@@ -1,0 +1,67 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide details below.
+
+  - type: dropdown
+    id: repository
+    attributes:
+      label: Repository
+      description: Which repository should this feature be added to?
+      options:
+        - stellarsettle-contracts
+        - stellarsettle-api
+        - stellarsettle-app
+        - Multiple repositories
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: As a seller, I need to be able to edit invoices after creation because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this to work?
+      placeholder: Add an "Edit" button on the invoice details page that allows...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other solutions have you considered?
+      placeholder: I considered manually deleting and recreating, but...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve experience
+        - High - Blocking important use case
+        - Critical - Platform won't work without it
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Contribution
+      description: Are you willing to work on this?
+      options:
+        - label: I'm willing to implement this feature
+        - label: I can help test this feature
