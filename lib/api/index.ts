@@ -1,53 +1,27 @@
-export interface Invoice {
-  id: string;
-  title: string;
-  seller: string;
-  amount: number;
-  raised: number;
-  investor_count: number;
-  status: "open" | "funded" | "settled";
-  due_date: string;
-  has_more: boolean;
-  next_cursor: string | null;
-}
+import type { Invoice, Investment, InvestmentRequest } from "@/lib/types";
 
-export interface InvoiceDetail extends Invoice {
-  description: string;
-  investors: { address: string; amount: number; timestamp: string }[];
-  document_url: string;
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
-export interface InvoicesResponse {
-  invoices: Invoice[];
-  has_more: boolean;
-  next_cursor: string | null;
-}
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
-
-export async function fetchInvoices(cursor?: string): Promise<InvoicesResponse> {
-  const params = new URLSearchParams();
-  if (cursor) params.set("cursor", cursor);
-  const res = await fetch(`${API_BASE}/invoices?${params}`);
+export async function fetchInvoices(): Promise<Invoice[]> {
+  const res = await fetch(`${API_URL}/invoices`);
   if (!res.ok) throw new Error("Failed to fetch invoices");
   return res.json();
 }
 
-export async function fetchInvoiceDetail(id: string): Promise<InvoiceDetail> {
-  const res = await fetch(`${API_BASE}/invoices/${id}`);
-  if (!res.ok) throw new Error("Failed to fetch invoice detail");
+export async function fetchInvoice(id: string): Promise<Invoice> {
+  const res = await fetch(`${API_URL}/invoices/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch invoice");
   return res.json();
 }
 
-export async function investInInvoice(
-  invoiceId: string,
-  amount: number
-): Promise<{ success: boolean; invested_amount: number }> {
-  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/invest`, {
+export async function createInvestment(
+  data: InvestmentRequest
+): Promise<Investment> {
+  const res = await fetch(`${API_URL}/investments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Investment failed");
+  if (!res.ok) throw new Error("Failed to create investment");
   return res.json();
 }
