@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { InvoiceStatus } from "@/lib/types";
+
+type InvoiceStatus = "open" | "funded" | "settled";
 
 interface MarketplaceFilterBarProps {
   status: InvoiceStatus | "all";

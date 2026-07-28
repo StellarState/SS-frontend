@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CountdownTimer, isExpired } from "./countdown-timer";
-import type { Invoice } from "@/lib/types";
+import type { Invoice } from "@/lib/api";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   open: "default",
@@ -17,7 +17,7 @@ interface InvoiceCardProps {
 
 export function InvoiceCard({ invoice, onInvest }: InvoiceCardProps) {
   const published = invoice.status === "open";
-  const expired = isExpired(invoice.deadline);
+  const expired = isExpired(invoice.due_date);
 
   return (
     <Card className="flex flex-col">
@@ -33,15 +33,11 @@ export function InvoiceCard({ invoice, onInvest }: InvoiceCardProps) {
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col gap-3">
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {invoice.description}
-        </p>
-
         <div className="flex items-center justify-between">
           <span className="text-lg font-semibold">
-            {invoice.amount.toLocaleString()} {invoice.currency}
+            {invoice.amount.toLocaleString()} XLM
           </span>
-          <CountdownTimer deadline={invoice.deadline} published={published} />
+          <CountdownTimer deadline={invoice.due_date} published={published} />
         </div>
 
         <Button
