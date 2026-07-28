@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
+import { CountdownTimer, isExpired } from "@/components/marketplace";
 
 function InvoiceDetailSkeleton() {
   return (
@@ -98,6 +99,8 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
   }
 
   const progress = Math.min((invoice.raised / invoice.amount) * 100, 100);
+  const published = invoice.status === "open";
+  const expired = isExpired(invoice.due_date);
 
   return (
     <div className="space-y-6">
@@ -108,6 +111,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
             <InvoiceStatusBadge status={invoice.status} />
           </div>
           <p className="text-sm text-muted-foreground">Seller: {invoice.seller}</p>
+          <CountdownTimer deadline={invoice.due_date} published={published} />
         </CardHeader>
       </Card>
 

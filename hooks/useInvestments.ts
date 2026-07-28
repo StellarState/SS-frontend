@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { investInInvoice } from "@/lib/api";
 import type { InvoiceDetail } from "@/lib/api";
 import { toast } from "sonner";
+import { INVOICES_QUERY_KEY } from "./useInvoices";
 
 interface InvestMutationVars {
   invoiceId: string;
@@ -42,6 +43,7 @@ export function useInvestMutation() {
 
     onSettled: (_data, _error, { invoiceId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
     },
   });
 }
