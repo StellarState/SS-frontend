@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
+import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 
 function InvoiceDetailSkeleton() {
   return (
@@ -103,9 +105,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">{invoice.title}</h1>
-            <Badge variant={invoice.status === "open" ? "default" : "secondary"}>
-              {invoice.status}
-            </Badge>
+            <InvoiceStatusBadge status={invoice.status} />
           </div>
           <p className="text-sm text-muted-foreground">Seller: {invoice.seller}</p>
         </CardHeader>
@@ -115,20 +115,9 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
         <CardHeader>
           <h2 className="text-lg font-semibold">Funding Progress</h2>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Raised</span>
-              <span>{progress.toFixed(1)}%</span>
-            </div>
-            <div className="h-3 w-full rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
+        <CardContent>
+          <FundingProgressBar raised={invoice.raised} target={invoice.amount} />
+          <div className="mt-4 grid grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Raised</p>
               <p className="text-lg font-semibold">{invoice.raised.toLocaleString()} XLM</p>
@@ -177,20 +166,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <h2 className="text-lg font-semibold">Invoice Document</h2>
         </CardHeader>
         <CardContent>
-          {invoice.document_url ? (
-            <div className="h-48 w-full rounded-md border bg-muted flex items-center justify-center">
-              <a
-                href={invoice.document_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary underline"
-              >
-                View Document
-              </a>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">No document attached</p>
-          )}
+          <DocumentPreview documentUrl={invoice.document_url} />
         </CardContent>
       </Card>
     </div>
