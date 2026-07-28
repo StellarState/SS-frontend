@@ -1,1 +1,1 @@
-export {};
+export { WalletChip } from "./WalletChip";
