@@ -1,47 +1,51 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { investInInvoice } from "@/lib/api";
-import type { InvoiceDetail } from "@/lib/api";
+import { createInvestment } from "@/lib/api";
 import { toast } from "sonner";
+import { INVOICES_QUERY_KEY } from "./useInvoices";
+import type { InvestmentRequest } from "@/lib/types";
 
-interface InvestMutationVars {
-  invoiceId: string;
-  amount: number;
+function truncateTxHash(hash: string, chars = 8): string {
+  return hash.slice(0, chars);
 }
 
-export function useInvestMutation() {
+function getStellarExpertUrl(txHash: string): string {
+  const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet";
+  const host =
+    network === "mainnet"
+      ? "stellar.expert"
+      : "testnet.stellar.expert";
+  return `https://${host}/explorer/tx/${txHash}`;
+}
+
+export function useInvest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ invoiceId, amount }: InvestMutationVars) =>
-      investInInvoice(invoiceId, amount),
+    mutationFn: createInvestment,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
 
-    onMutate: async ({ invoiceId, amount }) => {
-      await queryClient.cancelQueries({ queryKey: ["invoice", invoiceId] });
+      if (data.txHash) {
+        const truncated = truncateTxHash(data.txHash);
+        const expertUrl = getStellarExpertUrl(data.txHash);
 
-      const previous = queryClient.getQueryData<InvoiceDetail>(["invoice", invoiceId]);
-
-      if (previous) {
-        queryClient.setQueryData<InvoiceDetail>(["invoice", invoiceId], (old) => {
-          if (!old) return old;
-          const newRaised = Math.min(old.raised + amount, old.amount);
-          return { ...old, raised: newRaised, investor_count: old.investor_count + 1 };
+        toast.success("Investment confirmed", {
+          description: `Tx: ${truncated}…`,
+          duration: 6000,
+          action: {
+            label: "View on Stellar Expert",
+            onClick: () => window.open(expertUrl, "_blank", "noopener"),
+          },
         });
       }
-
-      return { previous };
     },
-
-    onError: (_err, { invoiceId }, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["invoice", invoiceId], context.previous);
-      }
-      toast.error("Investment failed. Your progress bar has been restored.");
-    },
-
-    onSettled: (_data, _error, { invoiceId }) => {
-      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
+    onError: (error: Error) => {
+      toast.error("Investment failed", {
+        description: error.message || "Transaction could not be completed.",
+        duration: 6000,
+      });
     },
   });
 }
