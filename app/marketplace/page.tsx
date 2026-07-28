@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useCallback, useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchInvoices, type Invoice } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MarketplaceFilterBar } from "@/components/marketplace";
+import { Loader2 } from "lucide-react";
 
 function InvoiceRow({ invoice }: { invoice: Invoice }) {
   return (
@@ -80,12 +82,14 @@ export default function MarketplacePage() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isFetching,
   } = useInfiniteQuery({
     queryKey: ["invoices"],
     queryFn: ({ pageParam }) => fetchInvoices(pageParam as string | undefined),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
       lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
+    staleTime: 60 * 1000,
   });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -115,10 +119,37 @@ export default function MarketplacePage() {
     [observer]
   );
 
-  const invoices = useMemo(
+  const allInvoices = useMemo(
     () => data?.pages.flatMap((p) => p.invoices) ?? [],
     [data]
   );
+
+  const [status, setStatus] = useState<"open" | "funded" | "settled" | "all">("all");
+  const [search, setSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setStatus("all");
+    setSearch("");
+    setDebouncedSearch("");
+  }, []);
+
+  const filtered = useMemo(() => {
+    return allInvoices.filter((inv) => {
+      const matchesStatus = status === "all" || inv.status === status;
+      const matchesSearch =
+        debouncedSearch === "" ||
+        inv.title.toLowerCase().includes(debouncedSearch.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [allInvoices, status, debouncedSearch]);
 
   if (isLoading) {
     return (
@@ -136,16 +167,38 @@ export default function MarketplacePage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Invoice Marketplace</h1>
-      <div className="space-y-4">
-        {invoices.map((invoice) => (
-          <InvoiceRow key={invoice.id} invoice={invoice} />
-        ))}
+
+      <MarketplaceFilterBar
+        status={status}
+        search={search}
+        onStatusChange={setStatus}
+        onSearchChange={handleSearchChange}
+        onClear={handleClear}
+      />
+
+      {isFetching && !isLoading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
+          <Loader2 className="size-3 animate-spin" />
+          Refreshing…
+        </div>
+      )}
+
+      <div className="space-y-4 mt-4">
+        {filtered.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">
+            No invoices match your filters.
+          </p>
+        ) : (
+          filtered.map((invoice) => (
+            <InvoiceRow key={invoice.id} invoice={invoice} />
+          ))
+        )}
         {isFetchingNextPage &&
           Array.from({ length: 3 }).map((_, i) => (
             <SkeletonRow key={`skeleton-${i}`} />
           ))}
         {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
-        {!hasNextPage && invoices.length > 0 && (
+        {!hasNextPage && filtered.length > 0 && (
           <p className="text-center text-sm text-muted-foreground py-4">
             No more invoices
           </p>
