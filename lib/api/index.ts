@@ -1,1 +1,53 @@
-export {};
+export interface Invoice {
+  id: string;
+  title: string;
+  seller: string;
+  amount: number;
+  raised: number;
+  investor_count: number;
+  status: "open" | "funded" | "settled";
+  due_date: string;
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export interface InvoiceDetail extends Invoice {
+  description: string;
+  investors: { address: string; amount: number; timestamp: string }[];
+  document_url: string;
+}
+
+export interface InvoicesResponse {
+  invoices: Invoice[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
+export async function fetchInvoices(cursor?: string): Promise<InvoicesResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  const res = await fetch(`${API_BASE}/invoices?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch invoices");
+  return res.json();
+}
+
+export async function fetchInvoiceDetail(id: string): Promise<InvoiceDetail> {
+  const res = await fetch(`${API_BASE}/invoices/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch invoice detail");
+  return res.json();
+}
+
+export async function investInInvoice(
+  invoiceId: string,
+  amount: number
+): Promise<{ success: boolean; invested_amount: number }> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/invest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount }),
+  });
+  if (!res.ok) throw new Error("Investment failed");
+  return res.json();
+}

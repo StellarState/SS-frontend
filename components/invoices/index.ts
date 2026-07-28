@@ -1,1 +1,1 @@
-export {};
+export { InvoiceDetail } from "./InvoiceDetail";
