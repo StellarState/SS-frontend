@@ -51,3 +51,32 @@ export async function investInInvoice(
   if (!res.ok) throw new Error("Investment failed");
   return res.json();
 }
+
+export type NotificationEventType = "new_invoice" | "funding_milestone" | "settlement";
+export type NotificationChannel = "email" | "in_app";
+
+export interface NotificationPreference {
+  event_type: NotificationEventType;
+  email: boolean;
+  in_app: boolean;
+}
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreference[]> {
+  const res = await fetch(`${API_BASE}/notifications/preferences`);
+  if (!res.ok) throw new Error("Failed to fetch notification preferences");
+  return res.json();
+}
+
+export async function updateNotificationPreference(
+  eventType: NotificationEventType,
+  channel: NotificationChannel,
+  enabled: boolean
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/preferences/${eventType}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channel, enabled }),
+  });
+  if (!res.ok) throw new Error("Failed to update notification preference");
+  return res.json();
+}
