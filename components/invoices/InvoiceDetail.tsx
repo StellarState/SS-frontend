@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,7 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 import { CountdownTimer, isExpired } from "@/components/marketplace";
+import { recordView } from "@/lib/recentlyViewed";
 
 function InvoiceDetailSkeleton() {
   return (
@@ -94,6 +96,17 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
     queryFn: () => fetchInvoiceDetail(invoiceId),
   });
 
+  useEffect(() => {
+    if (invoice) {
+      recordView({
+        id: invoice.id,
+        title: invoice.title,
+        status: invoice.status,
+        amount: invoice.amount,
+      });
+    }
+  }, [invoice]);
+
   if (isLoading || !invoice) {
     return <InvoiceDetailSkeleton />;
   }
@@ -120,21 +133,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <h2 className="text-lg font-semibold">Funding Progress</h2>
         </CardHeader>
         <CardContent>
-          <FundingProgressBar raised={invoice.raised} target={invoice.amount} />
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Raised</p>
-              <p className="text-lg font-semibold">{invoice.raised.toLocaleString()} XLM</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Target</p>
-              <p className="text-lg font-semibold">{invoice.amount.toLocaleString()} XLM</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Investors</p>
-              <p className="text-lg font-semibold">{invoice.investor_count}</p>
-            </div>
-          </div>
+          <FundingProgressBar raised={invoice.raised} target={invoice.amount} investorCount={invoice.investor_count} />
         </CardContent>
       </Card>
 

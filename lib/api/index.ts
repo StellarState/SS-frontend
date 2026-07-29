@@ -67,6 +67,15 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
   return res.json();
 }
 
+export async function submitKyc(data: FormData): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/kyc/submit`, {
+    method: "POST",
+    body: data,
+  });
+  if (!res.ok) throw new Error("KYC submission failed");
+  return res.json();
+}
+
 export async function updateNotificationPreference(
   eventType: NotificationEventType,
   channel: NotificationChannel,
