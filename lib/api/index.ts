@@ -69,6 +69,46 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
   return res.json();
 }
 
+export interface IpfsUploadResult {
+  cid: string;
+  url: string;
+}
+
+export async function uploadDocumentToIpfs(file: File): Promise<IpfsUploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/ipfs/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Document upload failed");
+  return res.json();
+}
+
+export interface PublishInvoiceInput {
+  title: string;
+  description: string;
+  faceValue: number;
+  fundingDeadline: string;
+  documentCid: string;
+}
+
+export interface PublishInvoiceResult {
+  id: string;
+}
+
+export async function publishInvoice(
+  input: PublishInvoiceInput
+): Promise<PublishInvoiceResult> {
+  const res = await fetch(`${API_BASE}/invoices`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("Failed to publish invoice");
+  return res.json();
+}
+
 export interface PortfolioResponse {
   positions: InvestmentPosition[];
 }

@@ -6,3 +6,4 @@ export { ErrorBoundary } from "./ErrorBoundary";
 export { InvestmentAmountInput } from "./InvestmentAmountInput";
 export { DocumentUpload } from "./DocumentUpload";
 export { SettlementReturnCard } from "./SettlementReturnCard";
+export { PublishInvoiceForm } from "./PublishInvoiceForm";
