@@ -23,6 +23,8 @@ export interface InvoicesResponse {
   next_cursor: string | null;
 }
 
+import type { InvestmentPosition } from "@/lib/portfolio";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 export async function fetchInvoices(cursor?: string): Promise<InvoicesResponse> {
@@ -64,6 +66,16 @@ export interface NotificationPreference {
 export async function fetchNotificationPreferences(): Promise<NotificationPreference[]> {
   const res = await fetch(`${API_BASE}/notifications/preferences`);
   if (!res.ok) throw new Error("Failed to fetch notification preferences");
+  return res.json();
+}
+
+export interface PortfolioResponse {
+  positions: InvestmentPosition[];
+}
+
+export async function fetchPortfolio(): Promise<PortfolioResponse> {
+  const res = await fetch(`${API_BASE}/investor/portfolio`);
+  if (!res.ok) throw new Error("Failed to fetch portfolio");
   return res.json();
 }
 

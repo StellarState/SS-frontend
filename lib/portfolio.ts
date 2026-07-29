@@ -3,6 +3,7 @@ export interface InvestmentPosition {
     invoice_title: string;
     committed_amount: number;
     status: "active" | "settled" | "expired";
+    share_percent?: number;
 }
 
 export interface PortfolioSummary {
