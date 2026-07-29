@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 interface FundingProgressBarProps {
     raised: number;
     target: number;
+    investorCount: number;
 }
 
-export function FundingProgressBar({ raised, target }: FundingProgressBarProps) {
+export function FundingProgressBar({ raised, target, investorCount }: FundingProgressBarProps) {
     const [animatedWidth, setAnimatedWidth] = useState(0);
 
     const percentage = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
@@ -36,10 +37,22 @@ export function FundingProgressBar({ raised, target }: FundingProgressBarProps) 
                     />
                 </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-                {raised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM raised of{" "}
-                {target.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM
-            </p>
+            <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                    {raised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM raised of{" "}
+                    {target.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM
+                </p>
+                <div className="flex items-center gap-2">
+                    {isFullyFunded && (
+                        <span className="inline-flex items-center rounded-full border border-transparent bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                            Fully Funded
+                        </span>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                        {investorCount} {investorCount === 1 ? "investor" : "investors"}
+                    </span>
+                </div>
+            </div>
         </div>
     );
 }

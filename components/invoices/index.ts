@@ -4,3 +4,4 @@ export { FundingProgressBar } from "./FundingProgressBar";
 export { DocumentPreview } from "./DocumentPreview";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { InvestmentAmountInput } from "./InvestmentAmountInput";
+export { DocumentUpload } from "./DocumentUpload";
