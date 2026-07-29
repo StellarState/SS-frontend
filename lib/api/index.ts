@@ -67,6 +67,20 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
   return res.json();
 }
 
+export interface SellerDashboardData {
+  total_invoices: number;
+  total_funded: number;
+  total_settled: number;
+  total_raised: number;
+  invoices: Invoice[];
+}
+
+export async function fetchSellerDashboard(): Promise<SellerDashboardData> {
+  const res = await fetch(`${API_BASE}/seller/analytics`);
+  if (!res.ok) throw new Error("Failed to fetch seller dashboard");
+  return res.json();
+}
+
 export async function submitKyc(data: FormData): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/kyc/submit`, {
     method: "POST",
