@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { useSellerDashboard } from "@/hooks/useSellerDashboard";
+import { ErrorBoundary } from "@/components/invoices/ErrorBoundary";
+import { Button } from "@/components/ui/button";
 
 function formatXlm(amount: number): string {
   return `${amount.toLocaleString(undefined, {
@@ -52,6 +54,17 @@ function InvoiceRowSkeleton() {
   );
 }
 
+function StatsPanel({ data }: { data: NonNullable<ReturnType<typeof useSellerDashboard>["data"]> }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <StatCard label="Total Invoices" value={data.total_invoices.toString()} />
+      <StatCard label="Total Funded" value={data.total_funded.toString()} />
+      <StatCard label="Total Settled" value={data.total_settled.toString()} />
+      <StatCard label="XLM Raised" value={formatXlm(data.total_raised)} />
+    </div>
+  );
+}
+
 export function SellerDashboard() {
   const { data, isLoading } = useSellerDashboard();
 
@@ -74,12 +87,16 @@ export function SellerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Total Invoices" value={data.total_invoices.toString()} />
-        <StatCard label="Total Funded" value={data.total_funded.toString()} />
-        <StatCard label="Total Settled" value={data.total_settled.toString()} />
-        <StatCard label="XLM Raised" value={formatXlm(data.total_raised)} />
-      </div>
+      <ErrorBoundary
+        fallback={(retry) => (
+          <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/50 gap-2">
+            <p className="text-sm text-muted-foreground">Dashboard stats unavailable — try refreshing</p>
+            <Button variant="outline" size="sm" onClick={retry}>Retry</Button>
+          </div>
+        )}
+      >
+        <StatsPanel data={data} />
+      </ErrorBoundary>
 
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Invoice Breakdown</h2>
