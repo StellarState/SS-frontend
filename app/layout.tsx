@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
+import { GlobalErrorBoundary } from "@/components/ui/GlobalErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,11 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <Navbar />
-          {children}
-          <Toaster />
-        </Providers>
+        <GlobalErrorBoundary>
+          <Providers>
+            <Navbar />
+            {children}
+            <Toaster />
+          </Providers>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );
