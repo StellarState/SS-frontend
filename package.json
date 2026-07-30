@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "shadcn:add": "npx shadcn@latest add button input textarea label card select checkbox radio-group table dialog sheet alert badge avatar skeleton separator tabs dropdown-menu popover form tooltip sonner -y"
   },
   "dependencies": {
