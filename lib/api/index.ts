@@ -89,3 +89,37 @@ export async function updateNotificationPreference(
   if (!res.ok) throw new Error("Failed to update notification preference");
   return res.json();
 }
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationItem[];
+  has_more: boolean;
+  next_cursor: string | null;
+  unread_count: number;
+}
+
+export async function fetchNotifications(
+  cursor?: string
+): Promise<NotificationsResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  const res = await fetch(`${API_BASE}/notifications?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function markAllNotificationsAsRead(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/read-all`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to mark all notifications as read");
+  return res.json();
+}

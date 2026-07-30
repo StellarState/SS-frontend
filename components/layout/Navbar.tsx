@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Wallet } from "lucide-react";
+import { Bell, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { WalletChip } from "@/components/wallet/WalletChip";
+import { useUnreadCount } from "@/hooks/useNotifications";
 
 export function Navbar() {
   const { address, network, isConnected, isConnecting, connect, disconnect, refreshNetwork } =
     useStellarWallet();
+  const { data: unreadCount } = useUnreadCount();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -20,6 +22,16 @@ export function Navbar() {
         <nav className="flex items-center gap-4">
           <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">
             Marketplace
+          </Link>
+          <Link href="/notifications" className="relative">
+            <Button variant="ghost" size="icon" className="cursor-default">
+              <Bell className="size-4" />
+              {unreadCount !== undefined && unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Button>
           </Link>
           {isConnected ? (
             <WalletChip
