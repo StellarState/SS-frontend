@@ -1,3 +1,5 @@
+import { formatXLM } from "./format";
+
 export interface InvestmentPosition {
     invoice_id: string;
     invoice_title: string;
@@ -21,9 +23,6 @@ export function calculateActiveTotal(positions: InvestmentPosition[]): Portfolio
 
     return {
         activeTotal,
-        formattedTotal: `${activeTotal.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })} XLM`,
+        formattedTotal: formatXLM(activeTotal),
     };
 }
