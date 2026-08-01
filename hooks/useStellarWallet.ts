@@ -13,6 +13,7 @@ interface WalletState {
   network: Network | null;
   isConnected: boolean;
   isConnecting: boolean;
+  isInitializing: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
   refreshNetwork: () => Promise<void>;
@@ -22,6 +23,7 @@ export function useStellarWallet(): WalletState {
   const [address, setAddress] = useState<string | null>(null);
   const [network, setNetwork] = useState<Network | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     async function init() {
@@ -31,6 +33,7 @@ export function useStellarWallet(): WalletState {
         const net = await getNetwork();
         setNetwork(net);
       }
+      setIsInitializing(false);
     }
     init();
   }, []);
@@ -63,6 +66,7 @@ export function useStellarWallet(): WalletState {
     network,
     isConnected: address !== null,
     isConnecting,
+    isInitializing,
     connect,
     disconnect,
     refreshNetwork,

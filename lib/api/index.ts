@@ -23,6 +23,8 @@ export interface InvoicesResponse {
   next_cursor: string | null;
 }
 
+import type { InvestmentPosition } from "@/lib/portfolio";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 export async function fetchInvoices(cursor?: string): Promise<InvoicesResponse> {
@@ -64,6 +66,70 @@ export interface NotificationPreference {
 export async function fetchNotificationPreferences(): Promise<NotificationPreference[]> {
   const res = await fetch(`${API_BASE}/notifications/preferences`);
   if (!res.ok) throw new Error("Failed to fetch notification preferences");
+  return res.json();
+}
+
+export interface IpfsUploadResult {
+  cid: string;
+  url: string;
+}
+
+export async function uploadDocumentToIpfs(file: File): Promise<IpfsUploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/ipfs/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Document upload failed");
+  return res.json();
+}
+
+export interface PublishInvoiceInput {
+  title: string;
+  description: string;
+  faceValue: number;
+  fundingDeadline: string;
+  documentCid: string;
+}
+
+export interface PublishInvoiceResult {
+  id: string;
+}
+
+export async function publishInvoice(
+  input: PublishInvoiceInput
+): Promise<PublishInvoiceResult> {
+  const res = await fetch(`${API_BASE}/invoices`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("Failed to publish invoice");
+  return res.json();
+}
+
+export interface PortfolioResponse {
+  positions: InvestmentPosition[];
+}
+
+export async function fetchPortfolio(): Promise<PortfolioResponse> {
+  const res = await fetch(`${API_BASE}/investor/portfolio`);
+  if (!res.ok) throw new Error("Failed to fetch portfolio");
+  return res.json();
+}
+
+export interface SellerDashboardData {
+  total_invoices: number;
+  total_funded: number;
+  total_settled: number;
+  total_raised: number;
+  invoices: Invoice[];
+}
+
+export async function fetchSellerDashboard(): Promise<SellerDashboardData> {
+  const res = await fetch(`${API_BASE}/seller/analytics`);
+  if (!res.ok) throw new Error("Failed to fetch seller dashboard");
   return res.json();
 }
 
