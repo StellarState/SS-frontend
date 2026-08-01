@@ -11,6 +11,7 @@ import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 import { CountdownTimer, isExpired } from "@/components/marketplace";
 import { recordView } from "@/lib/recentlyViewed";
+import { Loader2 } from "lucide-react";
 
 function InvoiceDetailSkeleton() {
   return (
@@ -91,9 +92,10 @@ interface InvoiceDetailProps {
 }
 
 export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
-  const { data: invoice, isLoading } = useQuery({
+  const { data: invoice, isLoading, isFetching } = useQuery({
     queryKey: ["invoice", invoiceId],
     queryFn: () => fetchInvoiceDetail(invoiceId),
+    staleTime: 60 * 1000,
   });
 
   useEffect(() => {
@@ -120,7 +122,15 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{invoice.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{invoice.title}</h1>
+              {isFetching && !isLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-3 animate-spin" />
+                  Refreshing…
+                </div>
+              )}
+            </div>
             <InvoiceStatusBadge status={invoice.status} />
           </div>
           <p className="text-sm text-muted-foreground">Seller: {invoice.seller}</p>
