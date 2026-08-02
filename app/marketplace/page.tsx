@@ -2,11 +2,24 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
 import { fetchInvoices, type Invoice } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MarketplaceFilterBar } from "@/components/marketplace";
+import {
+  MarketplaceFilterBar,
+  MarketplaceSortHeader,
+} from "@/components/marketplace";
+import {
+  cycleSort,
+  DEFAULT_SORT_STATE,
+  parseSortState,
+  serializeSortState,
+  sortInvoices,
+  type InvoiceSortKey,
+  type InvoiceSortState,
+} from "@/lib/invoice-sort";
 import { Loader2 } from "lucide-react";
 
 function InvoiceRow({ invoice }: { invoice: Invoice }) {
@@ -76,6 +89,14 @@ function SkeletonRow() {
 }
 
 export default function MarketplacePage() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [sortState, setSortState] = useState<InvoiceSortState>(() => {
+    if (typeof window === "undefined") return DEFAULT_SORT_STATE;
+    return parseSortState(new URLSearchParams(window.location.search));
+  });
+
   const {
     data,
     fetchNextPage,
@@ -139,17 +160,41 @@ export default function MarketplacePage() {
     setStatus("all");
     setSearch("");
     setDebouncedSearch("");
-  }, []);
+    setSortState(DEFAULT_SORT_STATE);
+    if (typeof window !== "undefined") {
+      const params = serializeSortState(
+        DEFAULT_SORT_STATE,
+        new URLSearchParams(window.location.search)
+      );
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [router, pathname]);
+
+  const handleSort = useCallback(
+    (key: InvoiceSortKey) => {
+      const next = cycleSort(sortState, key);
+      setSortState(next);
+      if (typeof window !== "undefined") {
+        const params = serializeSortState(
+          next,
+          new URLSearchParams(window.location.search)
+        );
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    },
+    [sortState, router, pathname]
+  );
 
   const filtered = useMemo(() => {
-    return allInvoices.filter((inv) => {
+    const matches = allInvoices.filter((inv) => {
       const matchesStatus = status === "all" || inv.status === status;
       const matchesSearch =
         debouncedSearch === "" ||
         inv.title.toLowerCase().includes(debouncedSearch.toLowerCase());
       return matchesStatus && matchesSearch;
     });
-  }, [allInvoices, status, debouncedSearch]);
+    return sortInvoices(matches, sortState);
+  }, [allInvoices, status, debouncedSearch, sortState]);
 
   if (isLoading) {
     return (
@@ -175,6 +220,10 @@ export default function MarketplacePage() {
         onSearchChange={handleSearchChange}
         onClear={handleClear}
       />
+
+      <div className="mt-4">
+        <MarketplaceSortHeader sort={sortState} onSort={handleSort} />
+      </div>
 
       {isFetching && !isLoading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
