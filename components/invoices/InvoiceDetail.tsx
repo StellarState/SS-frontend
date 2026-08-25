@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
@@ -111,7 +111,6 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
     return <InvoiceDetailSkeleton />;
   }
 
-  const progress = Math.min((invoice.raised / invoice.amount) * 100, 100);
   const published = invoice.status === "open";
   const expired = isExpired(invoice.due_date);
 
@@ -136,6 +135,22 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <FundingProgressBar raised={invoice.raised} target={invoice.amount} investorCount={invoice.investor_count} />
         </CardContent>
       </Card>
+
+      <div data-testid="invest-section">
+        {invoice.status === "open" && !expired && (
+          <Button data-testid="invest-button">Invest</Button>
+        )}
+        {invoice.status === "open" && expired && (
+          <p data-testid="invest-expired-message">This invoice has expired</p>
+        )}
+        {invoice.status === "settled" && (
+          <p data-testid="invest-settled-message">This invoice has been settled</p>
+        )}
+        {invoice.status === "funded" && (
+          <p data-testid="invest-funded-message">This invoice is fully funded</p>
+        )}
+        {invoice.status === "draft" && null}
+      </div>
 
       <Card>
         <CardHeader>

@@ -5,8 +5,9 @@ export interface Invoice {
   amount: number;
   raised: number;
   investor_count: number;
-  status: "open" | "funded" | "settled";
+  status: "open" | "funded" | "settled" | "rejected" | "draft";
   due_date: string;
+  rejection_reason?: string;
   has_more: boolean;
   next_cursor: string | null;
 }
