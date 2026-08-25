@@ -9,7 +9,9 @@ export default defineConfig({
         include: ["**/*.test.{ts,tsx}"],
     },
     oxc: {
-        jsx: "automatic",
+        // `jsx` takes an options object; the bare "automatic" string is not a
+        // valid value and fails `tsc --noEmit`.
+        jsx: { runtime: "automatic" },
     },
     resolve: {
         alias: {
