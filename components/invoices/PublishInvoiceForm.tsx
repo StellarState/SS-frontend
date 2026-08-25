@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DocumentUpload } from "@/components/invoices/DocumentUpload";
 import { uploadDocumentToIpfs, publishInvoice } from "@/lib/api";
+import { validateDeadline } from "@/lib/validation/deadline";
 
 const detailsSchema = z.object({
   title: z.string().min(1, "Invoice title is required"),
@@ -20,7 +21,18 @@ const detailsSchema = z.object({
     .string()
     .min(1, "Face value is required")
     .refine((v) => Number(v) > 0, "Face value must be greater than 0"),
-  fundingDeadline: z.string().min(1, "Funding deadline is required"),
+  fundingDeadline: z
+    .string()
+    .min(1, "Funding deadline is required")
+    .superRefine((v, ctx) => {
+      const error = validateDeadline(v);
+      if (error) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: error,
+        });
+      }
+    }),
 });
 
 type DetailsFormData = z.infer<typeof detailsSchema>;
@@ -40,7 +52,9 @@ export function PublishInvoiceForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishedInvoiceId, setPublishedInvoiceId] = useState<string | null>(null);
+  const [publishedInvoiceId, setPublishedInvoiceId] = useState<string | null>(
+    null,
+  );
 
   const {
     register,
@@ -49,7 +63,12 @@ export function PublishInvoiceForm() {
     formState: { errors },
   } = useForm<DetailsFormData>({
     resolver: zodResolver(detailsSchema),
-    defaultValues: { title: "", description: "", faceValue: "", fundingDeadline: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      faceValue: "",
+      fundingDeadline: "",
+    },
   });
 
   const handleNextFromDetails = useCallback(async () => {
@@ -119,7 +138,8 @@ export function PublishInvoiceForm() {
             Your invoice has been submitted for funding.
           </p>
           <p className="font-mono text-sm">
-            Invoice ID: <span className="font-semibold">{publishedInvoiceId}</span>
+            Invoice ID:{" "}
+            <span className="font-semibold">{publishedInvoiceId}</span>
           </p>
         </CardContent>
       </Card>
@@ -133,7 +153,10 @@ export function PublishInvoiceForm() {
       <CardHeader>
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           {([1, 2, 3] as Step[]).map((s) => (
-            <span key={s} className={s === step ? "font-semibold text-foreground" : ""}>
+            <span
+              key={s}
+              className={s === step ? "font-semibold text-foreground" : ""}
+            >
               {s > 1 && <span className="mx-2">›</span>}
               {s}. {STEP_LABELS[s]}
             </span>
@@ -147,7 +170,9 @@ export function PublishInvoiceForm() {
               <Label htmlFor="invoice-title">Invoice Title</Label>
               <Input id="invoice-title" {...register("title")} />
               {errors.title && (
-                <p className="text-sm text-destructive">{errors.title.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.title.message}
+                </p>
               )}
             </div>
 
@@ -155,23 +180,37 @@ export function PublishInvoiceForm() {
               <Label htmlFor="invoice-description">Description</Label>
               <Input id="invoice-description" {...register("description")} />
               {errors.description && (
-                <p className="text-sm text-destructive">{errors.description.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.description.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="invoice-face-value">Face Value (XLM)</Label>
-              <Input id="invoice-face-value" inputMode="decimal" {...register("faceValue")} />
+              <Input
+                id="invoice-face-value"
+                inputMode="decimal"
+                {...register("faceValue")}
+              />
               {errors.faceValue && (
-                <p className="text-sm text-destructive">{errors.faceValue.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.faceValue.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="invoice-deadline">Funding Deadline</Label>
-              <Input id="invoice-deadline" type="date" {...register("fundingDeadline")} />
+              <Input
+                id="invoice-deadline"
+                type="date"
+                {...register("fundingDeadline")}
+              />
               {errors.fundingDeadline && (
-                <p className="text-sm text-destructive">{errors.fundingDeadline.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.fundingDeadline.message}
+                </p>
               )}
             </div>
 
@@ -192,7 +231,9 @@ export function PublishInvoiceForm() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {documentCid ? "Upload complete" : `Uploading... ${uploadProgress}%`}
+                  {documentCid
+                    ? "Upload complete"
+                    : `Uploading... ${uploadProgress}%`}
                 </p>
               </div>
             )}

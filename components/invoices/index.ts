@@ -4,6 +4,7 @@ export { FundingProgressBar } from "./FundingProgressBar";
 export { DocumentPreview } from "./DocumentPreview";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { InvestmentAmountInput } from "./InvestmentAmountInput";
+export { InvestDialog } from "./InvestDialog";
 export { DocumentUpload } from "./DocumentUpload";
 export { SettlementReturnCard } from "./SettlementReturnCard";
 export { PublishInvoiceForm } from "./PublishInvoiceForm";
