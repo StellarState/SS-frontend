@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { CountdownTimer, isExpired } from "./countdown-timer";
 import type { Invoice } from "@/lib/api";
 
@@ -39,6 +40,12 @@ export function InvoiceCard({ invoice, onInvest }: InvoiceCardProps) {
           </span>
           <CountdownTimer deadline={invoice.due_date} published={published} />
         </div>
+
+        <FundingProgressBar
+          raised={invoice.raised}
+          target={invoice.amount}
+          investorCount={invoice.investor_count}
+        />
 
         <Button
           className="mt-auto w-full"

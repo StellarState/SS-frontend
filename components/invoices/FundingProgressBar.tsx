@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 interface FundingProgressBarProps {
-    raised: number;
+    /** Amount raised so far. The API may omit it for a brand new invoice. */
+    raised: number | null | undefined;
     target: number;
     investorCount: number;
 }
@@ -11,7 +12,9 @@ interface FundingProgressBarProps {
 export function FundingProgressBar({ raised, target, investorCount }: FundingProgressBarProps) {
     const [animatedWidth, setAnimatedWidth] = useState(0);
 
-    const percentage = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
+    // A missing raised value means nothing has been committed yet, not a crash.
+    const raisedAmount = raised ?? 0;
+    const percentage = target > 0 ? Math.min((raisedAmount / target) * 100, 100) : 0;
     const isFullyFunded = percentage >= 100;
 
     useEffect(() => {
@@ -31,6 +34,11 @@ export function FundingProgressBar({ raised, target, investorCount }: FundingPro
                 </div>
                 <div className="h-3 w-full rounded-full bg-secondary overflow-hidden">
                     <div
+                        data-testid="funding-progress-bar"
+                        role="progressbar"
+                        aria-valuenow={Math.round(percentage)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
                         className={`h-full transition-all duration-1000 ease-out ${isFullyFunded ? "bg-green-500" : "bg-primary"
                             }`}
                         style={{ width: `${animatedWidth}%` }}
@@ -39,7 +47,7 @@ export function FundingProgressBar({ raised, target, investorCount }: FundingPro
             </div>
             <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                    {raised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM raised of{" "}
+                    {raisedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM raised of{" "}
                     {target.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM
                 </p>
                 <div className="flex items-center gap-2">
