@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 
-export type InvoiceStatus = "draft" | "published" | "funded" | "settled" | "expired" | "active";
+export type InvoiceStatus = "draft" | "published" | "funded" | "settled" | "expired" | "active" | "rejected";
 
 interface InvoiceStatusBadgeProps {
     status?: InvoiceStatus | string | null;
@@ -16,6 +16,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
     funded: { label: "Funded", variant: "default" },
     settled: { label: "Settled", variant: "ghost" },
     expired: { label: "Expired", variant: "destructive" },
+    rejected: { label: "Rejected", variant: "destructive" },
 };
 
 export function InvoiceStatusBadge({ status }: InvoiceStatusBadgeProps) {

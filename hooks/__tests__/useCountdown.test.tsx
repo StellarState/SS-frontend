@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { useCountdown } from "../useCountdown";
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("useCountdown", () => {
@@ -55,27 +56,33 @@ describe("useCountdown", () => {
   });
 
   it("updates output after a simulated 1-minute tick", () => {
+    vi.useFakeTimers();
+
     const now = new Date("2024-01-01T00:00:00.000Z").getTime();
     const deadline = new Date("2024-01-01T01:01:00.000Z").toISOString(); // 1 hour, 1 minute from now
 
-    vi.spyOn(Date, "now").mockReturnValue(now);
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(now);
 
-    const { result, rerender } = renderHook(() => useCountdown(deadline, true));
+    const { result } = renderHook(() => useCountdown(deadline, true));
 
     expect(result.current).toEqual({ days: 0, hours: 1, minutes: 1 });
 
-    // Simulate 1 minute passing
-    const oneMinuteLater = new Date("2024-01-01T00:01:00.000Z").getTime();
-    vi.spyOn(Date, "now").mockReturnValue(oneMinuteLater);
+    // Simulate 1 minute passing. The hook only re-reads the clock from its
+    // interval, so the timer has to fire for the countdown to move.
+    nowSpy.mockReturnValue(new Date("2024-01-01T00:01:00.000Z").getTime());
 
-    rerender();
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
 
     expect(result.current).toEqual({ days: 0, hours: 1, minutes: 0 });
   });
 
   it("clears interval on unmount (no memory leak)", () => {
-    const clearIntervalSpy = vi.spyOn(clearInterval);
-    const setIntervalSpy = vi.spyOn(setInterval).mockReturnValue(123 as any);
+    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
+    const setIntervalSpy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockReturnValue(123 as unknown as ReturnType<typeof setInterval>);
 
     const deadline = new Date("2024-01-03T00:00:00.000Z").toISOString();
 
@@ -91,7 +98,7 @@ describe("useCountdown", () => {
   });
 
   it("does not set interval when deadline is null", () => {
-    const setIntervalSpy = vi.spyOn(setInterval);
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval");
 
     const { unmount } = renderHook(() => useCountdown(null, true));
 
@@ -101,7 +108,7 @@ describe("useCountdown", () => {
   });
 
   it("does not set interval when published is false", () => {
-    const setIntervalSpy = vi.spyOn(setInterval);
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval");
     const deadline = new Date("2024-01-03T00:00:00.000Z").toISOString();
 
     const { unmount } = renderHook(() => useCountdown(deadline, false));

@@ -1,13 +1,44 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchInvoices, type Invoice } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MarketplaceFilterBar } from "@/components/marketplace";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
+
+type SortField = "amount" | "due_date" | null;
+type SortDirection = "asc" | "desc";
+
+function SortHeader({
+  label,
+  field,
+  activeField,
+  activeDirection,
+  onSort,
+}: {
+  label: string;
+  field: SortField;
+  activeField: SortField;
+  activeDirection: SortDirection;
+  onSort: (field: SortField) => void;
+}) {
+  const isActive = activeField === field;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className="inline-flex items-center gap-1 text-sm font-medium hover:text-foreground transition-colors"
+      data-testid={`sort-${field}`}
+    >
+      {label}
+      {isActive && activeDirection === "asc" && <ArrowUp className="size-3" />}
+      {isActive && activeDirection === "desc" && <ArrowDown className="size-3" />}
+    </button>
+  );
+}
 
 function InvoiceRow({ invoice }: { invoice: Invoice }) {
   return (
@@ -128,6 +159,8 @@ export default function MarketplacePage() {
   const [search, setSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -135,21 +168,54 @@ export default function MarketplacePage() {
     debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
   }, []);
 
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        if (sortDirection === "asc") {
+          setSortDirection("desc");
+        } else {
+          setSortField(null);
+          setSortDirection("asc");
+        }
+      } else {
+        setSortField(field);
+        setSortDirection("asc");
+      }
+    },
+    [sortField, sortDirection]
+  );
+
   const handleClear = useCallback(() => {
     setStatus("all");
     setSearch("");
     setDebouncedSearch("");
+    setSortField(null);
+    setSortDirection("asc");
   }, []);
 
   const filtered = useMemo(() => {
-    return allInvoices.filter((inv) => {
+    let result = allInvoices.filter((inv) => {
       const matchesStatus = status === "all" || inv.status === status;
       const matchesSearch =
         debouncedSearch === "" ||
         inv.title.toLowerCase().includes(debouncedSearch.toLowerCase());
       return matchesStatus && matchesSearch;
     });
-  }, [allInvoices, status, debouncedSearch]);
+
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        let comparison: number;
+        if (sortField === "amount") {
+          comparison = a.amount - b.amount;
+        } else {
+          comparison = new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [allInvoices, status, debouncedSearch, sortField, sortDirection]);
 
   if (isLoading) {
     return (
@@ -183,7 +249,24 @@ export default function MarketplacePage() {
         </div>
       )}
 
-      <div className="space-y-4 mt-4">
+      <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
+        <SortHeader
+          label="Face Value"
+          field="amount"
+          activeField={sortField}
+          activeDirection={sortDirection}
+          onSort={handleSort}
+        />
+        <SortHeader
+          label="Deadline"
+          field="due_date"
+          activeField={sortField}
+          activeDirection={sortDirection}
+          onSort={handleSort}
+        />
+      </div>
+
+      <div className="space-y-4">
         {filtered.length === 0 ? (
           <p className="py-12 text-center text-muted-foreground">
             No invoices match your filters.

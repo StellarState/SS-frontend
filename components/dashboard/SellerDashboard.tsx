@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
@@ -100,6 +102,21 @@ export function SellerDashboard() {
                 </p>
               </CardHeader>
               <CardContent>
+                {invoice.status === "rejected" && invoice.rejection_reason && (
+                  <div
+                    className="mb-4 rounded-md border border-red-200 bg-red-50 p-4"
+                    data-testid="rejected-banner"
+                  >
+                    <p className="text-sm text-red-800">
+                      This invoice was not approved: {invoice.rejection_reason}
+                    </p>
+                    <Button variant="outline" size="sm" className="mt-2" asChild>
+                      <Link href={`/seller/publish?edit=${invoice.id}`}>
+                        Edit and Resubmit
+                      </Link>
+                    </Button>
+                  </div>
+                )}
                 <FundingProgressBar
                   raised={invoice.raised}
                   target={invoice.amount}

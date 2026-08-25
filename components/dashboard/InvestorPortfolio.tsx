@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
@@ -56,9 +58,17 @@ export function InvestorPortfolio() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Active Positions</h2>
         {positions.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">
-            You have no active invoice positions yet.
-          </p>
+          <div
+            className="flex flex-col items-center gap-4 py-12 text-center"
+            data-testid="investor-portfolio-empty"
+          >
+            <p className="text-muted-foreground">
+              No active investments yet — browse the marketplace to get started
+            </p>
+            <Button asChild>
+              <Link href="/marketplace">Browse Invoices</Link>
+            </Button>
+          </div>
         ) : (
           positions.map((position) => (
             <Card key={position.invoice_id}>
