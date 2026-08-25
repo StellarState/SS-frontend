@@ -155,3 +155,99 @@ export async function updateNotificationPreference(
   if (!res.ok) throw new Error("Failed to update notification preference");
   return res.json();
 }
+
+export interface LeaderboardInvestor {
+  address: string;
+  total_committed: number;
+  invoice_count: number;
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardInvestor[]> {
+  const res = await fetch(`${API_BASE}/leaderboard`);
+  if (!res.ok) throw new Error("Failed to fetch leaderboard");
+  return res.json();
+}
+
+export interface UpdateInvoiceInput {
+  title?: string;
+  description?: string;
+  faceValue?: number;
+  fundingDeadline?: string;
+  documentCid?: string;
+}
+
+export async function updateInvoice(
+  id: string,
+  input: UpdateInvoiceInput
+): Promise<InvoiceDetail> {
+  const res = await fetch(`${API_BASE}/invoices/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("Failed to update invoice");
+  return res.json();
+}
+
+export interface PendingInvoice {
+  id: string;
+  title: string;
+  seller: string;
+  face_value: number;
+  submission_date: string;
+  status: "pending_review";
+}
+
+export async function fetchPendingInvoices(): Promise<PendingInvoice[]> {
+  const res = await fetch(`${API_BASE}/admin/invoices/pending`);
+  if (!res.ok) throw new Error("Failed to fetch pending invoices");
+  return res.json();
+}
+
+export async function approveInvoice(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/invoices/${id}/approve`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to approve invoice");
+  return res.json();
+}
+
+export async function rejectInvoice(id: string, reason: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/invoices/${id}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error("Failed to reject invoice");
+  return res.json();
+}
+
+export interface NotificationItem {
+  id: string;
+  title?: string;
+  message: string;
+  read: boolean;
+  createdAt?: string;
+  created_at?: string;
+}
+
+export async function fetchNotifications(): Promise<NotificationItem[]> {
+  const res = await fetch(`${API_BASE}/notifications`);
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function fetchUnreadCount(): Promise<{ count: number }> {
+  const res = await fetch(`${API_BASE}/notifications/unread-count`);
+  if (!res.ok) throw new Error("Failed to fetch unread count");
+  return res.json();
+}
+
+export async function markNotificationAsRead(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+    method: "PATCH",
+  });
+  if (!res.ok) throw new Error("Failed to mark notification as read");
+  return res.json();
+}
+
