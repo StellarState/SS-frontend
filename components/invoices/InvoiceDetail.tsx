@@ -10,6 +10,7 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 import { CountdownTimer, isExpired } from "@/components/marketplace";
+import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { recordView } from "@/lib/recentlyViewed";
 
 function InvoiceDetailSkeleton() {
@@ -119,9 +120,12 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-bold">{invoice.title}</h1>
-            <InvoiceStatusBadge status={invoice.status} />
+            <div className="flex items-center gap-2">
+              <InvoiceStatusBadge status={invoice.status} />
+              <ShareInvoiceButton />
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">Seller: {invoice.seller}</p>
           <CountdownTimer deadline={invoice.due_date} published={published} />
