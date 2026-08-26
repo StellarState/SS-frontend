@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchInvoices, type Invoice } from "@/lib/api";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -8,7 +9,13 @@ import { FundingProgressBar } from "@/components/invoices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MarketplaceFilterBar } from "@/components/marketplace";
+import {
+  MarketplaceFilterBar,
+  FilterPanel,
+  MarketplaceFilterState,
+  FundingStatus,
+  isExpired,
+} from "@/components/marketplace";
 import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
 
 type SortField = "amount" | "due_date" | null;
@@ -54,12 +61,18 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
+        <div className="grid grid-cols-4 gap-4 text-sm text-muted-foreground">
           <div>
             <span className="block text-foreground font-medium">
               {invoice.amount.toLocaleString()} XLM
             </span>
             Amount
+          </div>
+          <div>
+            <span className="block text-foreground font-medium">
+              {invoice.yield_percentage !== undefined ? `${invoice.yield_percentage}%` : "N/A"}
+            </span>
+            Yield
           </div>
           <div>
             <span className="block text-foreground font-medium">
@@ -96,10 +109,14 @@ function SkeletonRow() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div>
             <Skeleton className="h-4 w-20 mb-1" />
             <Skeleton className="h-3 w-12" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-12 mb-1" />
+            <Skeleton className="h-3 w-10" />
           </div>
           <div>
             <Skeleton className="h-4 w-8 mb-1" />
@@ -117,6 +134,87 @@ function SkeletonRow() {
 
 export default function MarketplacePage() {
   usePageTitle("Browse Invoices");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Initialize filter state from URL search params
+  const initialStatuses = useMemo(() => {
+    const raw = searchParams.get("statuses");
+    if (!raw) return [];
+    return raw.split(",").filter((s) => ["open", "funded", "settled", "expired"].includes(s)) as FundingStatus[];
+  }, [searchParams]);
+
+  const initialMinYield = useMemo(() => {
+    const raw = searchParams.get("minYield");
+    return raw ? Number(raw) || 0 : 0;
+  }, [searchParams]);
+
+  const initialFromDate = searchParams.get("fromDate") || "";
+  const initialToDate = searchParams.get("toDate") || "";
+  const initialStatus = (searchParams.get("status") as "open" | "funded" | "settled" | "all") || "all";
+  const initialSearch = searchParams.get("search") || "";
+
+  const [panelFilters, setPanelFilters] = useState<MarketplaceFilterState>({
+    statuses: initialStatuses,
+    minYield: initialMinYield,
+    fromDate: initialFromDate,
+    toDate: initialToDate,
+  });
+
+  const [status, setStatus] = useState<"open" | "funded" | "settled" | "all">(initialStatus);
+  const [search, setSearch] = useState(initialSearch);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Sync state to URL params
+  const updateUrlParams = useCallback(
+    (newFilters: MarketplaceFilterState, newStatus: string, newSearch: string) => {
+      const params = new URLSearchParams();
+      if (newFilters.statuses.length > 0) {
+        params.set("statuses", newFilters.statuses.join(","));
+      }
+      if (newFilters.minYield > 0) {
+        params.set("minYield", newFilters.minYield.toString());
+      }
+      if (newFilters.fromDate) {
+        params.set("fromDate", newFilters.fromDate);
+      }
+      if (newFilters.toDate) {
+        params.set("toDate", newFilters.toDate);
+      }
+      if (newStatus !== "all") {
+        params.set("status", newStatus);
+      }
+      if (newSearch) {
+        params.set("search", newSearch);
+      }
+
+      const queryString = params.toString();
+      const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
+      router.replace(targetUrl, { scroll: false });
+    },
+    [pathname, router]
+  );
+
+  const handleFilterChange = (newFilters: MarketplaceFilterState) => {
+    setPanelFilters(newFilters);
+    updateUrlParams(newFilters, status, debouncedSearch);
+  };
+
+  const queryParamsObj = useMemo(() => {
+    const obj: Record<string, string> = {};
+    if (panelFilters.statuses.length > 0) obj.statuses = panelFilters.statuses.join(",");
+    if (panelFilters.minYield > 0) obj.minYield = panelFilters.minYield.toString();
+    if (panelFilters.fromDate) obj.fromDate = panelFilters.fromDate;
+    if (panelFilters.toDate) obj.toDate = panelFilters.toDate;
+    if (status !== "all") obj.status = status;
+    if (debouncedSearch) obj.search = debouncedSearch;
+    return obj;
+  }, [panelFilters, status, debouncedSearch]);
+
   const {
     data,
     fetchNextPage,
@@ -125,8 +223,8 @@ export default function MarketplacePage() {
     isLoading,
     isFetching,
   } = useInfiniteQuery({
-    queryKey: ["invoices"],
-    queryFn: ({ pageParam }) => fetchInvoices(pageParam as string | undefined),
+    queryKey: ["invoices", queryParamsObj],
+    queryFn: ({ pageParam }) => fetchInvoices(pageParam as string | undefined, queryParamsObj),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
       lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
@@ -167,18 +265,25 @@ export default function MarketplacePage() {
     [data]
   );
 
-  const [status, setStatus] = useState<"open" | "funded" | "settled" | "all">("all");
-  const [search, setSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setDebouncedSearch(value);
+        updateUrlParams(panelFilters, status, value);
+      }, 300);
+    },
+    [panelFilters, status, updateUrlParams]
+  );
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
-  }, []);
+  const handleStatusChange = useCallback(
+    (newStatus: "open" | "funded" | "settled" | "all") => {
+      setStatus(newStatus);
+      updateUrlParams(panelFilters, newStatus, debouncedSearch);
+    },
+    [panelFilters, debouncedSearch, updateUrlParams]
+  );
 
   const handleSort = useCallback(
     (field: SortField) => {
@@ -197,21 +302,73 @@ export default function MarketplacePage() {
     [sortField, sortDirection]
   );
 
-  const handleClear = useCallback(() => {
+  const handleClearAll = useCallback(() => {
+    const emptyFilters: MarketplaceFilterState = {
+      statuses: [],
+      minYield: 0,
+      fromDate: "",
+      toDate: "",
+    };
+    setPanelFilters(emptyFilters);
     setStatus("all");
     setSearch("");
     setDebouncedSearch("");
     setSortField(null);
     setSortDirection("asc");
-  }, []);
+    router.replace(pathname, { scroll: false });
+  }, [pathname, router]);
 
   const filtered = useMemo(() => {
     let result = allInvoices.filter((inv) => {
-      const matchesStatus = status === "all" || inv.status === status;
+      // Bar status filter
+      const matchesBarStatus = status === "all" || inv.status === status;
+      // Search filter
       const matchesSearch =
         debouncedSearch === "" ||
         inv.title.toLowerCase().includes(debouncedSearch.toLowerCase());
-      return matchesStatus && matchesSearch;
+
+      // Panel funding status filter
+      let matchesPanelStatus = true;
+      if (panelFilters.statuses.length > 0) {
+        matchesPanelStatus = panelFilters.statuses.some((st) => {
+          if (st === "expired") {
+            return isExpired(inv.due_date);
+          }
+          return inv.status === st;
+        });
+      }
+
+      // Panel min yield filter
+      let matchesYield = true;
+      if (panelFilters.minYield > 0) {
+        const y = inv.yield_percentage ?? 0;
+        matchesYield = y >= panelFilters.minYield;
+      }
+
+      // Panel due date range filter
+      let matchesFromDate = true;
+      if (panelFilters.fromDate) {
+        const invTime = new Date(inv.due_date).getTime();
+        const fromTime = new Date(panelFilters.fromDate).getTime();
+        matchesFromDate = invTime >= fromTime;
+      }
+
+      let matchesToDate = true;
+      if (panelFilters.toDate) {
+        const invTime = new Date(inv.due_date).getTime();
+        // End of the day for toDate
+        const toTime = new Date(`${panelFilters.toDate}T23:59:59.999Z`).getTime();
+        matchesToDate = invTime <= toTime;
+      }
+
+      return (
+        matchesBarStatus &&
+        matchesSearch &&
+        matchesPanelStatus &&
+        matchesYield &&
+        matchesFromDate &&
+        matchesToDate
+      );
     });
 
     if (sortField) {
@@ -227,16 +384,21 @@ export default function MarketplacePage() {
     }
 
     return result;
-  }, [allInvoices, status, debouncedSearch, sortField, sortDirection]);
+  }, [allInvoices, status, debouncedSearch, panelFilters, sortField, sortDirection]);
 
   if (isLoading) {
     return (
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Invoice Marketplace</h1>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-64 shrink-0">
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="flex-1 space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -246,58 +408,69 @@ export default function MarketplacePage() {
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Invoice Marketplace</h1>
 
-      <MarketplaceFilterBar
-        status={status}
-        search={search}
-        onStatusChange={setStatus}
-        onSearchChange={handleSearchChange}
-        onClear={handleClear}
-      />
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Collapsible Filter Panel on the left */}
+        <FilterPanel
+          filters={panelFilters}
+          onFilterChange={handleFilterChange}
+          onClear={handleClearAll}
+        />
 
-      {isFetching && !isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
-          <Loader2 className="size-3 animate-spin" />
-          Refreshing…
+        <div className="flex-1 space-y-4">
+          <MarketplaceFilterBar
+            status={status}
+            search={search}
+            onStatusChange={handleStatusChange}
+            onSearchChange={handleSearchChange}
+            onClear={handleClearAll}
+          />
+
+          {isFetching && !isLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
+              <Loader2 className="size-3 animate-spin" />
+              Refreshing…
+            </div>
+          )}
+
+          <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
+            <SortHeader
+              label="Face Value"
+              field="amount"
+              activeField={sortField}
+              activeDirection={sortDirection}
+              onSort={handleSort}
+            />
+            <SortHeader
+              label="Deadline"
+              field="due_date"
+              activeField={sortField}
+              activeDirection={sortDirection}
+              onSort={handleSort}
+            />
+          </div>
+
+          <div className="space-y-4">
+            {filtered.length === 0 ? (
+              <p className="py-12 text-center text-muted-foreground" data-testid="no-invoices-msg">
+                No invoices match your filters.
+              </p>
+            ) : (
+              filtered.map((invoice) => (
+                <InvoiceRow key={invoice.id} invoice={invoice} />
+              ))
+            )}
+            {isFetchingNextPage &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonRow key={`skeleton-${i}`} />
+              ))}
+            {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
+            {!hasNextPage && filtered.length > 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                No more invoices
+              </p>
+            )}
+          </div>
         </div>
-      )}
-
-      <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
-        <SortHeader
-          label="Face Value"
-          field="amount"
-          activeField={sortField}
-          activeDirection={sortDirection}
-          onSort={handleSort}
-        />
-        <SortHeader
-          label="Deadline"
-          field="due_date"
-          activeField={sortField}
-          activeDirection={sortDirection}
-          onSort={handleSort}
-        />
-      </div>
-
-      <div className="space-y-4">
-        {filtered.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">
-            No invoices match your filters.
-          </p>
-        ) : (
-          filtered.map((invoice) => (
-            <InvoiceRow key={invoice.id} invoice={invoice} />
-          ))
-        )}
-        {isFetchingNextPage &&
-          Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonRow key={`skeleton-${i}`} />
-          ))}
-        {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
-        {!hasNextPage && filtered.length > 0 && (
-          <p className="text-center text-sm text-muted-foreground py-4">
-            No more invoices
-          </p>
-        )}
       </div>
     </main>
   );

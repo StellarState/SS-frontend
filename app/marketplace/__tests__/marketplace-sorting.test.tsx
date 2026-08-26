@@ -16,6 +16,13 @@ vi.mock("@/lib/logger", () => ({
   logError: vi.fn(),
 }));
 
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: mockReplace, push: vi.fn() }),
+  usePathname: () => "/marketplace",
+}));
+
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 const mockUseInfiniteQuery = vi.mocked(useInfiniteQuery);

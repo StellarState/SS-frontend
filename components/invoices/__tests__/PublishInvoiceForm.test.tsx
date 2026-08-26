@@ -26,7 +26,7 @@ describe("PublishInvoiceForm field preservation", () => {
     const descriptionInput = screen.getByLabelText("Description");
     await user.type(descriptionInput, "Test Description");
 
-    const faceValueInput = screen.getByDisplayValue(/^$/);
+    const faceValueInput = screen.getByLabelText("Face Value (XLM)");
     await user.type(faceValueInput, "1000");
 
     const deadlineInput = screen.getByLabelText("Funding Deadline");
@@ -36,7 +36,7 @@ describe("PublishInvoiceForm field preservation", () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Invoice Document")).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload Document")).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole("button", { name: /Back/i });
@@ -58,7 +58,7 @@ describe("PublishInvoiceForm field preservation", () => {
     const descriptionInput = screen.getByLabelText("Description");
     await user.type(descriptionInput, "Test Description");
 
-    const faceValueInput = screen.getByDisplayValue(/^$/);
+    const faceValueInput = screen.getByLabelText("Face Value (XLM)");
     await user.type(faceValueInput, "1000");
 
     const deadlineInput = screen.getByLabelText("Funding Deadline");
@@ -68,7 +68,7 @@ describe("PublishInvoiceForm field preservation", () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Invoice Document")).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload Document")).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole("button", { name: /Back/i });
@@ -90,7 +90,7 @@ describe("PublishInvoiceForm field preservation", () => {
     const descriptionInput = screen.getByLabelText("Description");
     await user.type(descriptionInput, "Test Description");
 
-    const faceValueInput = screen.getByDisplayValue(/^$/);
+    const faceValueInput = screen.getByLabelText("Face Value (XLM)");
     await user.type(faceValueInput, "1000");
 
     const deadlineInput = screen.getByLabelText("Funding Deadline");
@@ -100,7 +100,7 @@ describe("PublishInvoiceForm field preservation", () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Invoice Document")).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload Document")).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole("button", { name: /Back/i });
@@ -122,7 +122,7 @@ describe("PublishInvoiceForm field preservation", () => {
     const descriptionInput = screen.getByLabelText("Description");
     await user.type(descriptionInput, "Test Description");
 
-    const faceValueInput = screen.getByDisplayValue(/^$/);
+    const faceValueInput = screen.getByLabelText("Face Value (XLM)");
     await user.type(faceValueInput, "1000");
 
     const deadlineInput = screen.getByLabelText("Funding Deadline");
@@ -132,7 +132,7 @@ describe("PublishInvoiceForm field preservation", () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Invoice Document")).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload Document")).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole("button", { name: /Back/i });
@@ -154,7 +154,7 @@ describe("PublishInvoiceForm field preservation", () => {
     const descriptionInput = screen.getByLabelText("Description");
     await user.type(descriptionInput, "Test Description");
 
-    const faceValueInput = screen.getByDisplayValue(/^$/);
+    const faceValueInput = screen.getByLabelText("Face Value (XLM)");
     await user.type(faceValueInput, "1000");
 
     const deadlineInput = screen.getByLabelText("Funding Deadline");
@@ -164,7 +164,7 @@ describe("PublishInvoiceForm field preservation", () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Invoice Document")).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload Document")).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole("button", { name: /Back/i });
