@@ -86,9 +86,17 @@ export function SellerDashboard() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Invoice Breakdown</h2>
         {data.invoices.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">
-            You haven&apos;t published any invoices yet.
-          </p>
+          <div
+            className="flex flex-col items-center gap-4 py-12 text-center"
+            data-testid="seller-invoices-empty"
+          >
+            <p className="text-muted-foreground">
+              No invoices yet — create your first invoice to get started
+            </p>
+            <Button asChild>
+              <Link href="/seller/publish">Create Invoice</Link>
+            </Button>
+          </div>
         ) : (
           data.invoices.map((invoice) => (
             <Card key={invoice.id}>

@@ -11,15 +11,25 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DocumentUpload } from "@/components/invoices/DocumentUpload";
+import { FaceValueInput } from "@/components/invoices/FaceValueInput";
 import { uploadDocumentToIpfs, publishInvoice } from "@/lib/api";
+import {
+  MIN_INVOICE_FACE_VALUE,
+  validateFaceValue,
+} from "@/lib/validation/face-value";
 
 const detailsSchema = z.object({
   title: z.string().min(1, "Invoice title is required"),
   description: z.string().min(1, "Description is required"),
   faceValue: z
     .string()
-    .min(1, "Face value is required")
-    .refine((v) => Number(v) > 0, "Face value must be greater than 0"),
+    .min(1, "Please enter a valid amount")
+    .superRefine((v, ctx) => {
+      const error = validateFaceValue(v, MIN_INVOICE_FACE_VALUE);
+      if (error) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+      }
+    }),
   fundingDeadline: z.string().min(1, "Funding deadline is required"),
 });
 
@@ -46,16 +56,34 @@ export function PublishInvoiceForm() {
     register,
     trigger,
     getValues,
+    setValue,
     formState: { errors },
   } = useForm<DetailsFormData>({
     resolver: zodResolver(detailsSchema),
     defaultValues: { title: "", description: "", faceValue: "", fundingDeadline: "" },
   });
 
+  const [isFaceValueValid, setIsFaceValueValid] = useState(false);
+
   const handleNextFromDetails = useCallback(async () => {
     const valid = await trigger();
     if (valid) setStep(2);
   }, [trigger]);
+
+  const handleFaceValueChange = useCallback(
+    (amount: number | null) => {
+      setIsFaceValueValid(amount !== null);
+      if (amount !== null) {
+        setValue("faceValue", String(amount), {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } else {
+        setValue("faceValue", "", { shouldValidate: true, shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
 
   const handleUpload = useCallback((file: File) => {
     setDocumentFile(file);
@@ -159,13 +187,11 @@ export function PublishInvoiceForm() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="invoice-face-value">Face Value (XLM)</Label>
-              <Input id="invoice-face-value" inputMode="decimal" {...register("faceValue")} />
-              {errors.faceValue && (
-                <p className="text-sm text-destructive">{errors.faceValue.message}</p>
-              )}
-            </div>
+            <FaceValueInput
+              min={MIN_INVOICE_FACE_VALUE}
+              defaultValue={getValues("faceValue")}
+              onValidAmountChange={handleFaceValueChange}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="invoice-deadline">Funding Deadline</Label>
@@ -175,7 +201,9 @@ export function PublishInvoiceForm() {
               )}
             </div>
 
-            <Button onClick={handleNextFromDetails}>Next</Button>
+            <Button onClick={handleNextFromDetails} disabled={!isFaceValueValid}>
+              Next
+            </Button>
           </div>
         )}
 
