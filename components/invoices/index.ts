@@ -9,5 +9,7 @@ export { FaceValueInput } from "./FaceValueInput";
 export { DocumentUpload } from "./DocumentUpload";
 export { SettlementReturnCard } from "./SettlementReturnCard";
 export { PublishInvoiceForm } from "./PublishInvoiceForm";
+export { EditInvoiceForm } from "./EditInvoiceForm";
 export { ShareInvoiceButton } from "./ShareInvoiceButton";
+
 export { InvoiceBackButton } from "./InvoiceBackButton";
