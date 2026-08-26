@@ -1,0 +1,68 @@
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { PositionCard, formatSharePercent } from "../PositionCard";
+import type { InvestmentPosition } from "@/lib/portfolio";
+
+function makePosition(overrides: Partial<InvestmentPosition> = {}): InvestmentPosition {
+  return {
+    invoice_id: "inv-1",
+    invoice_title: "Acme receivable",
+    committed_amount: 3000,
+    status: "active",
+    share_percent: 30,
+    ...overrides,
+  };
+}
+
+describe("formatSharePercent", () => {
+  it("rounds share percentage to two decimal places", () => {
+    expect(formatSharePercent(30.556)).toBe("30.56%");
+  });
+
+  it("renders whole percentages without trailing zeros", () => {
+    expect(formatSharePercent(100)).toBe("100%");
+    expect(formatSharePercent(30)).toBe("30%");
+  });
+
+  it("returns a dash placeholder for null or undefined", () => {
+    expect(formatSharePercent(null)).toBe("—");
+    expect(formatSharePercent(undefined)).toBe("—");
+  });
+});
+
+describe("PositionCard", () => {
+  it("renders committed XLM and share percentage correctly", () => {
+    render(<PositionCard position={makePosition({ committed_amount: 3000, share_percent: 30 })} />);
+
+    expect(screen.getByTestId("position-committed")).toHaveTextContent(
+      "3,000.00 XLM committed"
+    );
+    expect(screen.getByTestId("position-share")).toHaveTextContent("30%");
+  });
+
+  it("renders 100% share without crashing", () => {
+    render(<PositionCard position={makePosition({ share_percent: 100 })} />);
+
+    expect(screen.getByTestId("position-share")).toHaveTextContent("100%");
+  });
+
+  it("renders a dash placeholder when share percentage is null", () => {
+    render(<PositionCard position={makePosition({ share_percent: null })} />);
+
+    expect(screen.getByTestId("position-share")).toHaveTextContent("—");
+  });
+
+  it("formats XLM amount with two decimal places", () => {
+    render(<PositionCard position={makePosition({ committed_amount: 1234.5 })} />);
+
+    expect(screen.getByTestId("position-committed")).toHaveTextContent(
+      "1,234.50 XLM committed"
+    );
+  });
+
+  it("rounds share percentage to two decimal places in the UI", () => {
+    render(<PositionCard position={makePosition({ share_percent: 12.345 })} />);
+
+    expect(screen.getByTestId("position-share")).toHaveTextContent("12.35%");
+  });
+});

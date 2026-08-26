@@ -8,6 +8,13 @@ vi.mock("@/lib/api", () => ({
   fetchInvoiceDetail: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    back: vi.fn(),
+    push: vi.fn(),
+  }),
+}));
+
 vi.mock("@/lib/recentlyViewed", () => ({
   recordView: vi.fn(),
 }));
