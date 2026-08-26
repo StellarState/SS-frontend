@@ -13,6 +13,7 @@ import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 import { CountdownTimer, isExpired } from "@/components/marketplace";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
+import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { recordView } from "@/lib/recentlyViewed";
 
 function InvoiceDetailSkeleton() {
@@ -149,7 +150,11 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
 
       <div data-testid="invest-section">
         {invoice.status === "open" && !expired && (
-          <Button data-testid="invest-button">Invest</Button>
+          <InvestmentModal
+            invoiceId={invoice.id}
+            minInvestment={1}
+            maxInvestment={invoice.amount - invoice.raised}
+          />
         )}
         {invoice.status === "open" && expired && (
           <p data-testid="invest-expired-message">This invoice has expired</p>

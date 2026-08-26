@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,13 +45,13 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 export function PublishInvoiceForm() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentCid, setDocumentCid] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishedInvoiceId, setPublishedInvoiceId] = useState<string | null>(null);
 
   const {
     register,
@@ -130,29 +131,13 @@ export function PublishInvoiceForm() {
         fundingDeadline: values.fundingDeadline,
         documentCid,
       });
-      setPublishedInvoiceId(result.id);
+      router.push(`/dashboard/seller/publish/success?invoiceId=${result.id}`);
     } catch {
       toast.error("Failed to publish invoice. Please try again.");
     } finally {
       setIsPublishing(false);
     }
-  }, [documentCid, getValues]);
-
-  if (publishedInvoiceId) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-          <h2 className="text-xl font-bold">Invoice Published</h2>
-          <p className="text-sm text-muted-foreground">
-            Your invoice has been submitted for funding.
-          </p>
-          <p className="font-mono text-sm">
-            Invoice ID: <span className="font-semibold">{publishedInvoiceId}</span>
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [documentCid, getValues, router]);
 
   const values = getValues();
 
