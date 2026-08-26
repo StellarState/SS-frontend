@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { PositionCard } from "@/components/dashboard/PositionCard";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { calculateActiveTotal } from "@/lib/portfolio";
 
@@ -87,23 +87,7 @@ export function InvestorPortfolio() {
           </div>
         ) : (
           positions.map((position) => (
-            <Card key={position.invoice_id}>
-              <CardContent className="flex items-center justify-between pt-6">
-                <div>
-                  <p className="font-semibold">{position.invoice_title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {position.committed_amount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    XLM committed
-                    {typeof position.share_percent === "number" &&
-                      ` · ${position.share_percent}% share`}
-                  </p>
-                </div>
-                <InvoiceStatusBadge status={position.status} />
-              </CardContent>
-            </Card>
+            <PositionCard key={position.invoice_id} position={position} />
           ))
         )}
       </div>

@@ -52,6 +52,12 @@ export function useInvestMutation() {
       toast.error("Investment failed. Your progress bar has been restored.");
     },
 
+    onSuccess: (_data, { amount }) => {
+      toast.success(`Investment of ${amount.toLocaleString()} XLM committed successfully`, {
+        duration: 5000,
+      });
+    },
+
     onSettled: (_data, _error, { invoiceId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
       queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
