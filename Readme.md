@@ -202,6 +202,7 @@ docker run -p 3000:3000 stellarsettle-app
 - Image optimization (next/image)
 - API response caching
 
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md)
