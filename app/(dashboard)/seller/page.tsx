@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePageLoadPerformanceLog } from "@/hooks/usePageLoadPerformanceLog";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { SellerDashboard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 
 export default function SellerDashboardPage() {
   usePageLoadPerformanceLog("seller_dashboard");
+  usePageTitle("My Dashboard");
   const router = useRouter();
   const { isConnected, isInitializing } = useStellarWallet();
 

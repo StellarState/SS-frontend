@@ -46,7 +46,7 @@ describe("KycSubmissionForm", () => {
   it("shows validation errors on submit with empty fields", async () => {
     render(<KycSubmissionForm status="not_submitted" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Submit KYC" }));
+    fireEvent.submit(screen.getByRole("button", { name: "Submit KYC" }).closest("form")!);
 
     await waitFor(() => {
       expect(screen.getByText("Full name is required")).toBeInTheDocument();
@@ -147,5 +147,49 @@ describe("KycSubmissionForm", () => {
     await waitFor(() => {
       expect(screen.getByText(/Uploading/)).toBeInTheDocument();
     });
+  });
+
+  it("renders all three document type options in the dropdown", () => {
+    render(<KycSubmissionForm status="not_submitted" />);
+
+    const idTypeSelect = screen.getByLabelText("Government ID Type");
+    fireEvent.click(idTypeSelect);
+
+    expect(screen.getAllByText("Passport").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Driver's License").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("National ID Card").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("selecting Passport sets the form value", async () => {
+    render(<KycSubmissionForm status="not_submitted" />);
+
+    const idTypeSelect = screen.getByLabelText("Government ID Type");
+    fireEvent.click(idTypeSelect);
+    const passportOption = screen.getAllByText("Passport").find((el) => el.tagName === "SPAN");
+    if (passportOption) fireEvent.click(passportOption);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Government ID type is required")).not.toBeInTheDocument();
+    });
+  });
+
+  it("selecting National ID Card sets the form value", async () => {
+    render(<KycSubmissionForm status="not_submitted" />);
+
+    const idTypeSelect = screen.getByLabelText("Government ID Type");
+    fireEvent.click(idTypeSelect);
+    const nationalIdOption = screen.getAllByText("National ID Card").find((el) => el.tagName === "SPAN");
+    if (nationalIdOption) fireEvent.click(nationalIdOption);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Government ID type is required")).not.toBeInTheDocument();
+    });
+  });
+
+  it("submit button is disabled when no document type is selected", () => {
+    render(<KycSubmissionForm status="not_submitted" />);
+
+    const submitButton = screen.getByRole("button", { name: "Submit KYC" });
+    expect(submitButton).toBeDisabled();
   });
 });

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,8 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
     queryKey: ["invoice", invoiceId],
     queryFn: () => fetchInvoiceDetail(invoiceId),
   });
+
+  usePageTitle(invoice?.title ?? null);
 
   useEffect(() => {
     if (invoice) {

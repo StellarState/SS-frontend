@@ -56,11 +56,14 @@ export function KycSubmissionForm({ status }: KycSubmissionFormProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<KycFormData>({
     resolver: zodResolver(kycSchema),
     defaultValues: { fullName: "", country: "", idType: "" },
   });
+
+  const idTypeValue = watch("idType");
 
   const isPending = status === "pending";
 
@@ -197,7 +200,7 @@ export function KycSubmissionForm({ status }: KycSubmissionFormProps) {
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting || !idTypeValue}>
         {isSubmitting ? "Submitting..." : "Submit KYC"}
       </Button>
     </form>

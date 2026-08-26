@@ -4,10 +4,12 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePageLoadPerformanceLog } from "@/hooks/usePageLoadPerformanceLog";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { InvestorPortfolio } from "@/components/dashboard";
 
 export default function InvestorDashboardPage() {
   usePageLoadPerformanceLog("investor_portfolio");
+  usePageTitle("My Portfolio");
   const router = useRouter();
   const { isConnected, isInitializing } = useStellarWallet();
 
