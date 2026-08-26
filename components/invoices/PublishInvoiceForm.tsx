@@ -24,14 +24,20 @@ const detailsSchema = z.object({
   description: z.string().min(1, "Description is required"),
   faceValue: z
     .string()
-    .min(1, "Please enter a valid amount")
+    .min(1, "Face value is required")
+    .refine((v) => Number(v) > 0, "Face value must be greater than 0"),
+  fundingDeadline: z
+    .string()
+    .min(1, "Funding deadline is required")
     .superRefine((v, ctx) => {
-      const error = validateFaceValue(v, MIN_INVOICE_FACE_VALUE);
+      const error = validateDeadline(v);
       if (error) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: error,
+        });
       }
     }),
-  fundingDeadline: z.string().min(1, "Funding deadline is required"),
 });
 
 type DetailsFormData = z.infer<typeof detailsSchema>;
@@ -52,6 +58,9 @@ export function PublishInvoiceForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedInvoiceId, setPublishedInvoiceId] = useState<string | null>(
+    null,
+  );
 
   const {
     register,
@@ -61,7 +70,12 @@ export function PublishInvoiceForm() {
     formState: { errors },
   } = useForm<DetailsFormData>({
     resolver: zodResolver(detailsSchema),
-    defaultValues: { title: "", description: "", faceValue: "", fundingDeadline: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      faceValue: "",
+      fundingDeadline: "",
+    },
   });
 
   const [isFaceValueValid, setIsFaceValueValid] = useState(false);
@@ -137,7 +151,24 @@ export function PublishInvoiceForm() {
     } finally {
       setIsPublishing(false);
     }
-  }, [documentCid, getValues, router]);
+  }, [documentCid, getValues]);
+
+  if (publishedInvoiceId) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+          <h2 className="text-xl font-bold">Invoice Published</h2>
+          <p className="text-sm text-muted-foreground">
+            Your invoice has been submitted for funding.
+          </p>
+          <p className="font-mono text-sm">
+            Invoice ID:{" "}
+            <span className="font-semibold">{publishedInvoiceId}</span>
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const values = getValues();
 
@@ -146,7 +177,10 @@ export function PublishInvoiceForm() {
       <CardHeader>
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           {([1, 2, 3] as Step[]).map((s) => (
-            <span key={s} className={s === step ? "font-semibold text-foreground" : ""}>
+            <span
+              key={s}
+              className={s === step ? "font-semibold text-foreground" : ""}
+            >
               {s > 1 && <span className="mx-2">›</span>}
               {s}. {STEP_LABELS[s]}
             </span>
@@ -160,7 +194,9 @@ export function PublishInvoiceForm() {
               <Label htmlFor="invoice-title">Invoice Title</Label>
               <Input id="invoice-title" {...register("title")} />
               {errors.title && (
-                <p className="text-sm text-destructive">{errors.title.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.title.message}
+                </p>
               )}
             </div>
 
@@ -168,21 +204,37 @@ export function PublishInvoiceForm() {
               <Label htmlFor="invoice-description">Description</Label>
               <Input id="invoice-description" {...register("description")} />
               {errors.description && (
-                <p className="text-sm text-destructive">{errors.description.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.description.message}
+                </p>
               )}
             </div>
 
-            <FaceValueInput
-              min={MIN_INVOICE_FACE_VALUE}
-              defaultValue={getValues("faceValue")}
-              onValidAmountChange={handleFaceValueChange}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="invoice-face-value">Face Value (XLM)</Label>
+              <Input
+                id="invoice-face-value"
+                inputMode="decimal"
+                {...register("faceValue")}
+              />
+              {errors.faceValue && (
+                <p className="text-sm text-destructive">
+                  {errors.faceValue.message}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="invoice-deadline">Funding Deadline</Label>
-              <Input id="invoice-deadline" type="date" {...register("fundingDeadline")} />
+              <Input
+                id="invoice-deadline"
+                type="date"
+                {...register("fundingDeadline")}
+              />
               {errors.fundingDeadline && (
-                <p className="text-sm text-destructive">{errors.fundingDeadline.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.fundingDeadline.message}
+                </p>
               )}
             </div>
 
@@ -205,7 +257,9 @@ export function PublishInvoiceForm() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {documentCid ? "Upload complete" : `Uploading... ${uploadProgress}%`}
+                  {documentCid
+                    ? "Upload complete"
+                    : `Uploading... ${uploadProgress}%`}
                 </p>
               </div>
             )}

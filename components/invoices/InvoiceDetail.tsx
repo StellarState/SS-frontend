@@ -6,7 +6,6 @@ import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
@@ -119,6 +118,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
 
   const published = invoice.status === "open";
   const expired = isExpired(invoice.due_date);
+  const remainingAmount = Math.max(0, invoice.amount - invoice.raised);
 
   return (
     <div className="space-y-6">
@@ -134,7 +134,9 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
               <ShareInvoiceButton />
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">Seller: {invoice.seller}</p>
+          <p className="text-sm text-muted-foreground">
+            Seller: {invoice.seller}
+          </p>
           <CountdownTimer deadline={invoice.due_date} published={published} />
         </CardHeader>
       </Card>
@@ -144,7 +146,11 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <h2 className="text-lg font-semibold">Funding Progress</h2>
         </CardHeader>
         <CardContent>
-          <FundingProgressBar raised={invoice.raised} target={invoice.amount} investorCount={invoice.investor_count} />
+          <FundingProgressBar
+            raised={invoice.raised}
+            target={invoice.amount}
+            investorCount={invoice.investor_count}
+          />
         </CardContent>
       </Card>
 
@@ -160,10 +166,14 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <p data-testid="invest-expired-message">This invoice has expired</p>
         )}
         {invoice.status === "settled" && (
-          <p data-testid="invest-settled-message">This invoice has been settled</p>
+          <p data-testid="invest-settled-message">
+            This invoice has been settled
+          </p>
         )}
         {invoice.status === "funded" && (
-          <p data-testid="invest-funded-message">This invoice is fully funded</p>
+          <p data-testid="invest-funded-message">
+            This invoice is fully funded
+          </p>
         )}
         {invoice.status === "draft" && null}
       </div>
@@ -174,7 +184,10 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {invoice.investors.map((investor) => (
-            <div key={investor.address} className="flex items-center justify-between">
+            <div
+              key={investor.address}
+              className="flex items-center justify-between"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-xs font-mono">
                   {investor.address.slice(0, 2)}
@@ -186,11 +199,15 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
                   </p>
                 </div>
               </div>
-              <p className="text-sm font-medium">{investor.amount.toLocaleString()} XLM</p>
+              <p className="text-sm font-medium">
+                {investor.amount.toLocaleString()} XLM
+              </p>
             </div>
           ))}
           {invoice.investors.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No investors yet</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No investors yet
+            </p>
           )}
         </CardContent>
       </Card>
