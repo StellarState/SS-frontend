@@ -26,7 +26,7 @@ function PositionRowSkeleton() {
 
 export function InvestorPortfolio() {
   const [activeTab, setActiveTab] = useState<"positions" | "payouts">("positions");
-  const { data, isLoading } = usePortfolio();
+  const { data, isLoading, isFetching } = usePortfolio();
 
   // Show full skeleton only on initial load
   if (isLoading || !data) {
