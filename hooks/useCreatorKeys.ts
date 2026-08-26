@@ -6,6 +6,7 @@ import {
   buyCreatorKey,
   castGovernanceVote,
   fetchCreatorKeyDetail,
+  fetchKeySupply,
   fetchKeyProposals,
   fetchKeyWhitelistStatus,
   transferCreatorKey,
@@ -13,6 +14,8 @@ import {
 import { PORTFOLIO_QUERY_KEY } from "@/hooks/usePortfolio";
 
 export const creatorKeyQueryKey = (keyId: string) => ["creator-key", keyId] as const;
+export const keySupplyQueryKey = (keyId: string) =>
+  ["creator-key", keyId, "supply"] as const;
 export const keyProposalsQueryKey = (
   keyId: string,
   status: "active" | "closed"
@@ -49,6 +52,13 @@ export function useKeyWhitelistStatus(
   });
 }
 
+export function useKeySupply(keyId: string, token?: string | null) {
+  return useQuery({
+    queryKey: keySupplyQueryKey(keyId),
+    queryFn: () => fetchKeySupply(keyId, token ?? undefined),
+  });
+}
+
 export function useBuyCreatorKeyMutation(keyId: string) {
   const queryClient = useQueryClient();
 
@@ -63,6 +73,7 @@ export function useBuyCreatorKeyMutation(keyId: string) {
     onSuccess: () => {
       toast.success("Key purchase submitted");
       queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: keySupplyQueryKey(keyId) });
       queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
     },
     onError: () => {

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GovernanceTab } from "@/components/keys/GovernanceTab";
 import { BuyKeyPanel } from "@/components/keys/BuyKeyPanel";
-import { useCreatorKey } from "@/hooks/useCreatorKeys";
+import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
@@ -39,6 +39,7 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
   );
   const { jwt } = useAuth();
   const { data: creatorKey, isLoading } = useCreatorKey(keyId, jwt);
+  const { data: supply } = useKeySupply(keyId, jwt);
 
   usePageTitle(creatorKey?.title ?? null);
 
@@ -129,7 +130,7 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
           )}
         </div>
 
-        <BuyKeyPanel creatorKey={creatorKey} />
+        <BuyKeyPanel creatorKey={creatorKey} supply={supply} />
       </div>
     </div>
   );

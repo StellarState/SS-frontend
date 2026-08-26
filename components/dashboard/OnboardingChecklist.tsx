@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 export interface OnboardingUserData {
   kycStatus: "pending" | "approved" | "rejected" | null;
   displayName: string | null;
+  avatarUrl: string | null;
   invoiceCount: number;
 }
 
@@ -30,7 +31,11 @@ export function OnboardingChecklist({ data }: OnboardingChecklistProps) {
   }, []);
 
   const step1Complete = data.kycStatus === "pending" || data.kycStatus === "approved";
-  const step2Complete = data.displayName !== null && data.displayName.trim() !== "";
+  const step2Complete =
+    data.displayName !== null &&
+    data.displayName.trim() !== "" &&
+    data.avatarUrl !== null &&
+    data.avatarUrl.trim() !== "";
   const step3Complete = data.invoiceCount >= 1;
 
   const allComplete = step1Complete && step2Complete && step3Complete;
@@ -80,7 +85,7 @@ export function OnboardingChecklist({ data }: OnboardingChecklistProps) {
             <Circle className="size-5 text-muted-foreground shrink-0" data-testid="step-2-incomplete" />
           )}
           <span className={step2Complete ? "line-through text-muted-foreground" : "font-medium"}>
-            Set your Display Name
+            Complete your seller profile
           </span>
         </div>
 

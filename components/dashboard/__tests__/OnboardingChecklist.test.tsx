@@ -14,6 +14,7 @@ describe("OnboardingChecklist", () => {
   const baseData: OnboardingUserData = {
     kycStatus: null,
     displayName: null,
+    avatarUrl: null,
     invoiceCount: 0,
   };
 
@@ -31,12 +32,19 @@ describe("OnboardingChecklist", () => {
     expect(screen.queryByTestId("step-1-incomplete")).not.toBeInTheDocument();
   });
 
-  it("Step 2 is incomplete when displayName is null and complete when displayName is set", () => {
+  it("Step 2 is incomplete until displayName and avatarUrl are set", () => {
     const { rerender } = render(<OnboardingChecklist data={{ ...baseData, displayName: null }} />);
     expect(screen.getByTestId("step-2-incomplete")).toBeInTheDocument();
     expect(screen.queryByTestId("step-2-complete")).not.toBeInTheDocument();
 
     rerender(<OnboardingChecklist data={{ ...baseData, displayName: "Alice" }} />);
+    expect(screen.getByTestId("step-2-incomplete")).toBeInTheDocument();
+
+    rerender(
+      <OnboardingChecklist
+        data={{ ...baseData, displayName: "Alice", avatarUrl: "/avatar.png" }}
+      />
+    );
     expect(screen.getByTestId("step-2-complete")).toBeInTheDocument();
     expect(screen.queryByTestId("step-2-incomplete")).not.toBeInTheDocument();
   });
@@ -59,6 +67,7 @@ describe("OnboardingChecklist", () => {
     const completeData: OnboardingUserData = {
       kycStatus: "approved",
       displayName: "Alice",
+      avatarUrl: "/avatar.png",
       invoiceCount: 1,
     };
     render(<OnboardingChecklist data={completeData} />);

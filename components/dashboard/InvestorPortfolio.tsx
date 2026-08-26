@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PositionCard } from "@/components/dashboard/PositionCard";
 import { PayoutHistoryTable } from "@/components/dashboard/PayoutHistoryTable";
+import { VestingProgressWidget } from "@/components/dashboard/VestingProgressWidget";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { calculateActiveTotal } from "@/lib/portfolio";
 
@@ -128,6 +129,8 @@ export function InvestorPortfolio() {
           <PayoutHistoryTable />
         </div>
       )}
+
+      <VestingProgressWidget positions={positions} />
     </div>
   );
 }

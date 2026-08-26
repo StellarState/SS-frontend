@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
-import { useSellerDashboard } from "@/hooks/useSellerDashboard";
+import { KycStatusBanner } from "@/components/dashboard/KycStatusBanner";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
+import {
+  useSellerDashboard,
+  useSellerKycStatus,
+} from "@/hooks/useSellerDashboard";
 
 function formatXlm(amount: number): string {
   return `${amount.toLocaleString(undefined, {
@@ -56,6 +61,7 @@ function InvoiceRowSkeleton() {
 
 export function SellerDashboard() {
   const { data, isLoading } = useSellerDashboard();
+  const { data: kycStatus } = useSellerKycStatus();
 
   if (isLoading || !data) {
     return (
@@ -74,8 +80,32 @@ export function SellerDashboard() {
     );
   }
 
+  const displayName = data.display_name ?? data.displayName ?? null;
+  const avatarUrl = data.avatar_url ?? data.avatarUrl ?? null;
+
   return (
     <div className="space-y-6">
+      {kycStatus && (
+        <KycStatusBanner
+          status={kycStatus.status}
+          reason={kycStatus.rejection_reason ?? kycStatus.reason}
+        />
+      )}
+
+      <OnboardingChecklist
+        data={{
+          kycStatus:
+            kycStatus?.status === "pending" || kycStatus?.status === "approved"
+              ? kycStatus.status
+              : kycStatus?.status === "rejected"
+                ? "rejected"
+                : null,
+          displayName,
+          avatarUrl,
+          invoiceCount: data.invoices.length,
+        }}
+      />
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label="Total Invoices"

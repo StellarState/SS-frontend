@@ -135,6 +135,10 @@ export interface SellerDashboardData {
   total_settled: number;
   total_raised: number;
   invoices: Invoice[];
+  display_name?: string | null;
+  displayName?: string | null;
+  avatar_url?: string | null;
+  avatarUrl?: string | null;
 }
 
 export async function fetchSellerDashboard(): Promise<SellerDashboardData> {
@@ -150,6 +154,38 @@ export async function submitKyc(data: FormData): Promise<{ success: boolean }> {
   });
   if (!res.ok) throw new Error("KYC submission failed");
   return res.json();
+}
+
+export type SellerKycStatusValue =
+  | "pending"
+  | "rejected"
+  | "approved"
+  | "requires_resubmission"
+  | "not_submitted";
+
+export interface SellerKycStatus {
+  status: SellerKycStatusValue;
+  rejection_reason?: string | null;
+  rejectionReason?: string | null;
+  reason?: string | null;
+}
+
+function normalizeSellerKycStatus(raw: any): SellerKycStatus {
+  return {
+    status: raw.status ?? raw.kyc_status ?? raw.kycStatus ?? "not_submitted",
+    rejection_reason:
+      raw.rejection_reason ?? raw.rejectionReason ?? raw.reason ?? null,
+  };
+}
+
+export async function fetchSellerKycStatus(
+  token?: string
+): Promise<SellerKycStatus> {
+  const res = await fetch(`${API_BASE}/kyc/status`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch KYC status");
+  return normalizeSellerKycStatus(await res.json());
 }
 
 export async function updateNotificationPreference(
@@ -293,6 +329,12 @@ export interface WhitelistStatus {
   is_approved: boolean;
 }
 
+export interface KeySupply {
+  circulatingSupply: number;
+  supplyCap: number | null;
+  remainingMintable: number;
+}
+
 function authHeaders(token?: string): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -336,6 +378,22 @@ function normalizeWhitelistStatus(raw: any): WhitelistStatus {
   };
 }
 
+function normalizeKeySupply(raw: any): KeySupply {
+  const circulatingSupply =
+    raw.circulatingSupply ?? raw.circulating_supply ?? raw.circulating ?? 0;
+  const supplyCap = raw.supplyCap ?? raw.supply_cap ?? null;
+  const remainingMintable =
+    raw.remainingMintable ??
+    raw.remaining_mintable ??
+    (supplyCap === null ? 0 : Math.max(supplyCap - circulatingSupply, 0));
+
+  return {
+    circulatingSupply,
+    supplyCap,
+    remainingMintable,
+  };
+}
+
 export async function fetchCreatorKeyDetail(
   keyId: string,
   token?: string
@@ -373,6 +431,17 @@ export async function fetchKeyWhitelistStatus(
   });
   if (!res.ok) throw new Error("Failed to fetch whitelist status");
   return normalizeWhitelistStatus(await res.json());
+}
+
+export async function fetchKeySupply(
+  keyId: string,
+  token?: string
+): Promise<KeySupply> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/supply`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch key supply");
+  return normalizeKeySupply(await res.json());
 }
 
 export async function buyCreatorKey(
@@ -427,6 +496,64 @@ export async function transferCreatorKey(
     body: JSON.stringify({ recipient, quantity, wallet: walletAddress }),
   });
   if (!res.ok) throw new Error("Failed to transfer key");
+  return res.json();
+}
+
+export interface VestingSchedule {
+  keyId: string;
+  keyTitle?: string;
+  totalKeys: number;
+  vestedAmount: number;
+  claimableAmount: number;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+function normalizeVestingSchedule(raw: any, keyId: string): VestingSchedule {
+  return {
+    keyId: raw.keyId ?? raw.key_id ?? keyId,
+    keyTitle: raw.keyTitle ?? raw.key_title,
+    totalKeys: raw.totalKeys ?? raw.total_keys ?? 0,
+    vestedAmount: raw.vestedAmount ?? raw.vested_amount ?? 0,
+    claimableAmount: raw.claimableAmount ?? raw.claimable_amount ?? 0,
+    startDate: raw.startDate ?? raw.start_date ?? null,
+    endDate: raw.endDate ?? raw.end_date ?? null,
+  };
+}
+
+export async function fetchVestingSchedule(
+  keyId: string,
+  walletAddress: string,
+  token?: string
+): Promise<VestingSchedule | null> {
+  const res = await fetch(
+    `${API_BASE}/vesting/${keyId}/${encodeURIComponent(walletAddress)}`,
+    { headers: authHeaders(token) }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch vesting schedule");
+  const payload = await res.json();
+  if (!payload) return null;
+  return normalizeVestingSchedule(payload, keyId);
+}
+
+export async function claimVestedKeys(
+  keyId: string,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/vesting/${keyId}/${encodeURIComponent(walletAddress)}/claim`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(token),
+      },
+      body: JSON.stringify({ wallet: walletAddress }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to claim vested keys");
   return res.json();
 }
 
