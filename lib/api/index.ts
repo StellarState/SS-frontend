@@ -7,6 +7,7 @@ export interface Invoice {
   investor_count: number;
   status: "open" | "funded" | "settled" | "rejected" | "draft";
   due_date: string;
+  yield_percentage?: number;
   rejection_reason?: string;
   has_more: boolean;
   next_cursor: string | null;
@@ -28,9 +29,17 @@ import type { InvestmentPosition } from "@/lib/portfolio";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
-export async function fetchInvoices(cursor?: string): Promise<InvoicesResponse> {
+export async function fetchInvoices(
+  cursor?: string,
+  paramsObj?: Record<string, string>
+): Promise<InvoicesResponse> {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
+  if (paramsObj) {
+    Object.entries(paramsObj).forEach(([k, v]) => {
+      if (v) params.set(k, v);
+    });
+  }
   const res = await fetch(`${API_BASE}/invoices?${params}`);
   if (!res.ok) throw new Error("Failed to fetch invoices");
   return res.json();
@@ -156,3 +165,92 @@ export async function updateNotificationPreference(
   if (!res.ok) throw new Error("Failed to update notification preference");
   return res.json();
 }
+
+export interface AdminInvoiceRow {
+  invoiceId: string;
+  sellerName: string;
+  faceValue: number;
+  submittedAt: string;
+  documentUrl?: string;
+  status: string;
+}
+
+export interface AdminInvoicesResponse {
+  invoices: AdminInvoiceRow[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export async function fetchAdminInvoices(
+  status = "pending",
+  cursor?: string,
+  token?: string
+): Promise<AdminInvoicesResponse> {
+  const params = new URLSearchParams({ status });
+  if (cursor) params.set("cursor", cursor);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/admin/invoices?${params}`, { headers });
+  if (!res.ok) throw new Error("Failed to fetch admin invoices");
+  return res.json();
+}
+
+export async function approveAdminInvoice(
+  invoiceId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/admin/invoices/${invoiceId}/approve`, {
+    method: "POST",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to approve invoice");
+  return res.json();
+}
+
+export async function rejectAdminInvoice(
+  invoiceId: string,
+  reason: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/admin/invoices/${invoiceId}/reject`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error("Failed to reject invoice");
+  return res.json();
+}
+
+export interface PayoutRecord {
+  invoiceId: string;
+  sellerName: string;
+  amountInvested: number;
+  amountReceived: number;
+  yield: number;
+  settledAt: string;
+}
+
+export interface PayoutsResponse {
+  payouts: PayoutRecord[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export async function fetchInvestorPayouts(
+  cursor?: string
+): Promise<PayoutsResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${API_BASE}/investor/payouts?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch payout history");
+  return res.json();
+}
+
