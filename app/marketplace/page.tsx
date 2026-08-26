@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchInvoices, type Invoice } from "@/lib/api";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +108,7 @@ function SkeletonRow() {
 }
 
 export default function MarketplacePage() {
+  usePageTitle("Browse Invoices");
   const {
     data,
     fetchNextPage,

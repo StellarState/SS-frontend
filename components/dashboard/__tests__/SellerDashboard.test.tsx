@@ -69,7 +69,49 @@ describe("SellerDashboard", () => {
     } as any);
 
     render(<SellerDashboard />, { wrapper: createWrapper() });
-    expect(screen.getByText("You haven't published any invoices yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No invoices yet — create your first invoice to get started")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("seller-invoices-empty")).toBeInTheDocument();
+  });
+
+  it("points Create Invoice at the publish form", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makeDashboardData([]),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    const link = screen.getByRole("link", { name: "Create Invoice" });
+    expect(link).toHaveAttribute("href", "/seller/publish");
+  });
+
+  it("shows skeleton rows while loading, not the empty state", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByTestId("seller-dashboard-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("seller-invoices-empty")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("No invoices yet — create your first invoice to get started")
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the empty state when invoices exist", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makeDashboardData([makeInvoice({ title: "Existing Invoice" })]),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByText("Existing Invoice")).toBeInTheDocument();
+    expect(screen.queryByTestId("seller-invoices-empty")).not.toBeInTheDocument();
   });
 
   it("renders stat cards", () => {

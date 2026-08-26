@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,15 +12,25 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DocumentUpload } from "@/components/invoices/DocumentUpload";
+import { FaceValueInput } from "@/components/invoices/FaceValueInput";
 import { uploadDocumentToIpfs, publishInvoice } from "@/lib/api";
+import {
+  MIN_INVOICE_FACE_VALUE,
+  validateFaceValue,
+} from "@/lib/validation/face-value";
 
 const detailsSchema = z.object({
   title: z.string().min(1, "Invoice title is required"),
   description: z.string().min(1, "Description is required"),
   faceValue: z
     .string()
-    .min(1, "Face value is required")
-    .refine((v) => Number(v) > 0, "Face value must be greater than 0"),
+    .min(1, "Please enter a valid amount")
+    .superRefine((v, ctx) => {
+      const error = validateFaceValue(v, MIN_INVOICE_FACE_VALUE);
+      if (error) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+      }
+    }),
   fundingDeadline: z.string().min(1, "Funding deadline is required"),
 });
 
@@ -34,28 +45,46 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 export function PublishInvoiceForm() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentCid, setDocumentCid] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishedInvoiceId, setPublishedInvoiceId] = useState<string | null>(null);
 
   const {
     register,
     trigger,
     getValues,
+    setValue,
     formState: { errors },
   } = useForm<DetailsFormData>({
     resolver: zodResolver(detailsSchema),
     defaultValues: { title: "", description: "", faceValue: "", fundingDeadline: "" },
   });
 
+  const [isFaceValueValid, setIsFaceValueValid] = useState(false);
+
   const handleNextFromDetails = useCallback(async () => {
     const valid = await trigger();
     if (valid) setStep(2);
   }, [trigger]);
+
+  const handleFaceValueChange = useCallback(
+    (amount: number | null) => {
+      setIsFaceValueValid(amount !== null);
+      if (amount !== null) {
+        setValue("faceValue", String(amount), {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } else {
+        setValue("faceValue", "", { shouldValidate: true, shouldDirty: true });
+      }
+    },
+    [setValue]
+  );
 
   const handleUpload = useCallback((file: File) => {
     setDocumentFile(file);
@@ -102,29 +131,13 @@ export function PublishInvoiceForm() {
         fundingDeadline: values.fundingDeadline,
         documentCid,
       });
-      setPublishedInvoiceId(result.id);
+      router.push(`/dashboard/seller/publish/success?invoiceId=${result.id}`);
     } catch {
       toast.error("Failed to publish invoice. Please try again.");
     } finally {
       setIsPublishing(false);
     }
-  }, [documentCid, getValues]);
-
-  if (publishedInvoiceId) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-          <h2 className="text-xl font-bold">Invoice Published</h2>
-          <p className="text-sm text-muted-foreground">
-            Your invoice has been submitted for funding.
-          </p>
-          <p className="font-mono text-sm">
-            Invoice ID: <span className="font-semibold">{publishedInvoiceId}</span>
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [documentCid, getValues, router]);
 
   const values = getValues();
 
@@ -159,13 +172,11 @@ export function PublishInvoiceForm() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="invoice-face-value">Face Value (XLM)</Label>
-              <Input id="invoice-face-value" inputMode="decimal" {...register("faceValue")} />
-              {errors.faceValue && (
-                <p className="text-sm text-destructive">{errors.faceValue.message}</p>
-              )}
-            </div>
+            <FaceValueInput
+              min={MIN_INVOICE_FACE_VALUE}
+              defaultValue={getValues("faceValue")}
+              onValidAmountChange={handleFaceValueChange}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="invoice-deadline">Funding Deadline</Label>
@@ -175,7 +186,9 @@ export function PublishInvoiceForm() {
               )}
             </div>
 
-            <Button onClick={handleNextFromDetails}>Next</Button>
+            <Button onClick={handleNextFromDetails} disabled={!isFaceValueValid}>
+              Next
+            </Button>
           </div>
         )}
 

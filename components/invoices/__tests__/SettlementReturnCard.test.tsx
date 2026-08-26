@@ -24,6 +24,12 @@ describe("SettlementReturnCard", () => {
     expect(screen.getByText("0% return")).toBeInTheDocument();
   });
 
+  it("does not show skeleton when payout is zero", () => {
+    render(<SettlementReturnCard payout={0} committedAmount={3000} />);
+
+    expect(screen.queryByTestId("settlement-return-skeleton")).not.toBeInTheDocument();
+  });
+
   it("renders a skeleton card when payout is null (not yet processed)", () => {
     render(<SettlementReturnCard payout={null} committedAmount={3000} />);
 

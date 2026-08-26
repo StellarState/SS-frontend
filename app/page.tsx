@@ -1,10 +1,12 @@
 "use client";
 
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { RecentlyViewed } from "@/components/marketplace/recently-viewed";
 import { TopInvestorsLeaderboard } from "@/components/marketplace/TopInvestorsLeaderboard";
 
 export default function HomePage() {
+  usePageTitle("StellarSettle — Invoice Marketplace");
   const { entries } = useRecentlyViewed();
 
   return (
