@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchInvoices, type Invoice } from "@/lib/api";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { FundingProgressBar } from "@/components/invoices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,13 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
             Due Date
           </div>
         </div>
+        <div className="mt-4">
+          <FundingProgressBar
+            raised={invoice.raised}
+            target={invoice.amount}
+            investorCount={invoice.investor_count}
+          />
+        </div>
       </CardContent>
     </Card>
   );
@@ -122,6 +130,8 @@ export default function MarketplacePage() {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
       lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: true,
     staleTime: 60 * 1000,
   });
 
@@ -292,3 +302,7 @@ export default function MarketplacePage() {
     </main>
   );
 }
+
+
+
+

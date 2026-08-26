@@ -141,4 +141,26 @@ describe("Marketplace Sorting", () => {
     const sortBtn = screen.getByTestId("sort-amount");
     expect(sortBtn.querySelector("svg")).toBeInTheDocument();
   });
+
+  it("renders funding progress details for each marketplace invoice", () => {
+    render(<MarketplacePage />, { wrapper: createWrapper() });
+
+    expect(screen.getAllByTestId("funding-progress-bar")).toHaveLength(3);
+    expect(screen.getAllByText("50.0%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("5,000 XLM of 10,000 XLM").length).toBeGreaterThan(0);
+  });
+
+  it("polls the marketplace every 30 seconds for funding updates", () => {
+    setupMock();
+
+    render(<MarketplacePage />, { wrapper: createWrapper() });
+
+    expect(mockUseInfiniteQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        refetchInterval: 30000,
+        refetchIntervalInBackground: true,
+      })
+    );
+  });
 });
+
