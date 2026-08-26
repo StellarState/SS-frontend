@@ -6,9 +6,13 @@ import { SellerDashboard } from "../SellerDashboard";
 
 vi.mock("@/hooks/useSellerDashboard", () => ({
   useSellerDashboard: vi.fn(),
+  useSellerKycStatus: vi.fn(),
 }));
 
-import { useSellerDashboard } from "@/hooks/useSellerDashboard";
+import {
+  useSellerDashboard,
+  useSellerKycStatus,
+} from "@/hooks/useSellerDashboard";
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -50,6 +54,9 @@ function makeInvoice(overrides: any = {}) {
 describe("SellerDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useSellerKycStatus).mockReturnValue({
+      data: undefined,
+    } as any);
   });
 
   it("shows loading skeleton while data is loading", () => {
@@ -185,5 +192,56 @@ describe("SellerDashboard", () => {
 
     render(<SellerDashboard />, { wrapper: createWrapper() });
     expect(screen.queryByTestId("rejected-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows rejected KYC banner with the rejection reason", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makeDashboardData([]),
+      isLoading: false,
+    } as any);
+    vi.mocked(useSellerKycStatus).mockReturnValue({
+      data: { status: "rejected", rejection_reason: "Expired ID" },
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByTestId("kyc-rejected-banner")).toHaveTextContent(
+      "Your KYC was rejected. Reason: Expired ID. Please resubmit."
+    );
+    expect(screen.getByRole("link", { name: "Go to KYC" })).toHaveAttribute(
+      "href",
+      "/kyc/reapply"
+    );
+  });
+
+  it("shows requires resubmission KYC banner", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makeDashboardData([]),
+      isLoading: false,
+    } as any);
+    vi.mocked(useSellerKycStatus).mockReturnValue({
+      data: { status: "requires_resubmission" },
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByTestId("kyc-resubmission-banner")).toHaveTextContent(
+      "Additional documents required. Please update your KYC."
+    );
+  });
+
+  it("shows onboarding checklist until KYC, profile, and first invoice are complete", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: {
+        ...makeDashboardData([]),
+        display_name: null,
+        avatar_url: null,
+      },
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByTestId("onboarding-checklist")).toBeInTheDocument();
   });
 });

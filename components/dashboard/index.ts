@@ -6,4 +6,4 @@ export { SellerDashboard } from "./SellerDashboard";
 export { InvestorPortfolio } from "./InvestorPortfolio";
 export { OnboardingChecklist } from "./OnboardingChecklist";
 export { PayoutHistoryTable } from "./PayoutHistoryTable";
-
+export { VestingProgressWidget } from "./VestingProgressWidget";
