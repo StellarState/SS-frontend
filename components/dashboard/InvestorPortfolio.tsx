@@ -28,6 +28,7 @@ export function InvestorPortfolio() {
   const [activeTab, setActiveTab] = useState<"positions" | "payouts">("positions");
   const { data, isLoading } = usePortfolio();
 
+  // Show full skeleton only on initial load
   if (isLoading || !data) {
     return (
       <div className="space-y-6" data-testid="investor-portfolio-loading">
@@ -53,8 +54,23 @@ export function InvestorPortfolio() {
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Total Committed (Active)</p>
-          <p className="text-2xl font-bold">{formattedTotal}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Total Committed (Active)
+              </p>
+              <p className="text-2xl font-bold">{formattedTotal}</p>
+            </div>
+            {isFetching && (
+              <div
+                className="text-xs text-muted-foreground flex items-center gap-1"
+                data-testid="portfolio-refreshing"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" />
+                Refreshing…
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

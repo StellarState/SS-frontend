@@ -66,7 +66,7 @@ export function SellerDashboard() {
           ))}
         </div>
         <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <InvoiceRowSkeleton key={i} />
           ))}
         </div>
@@ -77,7 +77,10 @@ export function SellerDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Total Invoices" value={data.total_invoices.toString()} />
+        <StatCard
+          label="Total Invoices"
+          value={data.total_invoices.toString()}
+        />
         <StatCard label="Total Funded" value={data.total_funded.toString()} />
         <StatCard label="Total Settled" value={data.total_settled.toString()} />
         <StatCard label="XLM Raised" value={formatXlm(data.total_raised)} />
@@ -118,7 +121,12 @@ export function SellerDashboard() {
                     <p className="text-sm text-red-800">
                       This invoice was not approved: {invoice.rejection_reason}
                     </p>
-                    <Button variant="outline" size="sm" className="mt-2" asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      asChild
+                    >
                       <Link href={`/seller/publish?edit=${invoice.id}`}>
                         Edit and Resubmit
                       </Link>

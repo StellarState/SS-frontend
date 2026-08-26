@@ -5,6 +5,7 @@ import { investInInvoice } from "@/lib/api";
 import type { InvoiceDetail } from "@/lib/api";
 import { toast } from "sonner";
 import { INVOICES_QUERY_KEY } from "./useInvoices";
+import { PORTFOLIO_QUERY_KEY } from "./usePortfolio";
 
 interface InvestMutationVars {
   invoiceId: string;
@@ -21,14 +22,24 @@ export function useInvestMutation() {
     onMutate: async ({ invoiceId, amount }) => {
       await queryClient.cancelQueries({ queryKey: ["invoice", invoiceId] });
 
-      const previous = queryClient.getQueryData<InvoiceDetail>(["invoice", invoiceId]);
+      const previous = queryClient.getQueryData<InvoiceDetail>([
+        "invoice",
+        invoiceId,
+      ]);
 
       if (previous) {
-        queryClient.setQueryData<InvoiceDetail>(["invoice", invoiceId], (old) => {
-          if (!old) return old;
-          const newRaised = Math.min(old.raised + amount, old.amount);
-          return { ...old, raised: newRaised, investor_count: old.investor_count + 1 };
-        });
+        queryClient.setQueryData<InvoiceDetail>(
+          ["invoice", invoiceId],
+          (old) => {
+            if (!old) return old;
+            const newRaised = Math.min(old.raised + amount, old.amount);
+            return {
+              ...old,
+              raised: newRaised,
+              investor_count: old.investor_count + 1,
+            };
+          },
+        );
       }
 
       return { previous };
@@ -50,6 +61,7 @@ export function useInvestMutation() {
     onSettled: (_data, _error, { invoiceId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
       queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
     },
   });
 }

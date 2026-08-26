@@ -9,5 +9,7 @@ export function useSellerDashboard() {
   return useQuery({
     queryKey: SELLER_DASHBOARD_QUERY_KEY,
     queryFn: fetchSellerDashboard,
+    staleTime: 60 * 1000, // 60 seconds - serve cached data without skeleton on repeat visits
+    gcTime: 5 * 60 * 1000, // 5 minutes - keep data in memory for garbage collection
   });
 }

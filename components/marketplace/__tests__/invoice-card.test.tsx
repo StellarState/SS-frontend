@@ -88,6 +88,7 @@ describe("InvoiceCard funding progress", () => {
         advanceAnimation();
 
         expect(screen.getByText("0.0%")).toBeInTheDocument();
-        expect(screen.getByText(/0\.00 XLM raised of 10,000\.00 XLM/)).toBeInTheDocument();
+        expect(screen.getByText("0 XLM of 10,000 XLM")).toBeInTheDocument();
     });
 });
+
