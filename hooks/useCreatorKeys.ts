@@ -1,0 +1,139 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  buyCreatorKey,
+  castGovernanceVote,
+  fetchCreatorKeyDetail,
+  fetchKeyProposals,
+  fetchKeyWhitelistStatus,
+  transferCreatorKey,
+} from "@/lib/api";
+import { PORTFOLIO_QUERY_KEY } from "@/hooks/usePortfolio";
+
+export const creatorKeyQueryKey = (keyId: string) => ["creator-key", keyId] as const;
+export const keyProposalsQueryKey = (
+  keyId: string,
+  status: "active" | "closed"
+) => ["creator-key", keyId, "proposals", status] as const;
+
+export function useCreatorKey(keyId: string, token?: string | null) {
+  return useQuery({
+    queryKey: creatorKeyQueryKey(keyId),
+    queryFn: () => fetchCreatorKeyDetail(keyId, token ?? undefined),
+  });
+}
+
+export function useKeyProposals(
+  keyId: string,
+  status: "active" | "closed",
+  token?: string | null
+) {
+  return useQuery({
+    queryKey: keyProposalsQueryKey(keyId, status),
+    queryFn: () => fetchKeyProposals(keyId, status, token ?? undefined),
+  });
+}
+
+export function useKeyWhitelistStatus(
+  keyId: string,
+  walletAddress?: string | null,
+  token?: string | null
+) {
+  return useQuery({
+    queryKey: ["creator-key", keyId, "whitelist", walletAddress],
+    queryFn: () =>
+      fetchKeyWhitelistStatus(keyId, walletAddress ?? "", token ?? undefined),
+    enabled: Boolean(walletAddress),
+  });
+}
+
+export function useBuyCreatorKeyMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      walletAddress,
+      token,
+    }: {
+      walletAddress: string;
+      token?: string | null;
+    }) => buyCreatorKey(keyId, walletAddress, token ?? undefined),
+    onSuccess: () => {
+      toast.success("Key purchase submitted");
+      queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
+    onError: () => {
+      toast.error("Key purchase failed");
+    },
+  });
+}
+
+export function useCastGovernanceVoteMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      proposalId,
+      optionIndex,
+      walletAddress,
+      token,
+    }: {
+      proposalId: string;
+      optionIndex: number;
+      walletAddress: string;
+      token?: string | null;
+    }) =>
+      castGovernanceVote(
+        keyId,
+        proposalId,
+        optionIndex,
+        walletAddress,
+        token ?? undefined
+      ),
+    onSuccess: () => {
+      toast.success("Your vote has been recorded");
+      queryClient.invalidateQueries({ queryKey: keyProposalsQueryKey(keyId, "active") });
+      queryClient.invalidateQueries({ queryKey: keyProposalsQueryKey(keyId, "closed") });
+    },
+    onError: () => {
+      toast.error("Vote submission failed");
+    },
+  });
+}
+
+export function useTransferCreatorKeyMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      keyId,
+      recipient,
+      quantity,
+      walletAddress,
+      token,
+    }: {
+      keyId: string;
+      recipient: string;
+      quantity: number;
+      walletAddress: string;
+      token?: string | null;
+    }) =>
+      transferCreatorKey(
+        keyId,
+        recipient,
+        quantity,
+        walletAddress,
+        token ?? undefined
+      ),
+    onSuccess: () => {
+      toast.success("Key transfer confirmed");
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
+    onError: () => {
+      toast.error("Key transfer failed");
+    },
+  });
+}

@@ -6,6 +6,10 @@ export interface InvestmentPosition {
     committed_amount: number;
     status: "active" | "settled" | "expired";
     share_percent?: number | null;
+    key_id?: string;
+    key_title?: string;
+    quantity?: number;
+    lockup_expires_at?: string | null;
 }
 
 export interface PortfolioSummary {

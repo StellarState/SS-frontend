@@ -254,3 +254,179 @@ export async function fetchInvestorPayouts(
   return res.json();
 }
 
+export interface CreatorKeyDetail {
+  id: string;
+  title: string;
+  creator_name: string;
+  description?: string;
+  price: number;
+  holders_count: number;
+  whitelist_enabled: boolean;
+  holder_balance?: number;
+  is_holder?: boolean;
+}
+
+export interface GovernanceOption {
+  label: string;
+  vote_weight: number;
+}
+
+export interface GovernanceProposal {
+  id: string;
+  title: string;
+  status: "active" | "closed";
+  expires_at: string;
+  snapshot_ledger?: number;
+  user_voting_weight?: number;
+  user_has_voted?: boolean;
+  winning_option_index?: number;
+  winning_option?: string;
+  options: GovernanceOption[];
+}
+
+export interface GovernanceProposalsResponse {
+  proposals: GovernanceProposal[];
+}
+
+export interface WhitelistStatus {
+  whitelist_enabled: boolean;
+  is_approved: boolean;
+}
+
+function authHeaders(token?: string): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function normalizeCreatorKeyDetail(raw: any): CreatorKeyDetail {
+  return {
+    id: raw.id,
+    title: raw.title ?? raw.name,
+    creator_name: raw.creator_name ?? raw.creatorName ?? raw.creator ?? "",
+    description: raw.description,
+    price: raw.price ?? 0,
+    holders_count: raw.holders_count ?? raw.holdersCount ?? 0,
+    whitelist_enabled: raw.whitelist_enabled ?? raw.whitelistEnabled ?? false,
+    holder_balance: raw.holder_balance ?? raw.holderBalance,
+    is_holder: raw.is_holder ?? raw.isHolder,
+  };
+}
+
+function normalizeProposal(raw: any): GovernanceProposal {
+  return {
+    id: raw.id,
+    title: raw.title,
+    status: raw.status,
+    expires_at: raw.expires_at ?? raw.expiresAt,
+    snapshot_ledger: raw.snapshot_ledger ?? raw.snapshotLedger,
+    user_voting_weight: raw.user_voting_weight ?? raw.userVotingWeight,
+    user_has_voted: raw.user_has_voted ?? raw.userHasVoted,
+    winning_option_index: raw.winning_option_index ?? raw.winningOptionIndex,
+    winning_option: raw.winning_option ?? raw.winningOption,
+    options: (raw.options ?? []).map((option: any) => ({
+      label: option.label ?? option.title ?? option.name,
+      vote_weight: option.vote_weight ?? option.voteWeight ?? option.votes ?? 0,
+    })),
+  };
+}
+
+function normalizeWhitelistStatus(raw: any): WhitelistStatus {
+  return {
+    whitelist_enabled: raw.whitelist_enabled ?? raw.whitelistEnabled ?? false,
+    is_approved: raw.is_approved ?? raw.isApproved ?? false,
+  };
+}
+
+export async function fetchCreatorKeyDetail(
+  keyId: string,
+  token?: string
+): Promise<CreatorKeyDetail> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch key detail");
+  return normalizeCreatorKeyDetail(await res.json());
+}
+
+export async function fetchKeyProposals(
+  keyId: string,
+  status: "active" | "closed",
+  token?: string
+): Promise<GovernanceProposalsResponse> {
+  const params = new URLSearchParams({ status });
+  const res = await fetch(`${API_BASE}/keys/${keyId}/proposals?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch governance proposals");
+  const payload = await res.json();
+  const proposals = Array.isArray(payload) ? payload : payload.proposals ?? [];
+  return { proposals: proposals.map(normalizeProposal) };
+}
+
+export async function fetchKeyWhitelistStatus(
+  keyId: string,
+  walletAddress: string,
+  token?: string
+): Promise<WhitelistStatus> {
+  const params = new URLSearchParams({ wallet: walletAddress });
+  const res = await fetch(`${API_BASE}/keys/${keyId}/whitelist?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch whitelist status");
+  return normalizeWhitelistStatus(await res.json());
+}
+
+export async function buyCreatorKey(
+  keyId: string,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/buy`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Failed to buy key");
+  return res.json();
+}
+
+export async function castGovernanceVote(
+  keyId: string,
+  proposalId: string,
+  optionIndex: number,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/proposals/${proposalId}/votes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ optionIndex, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Failed to cast vote");
+  return res.json();
+}
+
+export async function transferCreatorKey(
+  keyId: string,
+  recipient: string,
+  quantity: number,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/transfer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ recipient, quantity, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Failed to transfer key");
+  return res.json();
+}
+
