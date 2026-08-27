@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GovernanceTab } from "@/components/keys/GovernanceTab";
 import { BuyKeyPanel } from "@/components/keys/BuyKeyPanel";
 import { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
+import { WhitelistManager } from "@/components/keys/WhitelistManager";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -35,9 +36,9 @@ function CreatorKeyDetailSkeleton() {
 }
 
 export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "governance">(
-    "overview"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "governance" | "whitelist"
+  >("overview");
   const { jwt } = useAuth();
   const { data: creatorKey, isLoading } = useCreatorKey(keyId, jwt);
   const { data: supply } = useKeySupply(keyId, jwt);
@@ -104,6 +105,20 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
             >
               Governance
             </button>
+            {creatorKey.is_creator && (
+              <button
+                type="button"
+                className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+                  activeTab === "whitelist"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("whitelist")}
+                data-testid="whitelist-tab"
+              >
+                Whitelist
+              </button>
+            )}
           </div>
 
           {activeTab === "overview" ? (
@@ -137,6 +152,13 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               keyId={creatorKey.id}
               isHolder={isHolder}
               isCreator={creatorKey.is_creator}
+            />
+          )}
+
+          {activeTab === "whitelist" && creatorKey.is_creator && (
+            <WhitelistManager
+              keyId={creatorKey.id}
+              whitelistEnabled={creatorKey.whitelist_enabled}
             />
           )}
         </div>
