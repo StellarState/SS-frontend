@@ -14,12 +14,27 @@ const CONFIRM_PHRASE = "BURN";
 
 interface BurnKeyModalProps {
   position: InvestmentPosition;
+  /** When provided the modal is controlled and renders no trigger button of its own. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function BurnKeyModal({ position }: BurnKeyModalProps) {
+export function BurnKeyModal({
+  position,
+  open: controlledOpen,
+  onOpenChange,
+}: BurnKeyModalProps) {
   const { address: authAddress, jwt } = useAuth();
   const { address: walletAddress } = useStellarWallet();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+
   const [quantity, setQuantity] = useState("1");
   const [confirmText, setConfirmText] = useState("");
   const burnMutation = useBurnCreatorKeyMutation(position.key_id ?? "");
@@ -37,7 +52,7 @@ export function BurnKeyModal({ position }: BurnKeyModalProps) {
       return "Enter a valid quantity";
     }
     if (overBalance) {
-      return "Quantity exceeds your held balance";
+      return "Insufficient balance";
     }
     return null;
   }, [overBalance, parsedQuantity]);
@@ -69,16 +84,19 @@ export function BurnKeyModal({ position }: BurnKeyModalProps) {
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        data-testid={`burn-button-${position.key_id}`}
-      >
-        <Flame className="h-4 w-4" />
-        Burn
-      </Button>
+      {!isControlled && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={heldBalance <= 0}
+          onClick={() => setOpen(true)}
+          data-testid={`burn-button-${position.key_id}`}
+        >
+          <Flame className="h-4 w-4" />
+          Burn
+        </Button>
+      )}
 
       {open && (
         <div

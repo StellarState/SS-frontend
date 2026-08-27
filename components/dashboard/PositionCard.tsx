@@ -2,8 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
-import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
-import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
+import { HoldingActionsMenu } from "@/components/dashboard/HoldingActionsMenu";
 import type { InvestmentPosition } from "@/lib/portfolio";
 
 function formatCommittedXlm(amount: number): string {
@@ -27,8 +26,7 @@ interface PositionCardProps {
 
 export function PositionCard({ position }: PositionCardProps) {
   const shareDisplay = formatSharePercent(position.share_percent);
-  const hasTransferableBalance =
-    Boolean(position.key_id) && (position.quantity ?? 0) > 0;
+  const isKeyHolding = Boolean(position.key_id);
 
   return (
     <Card data-testid="position-card">
@@ -45,8 +43,7 @@ export function PositionCard({ position }: PositionCardProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {hasTransferableBalance && <KeyTransferModal position={position} />}
-          {hasTransferableBalance && <BurnKeyModal position={position} />}
+          {isKeyHolding && <HoldingActionsMenu position={position} />}
           <InvoiceStatusBadge status={position.status} />
         </div>
       </CardContent>

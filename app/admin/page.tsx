@@ -8,6 +8,11 @@ import { TimelockProposalsPanel } from "@/components/admin/TimelockProposalsPane
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     "invoices" | "audit-log" | "timelock"
+import { TradingControlsPanel } from "@/components/admin/TradingControlsPanel";
+
+export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<
+    "invoices" | "audit-log" | "trading-controls"
   >("invoices");
 
   return (
@@ -47,12 +52,21 @@ export default function AdminPage() {
           data-testid="timelock-tab"
         >
           Timelock
+            activeTab === "trading-controls"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setActiveTab("trading-controls")}
+          data-testid="trading-controls-tab"
+        >
+          Trading Controls
         </button>
       </div>
 
       {activeTab === "invoices" && <AdminInvoiceReview />}
       {activeTab === "audit-log" && <AuditLogViewer />}
       {activeTab === "timelock" && <TimelockProposalsPanel />}
+      {activeTab === "trading-controls" && <TradingControlsPanel />}
     </div>
   );
 }

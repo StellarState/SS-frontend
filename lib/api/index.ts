@@ -340,6 +340,17 @@ function authHeaders(token?: string): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** Reads a server-provided error message, falling back to a generic one. */
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const payload = await res.json();
+    const message = payload?.message ?? payload?.error;
+    return typeof message === "string" && message.length > 0 ? message : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function normalizeCreatorKeyDetail(raw: any): CreatorKeyDetail {
   return {
     id: raw.id,
@@ -482,12 +493,17 @@ export async function castGovernanceVote(
   return res.json();
 }
 
+export interface BurnKeyResult {
+  success: boolean;
+  circulatingSupply: number | null;
+}
+
 export async function burnCreatorKey(
   keyId: string,
   quantity: number,
   walletAddress: string,
   token?: string
-): Promise<{ success: boolean }> {
+): Promise<BurnKeyResult> {
   const res = await fetch(`${API_BASE}/keys/${keyId}/burn`, {
     method: "POST",
     headers: {
@@ -497,7 +513,20 @@ export async function burnCreatorKey(
     body: JSON.stringify({ quantity, wallet: walletAddress }),
   });
   if (!res.ok) throw new Error("Failed to burn key");
-  return res.json();
+
+  const payload = await res.json();
+  const circulatingSupply =
+    payload?.circulatingSupply ??
+    payload?.circulating_supply ??
+    payload?.supply?.circulatingSupply ??
+    payload?.supply?.circulating_supply ??
+    null;
+
+  return {
+    success: payload?.success ?? true,
+    circulatingSupply:
+      typeof circulatingSupply === "number" ? circulatingSupply : null,
+  };
 }
 
 export interface CreateProposalInput {
@@ -857,6 +886,279 @@ export async function distributeDividend(
   token?: string
 ): Promise<DividendDistributionResult> {
   const res = await fetch(`${API_BASE}/keys/${keyId}/distribute-dividend`, {
+
+export type WalletActivityType =
+  | "buy"
+  | "sell"
+  | "transfer"
+  | "burn"
+  | "dividend";
+
+export interface WalletActivityEvent {
+  id: string;
+  type: WalletActivityType;
+  keyId?: string;
+  keyName: string;
+  amount: number;
+  createdAt: string;
+  counterparty?: string;
+  direction?: "in" | "out";
+}
+
+export interface WalletActivityResponse {
+  events: WalletActivityEvent[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+const WALLET_ACTIVITY_TYPES: WalletActivityType[] = [
+  "buy",
+  "sell",
+  "transfer",
+  "burn",
+  "dividend",
+];
+
+function normalizeActivityType(raw: any): WalletActivityType {
+  const value = String(raw ?? "").toLowerCase();
+  return WALLET_ACTIVITY_TYPES.includes(value as WalletActivityType)
+    ? (value as WalletActivityType)
+    : "transfer";
+}
+
+function normalizeWalletActivityEvent(raw: any): WalletActivityEvent {
+  return {
+    id: raw.id ?? raw.event_id ?? raw.eventId ?? "",
+    type: normalizeActivityType(raw.type ?? raw.event_type ?? raw.eventType),
+    keyId: raw.keyId ?? raw.key_id ?? undefined,
+    keyName:
+      raw.keyName ?? raw.key_name ?? raw.key_title ?? raw.keyTitle ?? "Key",
+    amount: Number(raw.amount ?? raw.quantity ?? 0),
+    createdAt: raw.createdAt ?? raw.created_at ?? raw.timestamp ?? "",
+    counterparty: raw.counterparty ?? raw.counter_party ?? undefined,
+    direction: raw.direction ?? undefined,
+  };
+}
+
+export async function fetchWalletActivity(
+  address: string,
+  cursor?: string,
+  token?: string
+): Promise<WalletActivityResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(
+    `${API_BASE}/wallets/${encodeURIComponent(address)}/activity?${params}`,
+    { headers: authHeaders(token) }
+  );
+  if (!res.ok) throw new Error("Failed to fetch wallet activity");
+
+  const payload = await res.json();
+  const events = Array.isArray(payload)
+    ? payload
+    : payload.events ?? payload.activity ?? [];
+
+  return {
+    events: events.map(normalizeWalletActivityEvent),
+    has_more: payload.has_more ?? payload.hasMore ?? false,
+    next_cursor: payload.next_cursor ?? payload.nextCursor ?? null,
+  };
+}
+
+export interface WhitelistEntry {
+  address: string;
+  addedAt?: string;
+}
+
+export interface WhitelistResponse {
+  entries: WhitelistEntry[];
+  whitelist_enabled: boolean;
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+function normalizeWhitelistEntry(raw: any): WhitelistEntry {
+  if (typeof raw === "string") return { address: raw };
+  return {
+    address: raw.address ?? raw.wallet ?? "",
+    addedAt: raw.addedAt ?? raw.added_at ?? undefined,
+  };
+}
+
+export async function fetchKeyWhitelist(
+  keyId: string,
+  cursor?: string,
+  token?: string
+): Promise<WhitelistResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(
+    `${API_BASE}/creator/${keyId}/whitelist?${params}`,
+    { headers: authHeaders(token) }
+  );
+  if (!res.ok) throw new Error("Failed to fetch whitelist");
+
+  const payload = await res.json();
+  const entries = Array.isArray(payload)
+    ? payload
+    : payload.entries ?? payload.addresses ?? [];
+
+  return {
+    entries: entries.map(normalizeWhitelistEntry),
+    whitelist_enabled:
+      payload.whitelist_enabled ?? payload.whitelistEnabled ?? false,
+    has_more: payload.has_more ?? payload.hasMore ?? false,
+    next_cursor: payload.next_cursor ?? payload.nextCursor ?? null,
+  };
+}
+
+export async function addWhitelistAddress(
+  keyId: string,
+  address: string,
+  token?: string
+): Promise<WhitelistEntry> {
+  const res = await fetch(`${API_BASE}/creator/${keyId}/whitelist/add`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ address }),
+  });
+  if (!res.ok) throw new Error("Failed to add address to whitelist");
+  return normalizeWhitelistEntry(await res.json());
+}
+
+export async function removeWhitelistAddress(
+  keyId: string,
+  address: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/creator/${keyId}/whitelist/remove`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ address }),
+  });
+  if (!res.ok) throw new Error("Failed to remove address from whitelist");
+  return res.json();
+}
+
+export async function updateWhitelistMode(
+  keyId: string,
+  enabled: boolean,
+  token?: string
+): Promise<{ whitelist_enabled: boolean }> {
+  const res = await fetch(`${API_BASE}/creator/${keyId}/whitelist/mode`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error("Failed to update whitelist mode");
+
+  const payload = await res.json();
+  return {
+    whitelist_enabled:
+      payload.whitelist_enabled ?? payload.whitelistEnabled ?? enabled,
+  };
+}
+
+export type KeyTradingStatus = "active" | "pause_pending" | "paused";
+
+export interface PauseProposal {
+  keyId: string;
+  proposedBy: string;
+  proposedAt: string;
+}
+
+export interface AdminKeyControl {
+  keyId: string;
+  keyTitle: string;
+  tradingStatus: KeyTradingStatus;
+  pendingProposal: PauseProposal | null;
+}
+
+export interface AdminKeyControlsResponse {
+  keys: AdminKeyControl[];
+}
+
+function normalizePauseProposal(raw: any, keyId: string): PauseProposal | null {
+  if (!raw) return null;
+  return {
+    keyId: raw.keyId ?? raw.key_id ?? keyId,
+    proposedBy: raw.proposedBy ?? raw.proposed_by ?? raw.proposer ?? "",
+    proposedAt: raw.proposedAt ?? raw.proposed_at ?? raw.created_at ?? "",
+  };
+}
+
+function normalizeAdminKeyControl(raw: any): AdminKeyControl {
+  const keyId = raw.keyId ?? raw.key_id ?? raw.id ?? "";
+  const pendingProposal = normalizePauseProposal(
+    raw.pendingProposal ?? raw.pending_proposal ?? raw.pause_proposal,
+    keyId
+  );
+  const rawStatus = String(
+    raw.tradingStatus ?? raw.trading_status ?? raw.status ?? ""
+  ).toLowerCase();
+
+  const tradingStatus: KeyTradingStatus =
+    rawStatus === "paused"
+      ? "paused"
+      : pendingProposal
+        ? "pause_pending"
+        : "active";
+
+  return {
+    keyId,
+    keyTitle: raw.keyTitle ?? raw.key_title ?? raw.title ?? raw.name ?? keyId,
+    tradingStatus,
+    pendingProposal,
+  };
+}
+
+export async function fetchAdminKeyControls(
+  token?: string
+): Promise<AdminKeyControlsResponse> {
+  const res = await fetch(`${API_BASE}/admin/keys`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch trading controls");
+
+  const payload = await res.json();
+  const keys = Array.isArray(payload) ? payload : payload.keys ?? [];
+
+  return { keys: keys.map(normalizeAdminKeyControl) };
+}
+
+export async function proposeKeyPause(
+  keyId: string,
+  token?: string
+): Promise<AdminKeyControl> {
+  const res = await fetch(`${API_BASE}/admin/keys/${keyId}/pause/propose`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to propose pause"));
+  }
+  return normalizeAdminKeyControl(await res.json());
+}
+
+export async function approveKeyPause(
+  keyId: string,
+  token?: string
+): Promise<AdminKeyControl> {
+  const res = await fetch(`${API_BASE}/admin/keys/${keyId}/pause/approve`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -866,4 +1168,9 @@ export async function distributeDividend(
   });
   if (!res.ok) throw new Error("Dividend distribution failed");
   return normalizeDividendResult(await res.json(), amount);
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to approve pause"));
+  }
+  return normalizeAdminKeyControl(await res.json());
 }
