@@ -9,6 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GovernanceTab } from "@/components/keys/GovernanceTab";
 import { BuyKeyPanel } from "@/components/keys/BuyKeyPanel";
 import { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
+import { CreatorRevenueSection } from "@/components/keys/CreatorRevenueSection";
+import { DistributeDividendsPanel } from "@/components/keys/DistributeDividendsPanel";
+import { SupplyCapSettings } from "@/components/keys/SupplyCapSettings";
 import { WhitelistManager } from "@/components/keys/WhitelistManager";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +40,7 @@ function CreatorKeyDetailSkeleton() {
 
 export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
   const [activeTab, setActiveTab] = useState<
+    "overview" | "governance" | "settings"
     "overview" | "governance" | "whitelist"
   >("overview");
   const { jwt } = useAuth();
@@ -109,6 +113,14 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               <button
                 type="button"
                 className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+                  activeTab === "settings"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("settings")}
+                data-testid="settings-tab"
+              >
+                Settings
                   activeTab === "whitelist"
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -144,7 +156,18 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
           ) : null}
 
           {activeTab === "overview" && creatorKey.is_creator && (
-            <CreatorVestingSection keyId={creatorKey.id} />
+            <>
+              <CreatorVestingSection keyId={creatorKey.id} />
+              <CreatorRevenueSection keyId={creatorKey.id} />
+              <DistributeDividendsPanel
+                keyId={creatorKey.id}
+                holdersCount={creatorKey.holders_count}
+              />
+            </>
+          )}
+
+          {activeTab === "settings" && creatorKey.is_creator && (
+            <SupplyCapSettings keyId={creatorKey.id} />
           )}
 
           {activeTab === "governance" && (

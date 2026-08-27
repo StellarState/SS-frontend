@@ -12,6 +12,8 @@ import {
   fetchKeyProposals,
   fetchKeyWhitelistStatus,
   transferCreatorKey,
+  updateKeySupplyCap,
+  distributeDividend,
   type CreateProposalInput,
 } from "@/lib/api";
 import { PORTFOLIO_QUERY_KEY } from "@/hooks/usePortfolio";
@@ -200,6 +202,50 @@ export function useTransferCreatorKeyMutation() {
     },
     onError: () => {
       toast.error("Key transfer failed");
+    },
+  });
+}
+
+export function useUpdateSupplyCapMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      supplyCap,
+      token,
+    }: {
+      supplyCap: number;
+      token?: string | null;
+    }) => updateKeySupplyCap(keyId, supplyCap, token ?? undefined),
+    onSuccess: () => {
+      toast.success("Supply cap updated");
+      queryClient.invalidateQueries({ queryKey: keySupplyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
+    },
+  });
+}
+
+export function useDistributeDividendMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      amount,
+      walletAddress,
+      token,
+    }: {
+      amount: number;
+      walletAddress: string;
+      token?: string | null;
+    }) => distributeDividend(keyId, amount, walletAddress, token ?? undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Dividend distribution failed"
+      );
     },
   });
 }
