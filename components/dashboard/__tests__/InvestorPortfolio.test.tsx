@@ -6,6 +6,15 @@ import { InvestorPortfolio } from "../InvestorPortfolio";
 import type { InvestmentPosition } from "@/lib/portfolio";
 import * as api from "@/lib/api";
 
+// PositionCard renders PositionTransferModal for every "active" position
+// (issue #119), which needs AuthContext this file doesn't set up — it isn't
+// testing transfer behaviour, so it's stubbed the same way
+// PositionCard.test.tsx does. See PositionTransferModal's own test file for
+// its behaviour (issue #115).
+vi.mock("@/components/dashboard/PositionTransferModal", () => ({
+    PositionTransferModal: () => null,
+}));
+
 const EMPTY_MESSAGE =
     "No active investments yet — browse the marketplace to get started";
 

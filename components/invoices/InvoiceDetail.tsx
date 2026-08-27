@@ -14,6 +14,12 @@ import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { recordView } from "@/lib/recentlyViewed";
+import { useProtocolStatus } from "@/hooks/useProtocolStatus";
+
+/** Fallback while /protocol/status is loading or unavailable — matches the
+ * previous hardcoded value so behaviour degrades gracefully rather than
+ * blocking investment entirely (issue #116). */
+const DEFAULT_MIN_INVESTMENT = 1;
 
 function InvoiceDetailSkeleton() {
   return (
@@ -98,6 +104,8 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
     queryKey: ["invoice", invoiceId],
     queryFn: () => fetchInvoiceDetail(invoiceId),
   });
+  const { data: protocolStatus } = useProtocolStatus();
+  const minInvestment = protocolStatus?.min_investment ?? DEFAULT_MIN_INVESTMENT;
 
   usePageTitle(invoice?.title ?? null);
 
@@ -158,7 +166,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
         {invoice.status === "open" && !expired && (
           <InvestmentModal
             invoiceId={invoice.id}
-            minInvestment={1}
+            minInvestment={minInvestment}
             maxInvestment={invoice.amount - invoice.raised}
           />
         )}

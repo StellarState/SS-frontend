@@ -1,7 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PositionCard, formatSharePercent } from "../PositionCard";
 import type { InvestmentPosition } from "@/lib/portfolio";
+
+// PositionCard renders PositionTransferModal for every "active" position
+// (issue #119); this file only exercises PositionCard's own rendering, so
+// it's mocked here the same way InvoiceDetail.test.tsx mocks
+// CountdownTimer/DocumentPreview — PositionTransferModal's own behaviour is
+// covered by its dedicated test file (issue #115).
+vi.mock("../PositionTransferModal", () => ({
+  PositionTransferModal: ({ position }: { position: InvestmentPosition }) => (
+    <button type="button" data-testid={`transfer-position-button-${position.invoice_id}`}>
+      Transfer Position
+    </button>
+  ),
+}));
 
 function makePosition(overrides: Partial<InvestmentPosition> = {}): InvestmentPosition {
   return {

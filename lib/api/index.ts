@@ -25,6 +25,11 @@ export interface InvoicesResponse {
   next_cursor: string | null;
 }
 
+export interface ProtocolStatus {
+  min_investment: number;
+  [key: string]: unknown;
+}
+
 import type { InvestmentPosition } from "@/lib/portfolio";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
@@ -51,6 +56,15 @@ export async function fetchInvoiceDetail(id: string): Promise<InvoiceDetail> {
   return res.json();
 }
 
+/** Protocol-wide status, including the minimum investment floor the contract
+ * enforces (issue #116) — must be read from here rather than hardcoded, since
+ * it can change independently of any one invoice. */
+export async function fetchProtocolStatus(): Promise<ProtocolStatus> {
+  const res = await fetch(`${API_BASE}/protocol/status`);
+  if (!res.ok) throw new Error("Failed to fetch protocol status");
+  return res.json();
+}
+
 export async function investInInvoice(
   invoiceId: string,
   amount: number
@@ -61,6 +75,31 @@ export async function investInInvoice(
     body: JSON.stringify({ amount }),
   });
   if (!res.ok) throw new Error("Investment failed");
+  return res.json();
+}
+
+/** Submits the `transfer_position` contract call (issue #119) — sells an
+ * investor's funded-invoice position to `buyer` for `salePriceXlm`. */
+export async function transferInvoicePosition(
+  invoiceId: string,
+  buyer: string,
+  salePriceXlm: number,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/transfer-position`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({
+      buyer,
+      sale_price: salePriceXlm,
+      wallet: walletAddress,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to transfer position");
   return res.json();
 }
 

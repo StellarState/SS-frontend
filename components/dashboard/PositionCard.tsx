@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
+import { PositionTransferModal } from "@/components/dashboard/PositionTransferModal";
 import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
 import type { InvestmentPosition } from "@/lib/portfolio";
 
@@ -45,6 +46,9 @@ export function PositionCard({ position }: PositionCardProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {position.status === "active" && (
+            <PositionTransferModal position={position} />
+          )}
           {hasTransferableBalance && <KeyTransferModal position={position} />}
           {hasTransferableBalance && <BurnKeyModal position={position} />}
           <InvoiceStatusBadge status={position.status} />
