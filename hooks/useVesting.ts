@@ -50,6 +50,18 @@ export function useVestingSchedules(
   });
 }
 
+export function useKeyVestingSchedule(
+  keyId: string,
+  walletAddress?: string | null,
+  token?: string | null
+) {
+  return useQuery({
+    queryKey: vestingSchedulesQueryKey(walletAddress, [keyId]),
+    queryFn: () => fetchVestingSchedule(keyId, walletAddress ?? "", token ?? undefined),
+    enabled: Boolean(walletAddress && keyId),
+  });
+}
+
 export function useClaimVestedKeysMutation(walletAddress?: string | null) {
   const queryClient = useQueryClient();
 

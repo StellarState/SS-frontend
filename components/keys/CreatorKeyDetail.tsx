@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GovernanceTab } from "@/components/keys/GovernanceTab";
 import { BuyKeyPanel } from "@/components/keys/BuyKeyPanel";
+import { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -125,8 +126,18 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
                 )}
               </CardContent>
             </Card>
-          ) : (
-            <GovernanceTab keyId={creatorKey.id} isHolder={isHolder} />
+          ) : null}
+
+          {activeTab === "overview" && creatorKey.is_creator && (
+            <CreatorVestingSection keyId={creatorKey.id} />
+          )}
+
+          {activeTab === "governance" && (
+            <GovernanceTab
+              keyId={creatorKey.id}
+              isHolder={isHolder}
+              isCreator={creatorKey.is_creator}
+            />
           )}
         </div>
 

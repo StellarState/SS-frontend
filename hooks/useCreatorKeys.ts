@@ -4,12 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   buyCreatorKey,
+  burnCreatorKey,
   castGovernanceVote,
+  createGovernanceProposal,
   fetchCreatorKeyDetail,
   fetchKeySupply,
   fetchKeyProposals,
   fetchKeyWhitelistStatus,
   transferCreatorKey,
+  type CreateProposalInput,
 } from "@/lib/api";
 import { PORTFOLIO_QUERY_KEY } from "@/hooks/usePortfolio";
 
@@ -111,6 +114,54 @@ export function useCastGovernanceVoteMutation(keyId: string) {
     },
     onError: () => {
       toast.error("Vote submission failed");
+    },
+  });
+}
+
+export function useBurnCreatorKeyMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      quantity,
+      walletAddress,
+      token,
+    }: {
+      quantity: number;
+      walletAddress: string;
+      token?: string | null;
+    }) => burnCreatorKey(keyId, quantity, walletAddress, token ?? undefined),
+    onSuccess: () => {
+      toast.success("Key burned successfully");
+      queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: keySupplyQueryKey(keyId) });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
+    onError: () => {
+      toast.error("Key burn failed");
+    },
+  });
+}
+
+export function useCreateProposalMutation(keyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      input,
+      walletAddress,
+      token,
+    }: {
+      input: CreateProposalInput;
+      walletAddress: string;
+      token?: string | null;
+    }) => createGovernanceProposal(keyId, input, walletAddress, token ?? undefined),
+    onSuccess: () => {
+      toast.success("Proposal created");
+      queryClient.invalidateQueries({ queryKey: keyProposalsQueryKey(keyId, "active") });
+    },
+    onError: () => {
+      toast.error("Failed to create proposal");
     },
   });
 }
