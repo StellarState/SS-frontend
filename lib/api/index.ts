@@ -660,3 +660,210 @@ export async function fetchAuditLog(
   };
 }
 
+export interface ApiConflictError extends Error {
+  isConflict: true;
+}
+
+export function isApiConflictError(error: unknown): error is ApiConflictError {
+  return (
+    error instanceof Error &&
+    (error as Partial<ApiConflictError>).isConflict === true
+  );
+}
+
+function conflictError(message: string): ApiConflictError {
+  const error = new Error(message) as ApiConflictError;
+  error.name = "ApiConflictError";
+  error.isConflict = true;
+  return error;
+}
+
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const payload = await res.json();
+    return payload?.message ?? payload?.error ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function updateKeySupplyCap(
+  keyId: string,
+  supplyCap: number,
+  token?: string
+): Promise<KeySupply> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/supply`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ supplyCap }),
+  });
+
+  if (res.status === 409) {
+    throw conflictError(
+      await readErrorMessage(
+        res,
+        "Supply cap conflicts with the current circulating supply"
+      )
+    );
+  }
+  if (!res.ok) throw new Error("Failed to update supply cap");
+
+  return normalizeKeySupply(await res.json());
+}
+
+export interface MonthlyRevenue {
+  month: string;
+  royaltyEarned: number;
+}
+
+export interface CreatorRevenue {
+  totalRoyaltyEarned: number;
+  buyRoyaltyEarned: number;
+  sellRoyaltyEarned: number;
+  tradeCount: number;
+  monthlyBreakdown: MonthlyRevenue[];
+}
+
+function normalizeMonthlyRevenue(raw: any): MonthlyRevenue {
+  return {
+    month: raw.month ?? raw.period ?? "",
+    royaltyEarned: raw.royaltyEarned ?? raw.royalty_earned ?? 0,
+  };
+}
+
+function normalizeCreatorRevenue(raw: any): CreatorRevenue {
+  const monthly =
+    raw.monthlyBreakdown ?? raw.monthly_breakdown ?? raw.monthly ?? [];
+
+  return {
+    totalRoyaltyEarned:
+      raw.totalRoyaltyEarned ?? raw.total_royalty_earned ?? 0,
+    buyRoyaltyEarned: raw.buyRoyaltyEarned ?? raw.buy_royalty_earned ?? 0,
+    sellRoyaltyEarned: raw.sellRoyaltyEarned ?? raw.sell_royalty_earned ?? 0,
+    tradeCount: raw.tradeCount ?? raw.trade_count ?? 0,
+    monthlyBreakdown: monthly.map(normalizeMonthlyRevenue),
+  };
+}
+
+export async function fetchCreatorRevenue(
+  keyId: string,
+  token?: string
+): Promise<CreatorRevenue> {
+  const res = await fetch(`${API_BASE}/creator/${keyId}/revenue`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch creator revenue");
+  return normalizeCreatorRevenue(await res.json());
+}
+
+export type TimelockProposalStatus = "pending" | "executed" | "cancelled";
+
+export interface TimelockProposal {
+  id: string;
+  changeType: string;
+  payload: Record<string, unknown>;
+  proposedAt: string;
+  executionNotBefore: string;
+  status: TimelockProposalStatus;
+  executedAt: string | null;
+}
+
+export interface TimelockProposalsResponse {
+  proposals: TimelockProposal[];
+}
+
+function normalizeTimelockProposal(raw: any): TimelockProposal {
+  const rawStatus = raw.status ?? (raw.executedAt || raw.executed_at ? "executed" : "pending");
+
+  return {
+    id: raw.id,
+    changeType: raw.changeType ?? raw.change_type ?? "",
+    payload: raw.payload ?? {},
+    proposedAt: raw.proposedAt ?? raw.proposed_at ?? "",
+    executionNotBefore:
+      raw.executionNotBefore ?? raw.execution_not_before ?? "",
+    status: rawStatus as TimelockProposalStatus,
+    executedAt: raw.executedAt ?? raw.executed_at ?? null,
+  };
+}
+
+export async function fetchTimelockProposals(
+  token?: string
+): Promise<TimelockProposalsResponse> {
+  const res = await fetch(`${API_BASE}/admin/timelock/proposals`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch timelock proposals");
+  const payload = await res.json();
+  const proposals = Array.isArray(payload) ? payload : payload.proposals ?? [];
+  return { proposals: proposals.map(normalizeTimelockProposal) };
+}
+
+export async function executeTimelockProposal(
+  proposalId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/admin/timelock/proposals/${proposalId}/execute`,
+    {
+      method: "POST",
+      headers: authHeaders(token),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to execute timelock proposal");
+  return res.json();
+}
+
+export async function cancelTimelockProposal(
+  proposalId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/admin/timelock/proposals/${proposalId}/cancel`,
+    {
+      method: "POST",
+      headers: authHeaders(token),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to cancel timelock proposal");
+  return res.json();
+}
+
+export interface DividendDistributionResult {
+  totalDistributed: number;
+  perKeyAmount: number;
+  holderCount: number;
+}
+
+function normalizeDividendResult(
+  raw: any,
+  fallbackAmount: number
+): DividendDistributionResult {
+  return {
+    totalDistributed:
+      raw.totalDistributed ?? raw.total_distributed ?? fallbackAmount,
+    perKeyAmount: raw.perKeyAmount ?? raw.per_key_amount ?? 0,
+    holderCount: raw.holderCount ?? raw.holder_count ?? 0,
+  };
+}
+
+export async function distributeDividend(
+  keyId: string,
+  amount: number,
+  walletAddress: string,
+  token?: string
+): Promise<DividendDistributionResult> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/distribute-dividend`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ amount, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Dividend distribution failed");
+  return normalizeDividendResult(await res.json(), amount);
+}
