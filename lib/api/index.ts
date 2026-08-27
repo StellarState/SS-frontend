@@ -286,6 +286,87 @@ export async function approveAdminInvoice(
   return res.json();
 }
 
+// ─── Settlement multi-sig (issue #118) ──────────────────────────────────────
+//
+// Two admins must act to settle a funded invoice: one proposes a repayment
+// amount, a second (different) admin approves and executes it.
+
+export interface SettlementProposal {
+  id: string;
+  amount: number;
+  proposed_by: string;
+  proposed_at: string;
+}
+
+export interface SettlementInvoiceRow {
+  invoice_id: string;
+  title: string;
+  face_value: number;
+  seller: string;
+  proposal: SettlementProposal | null;
+}
+
+export interface SettlementsResponse {
+  invoices: SettlementInvoiceRow[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+/** Lists funded invoices awaiting settlement, each annotated with its open
+ * proposal (if any) so the UI doesn't need one request per invoice. */
+export async function fetchSettlements(
+  cursor?: string,
+  token?: string
+): Promise<SettlementsResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  const res = await fetch(`${API_BASE}/admin/settlements?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch settlements");
+  return res.json();
+}
+
+export async function proposeSettlement(
+  invoiceId: string,
+  amount: number,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/admin/invoices/${invoiceId}/settlement/propose`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ amount }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to propose settlement");
+  return res.json();
+}
+
+/** Approves and executes a pending settlement proposal. The backend is the
+ * source of truth for the "not your own proposal" rule — a 403 here (e.g.
+ * the proposing admin retrying via another tab) surfaces as this error. */
+export async function approveSettlement(
+  invoiceId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/admin/invoices/${invoiceId}/settlement/approve`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    }
+  );
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error("Cannot approve your own settlement proposal");
+    }
+    throw new Error("Failed to approve settlement");
+  }
+  return res.json();
+}
+
 export async function rejectAdminInvoice(
   invoiceId: string,
   reason: string,
