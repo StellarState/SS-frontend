@@ -300,6 +300,7 @@ export interface CreatorKeyDetail {
   whitelist_enabled: boolean;
   holder_balance?: number;
   is_holder?: boolean;
+  is_creator?: boolean;
 }
 
 export interface GovernanceOption {
@@ -350,6 +351,7 @@ function normalizeCreatorKeyDetail(raw: any): CreatorKeyDetail {
     whitelist_enabled: raw.whitelist_enabled ?? raw.whitelistEnabled ?? false,
     holder_balance: raw.holder_balance ?? raw.holderBalance,
     is_holder: raw.is_holder ?? raw.isHolder,
+    is_creator: raw.is_creator ?? raw.isCreator,
   };
 }
 
@@ -480,6 +482,53 @@ export async function castGovernanceVote(
   return res.json();
 }
 
+export async function burnCreatorKey(
+  keyId: string,
+  quantity: number,
+  walletAddress: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/burn`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ quantity, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Failed to burn key");
+  return res.json();
+}
+
+export interface CreateProposalInput {
+  title: string;
+  options: string[];
+  durationDays: number;
+}
+
+export async function createGovernanceProposal(
+  keyId: string,
+  input: CreateProposalInput,
+  walletAddress: string,
+  token?: string
+): Promise<GovernanceProposal> {
+  const res = await fetch(`${API_BASE}/keys/${keyId}/proposals`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({
+      title: input.title,
+      options: input.options,
+      durationDays: input.durationDays,
+      wallet: walletAddress,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to create proposal");
+  return normalizeProposal(await res.json());
+}
+
 export async function transferCreatorKey(
   keyId: string,
   recipient: string,
@@ -504,20 +553,25 @@ export interface VestingSchedule {
   keyTitle?: string;
   totalKeys: number;
   vestedAmount: number;
+  claimedAmount?: number;
   claimableAmount: number;
   startDate?: string | null;
   endDate?: string | null;
+  vestingEndsAt?: string | null;
 }
 
 function normalizeVestingSchedule(raw: any, keyId: string): VestingSchedule {
+  const endDate = raw.endDate ?? raw.end_date ?? null;
   return {
     keyId: raw.keyId ?? raw.key_id ?? keyId,
     keyTitle: raw.keyTitle ?? raw.key_title,
     totalKeys: raw.totalKeys ?? raw.total_keys ?? 0,
     vestedAmount: raw.vestedAmount ?? raw.vested_amount ?? 0,
+    claimedAmount: raw.claimedAmount ?? raw.claimed_amount ?? 0,
     claimableAmount: raw.claimableAmount ?? raw.claimable_amount ?? 0,
     startDate: raw.startDate ?? raw.start_date ?? null,
-    endDate: raw.endDate ?? raw.end_date ?? null,
+    endDate,
+    vestingEndsAt: raw.vestingEndsAt ?? raw.vesting_ends_at ?? endDate,
   };
 }
 
@@ -555,5 +609,54 @@ export async function claimVestedKeys(
   );
   if (!res.ok) throw new Error("Failed to claim vested keys");
   return res.json();
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorWallet: string;
+  actionType: string;
+  targetId: string;
+  createdAt: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface AuditLogResponse {
+  entries: AuditLogEntry[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+function normalizeAuditLogEntry(raw: any): AuditLogEntry {
+  return {
+    id: raw.id,
+    actorWallet: raw.actorWallet ?? raw.actor_wallet ?? "",
+    actionType: raw.actionType ?? raw.action_type ?? "",
+    targetId: raw.targetId ?? raw.target_id ?? "",
+    createdAt: raw.createdAt ?? raw.created_at ?? "",
+    payload: raw.payload ?? raw,
+  };
+}
+
+export async function fetchAuditLog(
+  cursor?: string,
+  actionType?: string,
+  token?: string
+): Promise<AuditLogResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  if (actionType) params.set("actionType", actionType);
+
+  const res = await fetch(`${API_BASE}/admin/audit-log?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch audit log");
+  const payload = await res.json();
+  const entries = Array.isArray(payload) ? payload : payload.entries ?? [];
+
+  return {
+    entries: entries.map(normalizeAuditLogEntry),
+    has_more: payload.has_more ?? false,
+    next_cursor: payload.next_cursor ?? null,
+  };
 }
 

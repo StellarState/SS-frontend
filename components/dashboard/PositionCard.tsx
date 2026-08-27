@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
+import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
 import type { InvestmentPosition } from "@/lib/portfolio";
 
 function formatCommittedXlm(amount: number): string {
@@ -45,6 +46,7 @@ export function PositionCard({ position }: PositionCardProps) {
         </div>
         <div className="flex items-center gap-2">
           {hasTransferableBalance && <KeyTransferModal position={position} />}
+          {hasTransferableBalance && <BurnKeyModal position={position} />}
           <InvoiceStatusBadge status={position.status} />
         </div>
       </CardContent>

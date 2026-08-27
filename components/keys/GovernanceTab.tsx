@@ -9,6 +9,7 @@ import type { GovernanceProposal } from "@/lib/api";
 import { useKeyProposals } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { VoteModal } from "@/components/keys/VoteModal";
+import { CreateProposalModal } from "@/components/keys/CreateProposalModal";
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now());
@@ -130,9 +131,10 @@ function ProposalCard({ proposal, isHolder, onVote, now }: ProposalCardProps) {
 interface GovernanceTabProps {
   keyId: string;
   isHolder: boolean;
+  isCreator?: boolean;
 }
 
-export function GovernanceTab({ keyId, isHolder }: GovernanceTabProps) {
+export function GovernanceTab({ keyId, isHolder, isCreator }: GovernanceTabProps) {
   const [status, setStatus] = useState<"active" | "closed">("active");
   const [selectedProposal, setSelectedProposal] =
     useState<GovernanceProposal | null>(null);
@@ -143,21 +145,24 @@ export function GovernanceTab({ keyId, isHolder }: GovernanceTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={status === "active" ? "default" : "outline"}
-          onClick={() => setStatus("active")}
-        >
-          Active
-        </Button>
-        <Button
-          type="button"
-          variant={status === "closed" ? "default" : "outline"}
-          onClick={() => setStatus("closed")}
-        >
-          Closed
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={status === "active" ? "default" : "outline"}
+            onClick={() => setStatus("active")}
+          >
+            Active
+          </Button>
+          <Button
+            type="button"
+            variant={status === "closed" ? "default" : "outline"}
+            onClick={() => setStatus("closed")}
+          >
+            Closed
+          </Button>
+        </div>
+        {isCreator && <CreateProposalModal keyId={keyId} />}
       </div>
 
       {isLoading ? (
