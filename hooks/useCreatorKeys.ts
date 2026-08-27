@@ -131,8 +131,12 @@ export function useBurnCreatorKeyMutation(keyId: string) {
       walletAddress: string;
       token?: string | null;
     }) => burnCreatorKey(keyId, quantity, walletAddress, token ?? undefined),
-    onSuccess: () => {
-      toast.success("Key burned successfully");
+    onSuccess: (result) => {
+      toast.success(
+        result.circulatingSupply === null
+          ? "Key burned successfully"
+          : `Key burned successfully. New circulating supply: ${result.circulatingSupply.toLocaleString()}`
+      );
       queryClient.invalidateQueries({ queryKey: creatorKeyQueryKey(keyId) });
       queryClient.invalidateQueries({ queryKey: keySupplyQueryKey(keyId) });
       queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });

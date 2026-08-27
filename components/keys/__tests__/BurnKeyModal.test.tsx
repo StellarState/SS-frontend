@@ -83,9 +83,35 @@ describe("BurnKeyModal", () => {
     await user.type(screen.getByTestId("burn-confirm-input"), "BURN");
 
     expect(screen.getByTestId("burn-quantity-error")).toHaveTextContent(
-      "Quantity exceeds your held balance"
+      "Insufficient balance"
     );
     expect(screen.getByTestId("burn-confirm-button")).toBeDisabled();
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("disables the trigger button when the held balance is zero", () => {
+    render(<BurnKeyModal position={{ ...position, quantity: 0 }} />);
+    expect(screen.getByTestId("burn-button-key-1")).toBeDisabled();
+  });
+
+  it("renders no trigger button and opens directly when controlled", () => {
+    render(<BurnKeyModal position={position} open onOpenChange={() => {}} />);
+    expect(screen.queryByTestId("burn-button-key-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("burn-confirm-input")).toBeInTheDocument();
+  });
+
+  it("submits the burn with the entered quantity once BURN is typed", async () => {
+    const user = await openModal();
+    const quantityInput = screen.getByTestId("burn-quantity-input");
+    await user.clear(quantityInput);
+    await user.type(quantityInput, "4");
+    await user.type(screen.getByTestId("burn-confirm-input"), "BURN");
+    await user.click(screen.getByTestId("burn-confirm-button"));
+
+    expect(mutateAsync).toHaveBeenCalledWith({
+      quantity: 4,
+      walletAddress: "GTESTADDRESS",
+      token: null,
+    });
   });
 });
