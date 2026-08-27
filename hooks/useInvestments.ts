@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { investInInvoice } from "@/lib/api";
+import { investInInvoice, topUpInvoice } from "@/lib/api";
 import type { InvoiceDetail } from "@/lib/api";
 import { toast } from "sonner";
 import { INVOICES_QUERY_KEY } from "./useInvoices";
@@ -54,6 +54,36 @@ export function useInvestMutation() {
 
     onSuccess: (_data, { amount }) => {
       toast.success(`Investment of ${amount.toLocaleString()} XLM committed successfully`, {
+        duration: 5000,
+      });
+    },
+
+    onSettled: (_data, _error, { invoiceId }) => {
+      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
+  });
+}
+
+interface TopUpMutationVars {
+  invoiceId: string;
+  amount: number;
+}
+
+export function useTopUpMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ invoiceId, amount }: TopUpMutationVars) =>
+      topUpInvoice(invoiceId, amount),
+
+    onError: () => {
+      toast.error("Top-up failed. Please try again.");
+    },
+
+    onSuccess: (data, { amount }) => {
+      toast.success(`Top-up of ${amount.toLocaleString()} XLM successful. New total: ${data.new_total.toLocaleString()} XLM`, {
         duration: 5000,
       });
     },

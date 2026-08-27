@@ -64,6 +64,19 @@ export async function investInInvoice(
   return res.json();
 }
 
+export async function topUpInvoice(
+  invoiceId: string,
+  amount: number
+): Promise<{ success: boolean; new_total: number }> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/top_up`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount }),
+  });
+  if (!res.ok) throw new Error("Top-up failed");
+  return res.json();
+}
+
 export type NotificationEventType = "new_invoice" | "funding_milestone" | "settlement";
 export type NotificationChannel = "email" | "in_app";
 
@@ -886,6 +899,16 @@ export async function distributeDividend(
   token?: string
 ): Promise<DividendDistributionResult> {
   const res = await fetch(`${API_BASE}/keys/${keyId}/distribute-dividend`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ amount, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Dividend distribution failed");
+  return normalizeDividendResult(await res.json(), amount);
+}
 
 export type WalletActivityType =
   | "buy"
@@ -1164,10 +1187,6 @@ export async function approveKeyPause(
       "Content-Type": "application/json",
       ...authHeaders(token),
     },
-    body: JSON.stringify({ amount, wallet: walletAddress }),
-  });
-  if (!res.ok) throw new Error("Dividend distribution failed");
-  return normalizeDividendResult(await res.json(), amount);
   });
   if (!res.ok) {
     throw new Error(await readErrorMessage(res, "Failed to approve pause"));
