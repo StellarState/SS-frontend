@@ -28,8 +28,7 @@ interface PositionCardProps {
 
 export function PositionCard({ position }: PositionCardProps) {
   const shareDisplay = formatSharePercent(position.share_percent);
-  const hasTransferableBalance =
-    Boolean(position.key_id) && (position.quantity ?? 0) > 0;
+  const isKeyHolding = Boolean(position.key_id);
 
   return (
     <Card data-testid="position-card">

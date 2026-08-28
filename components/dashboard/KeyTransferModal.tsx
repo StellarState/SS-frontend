@@ -13,6 +13,9 @@ import { useStellarWallet } from "@/hooks/useStellarWallet";
 
 interface KeyTransferModalProps {
   position: InvestmentPosition;
+  /** When provided the modal is controlled and renders no trigger button of its own. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function isLockupActive(lockupExpiresAt?: string | null): boolean {
@@ -20,10 +23,22 @@ function isLockupActive(lockupExpiresAt?: string | null): boolean {
   return new Date(lockupExpiresAt).getTime() > Date.now();
 }
 
-export function KeyTransferModal({ position }: KeyTransferModalProps) {
+export function KeyTransferModal({
+  position,
+  open: controlledOpen,
+  onOpenChange,
+}: KeyTransferModalProps) {
   const { address: authAddress, jwt } = useAuth();
   const { address: walletAddress } = useStellarWallet();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+
   const [recipient, setRecipient] = useState("");
   const [quantity, setQuantity] = useState("1");
   const transferMutation = useTransferCreatorKeyMutation();
@@ -82,16 +97,18 @@ export function KeyTransferModal({ position }: KeyTransferModalProps) {
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        data-testid={`transfer-button-${keyId}`}
-      >
-        <Send className="h-4 w-4" />
-        Transfer
-      </Button>
+      {!isControlled && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          data-testid={`transfer-button-${keyId}`}
+        >
+          <Send className="h-4 w-4" />
+          Transfer
+        </Button>
+      )}
 
       {open && (
         <div

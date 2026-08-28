@@ -25,6 +25,9 @@ export function Navbar() {
           <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">
             Marketplace
           </Link>
+          <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground">
+            Profile
+          </Link>
           <Link
             href="/investor/notifications"
             className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
