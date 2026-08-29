@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { investInInvoice, topUpInvoice } from "@/lib/api";
+import { investInInvoice, transferInvoicePosition } from "@/lib/api";
 import type { InvoiceDetail } from "@/lib/api";
 import { toast } from "sonner";
 import { INVOICES_QUERY_KEY } from "./useInvoices";
@@ -66,32 +66,44 @@ export function useInvestMutation() {
   });
 }
 
-interface TopUpMutationVars {
+interface TransferPositionMutationVars {
   invoiceId: string;
-  amount: number;
+  buyer: string;
+  salePriceXlm: number;
+  walletAddress: string;
+  token?: string | null;
 }
 
-export function useTopUpMutation() {
+/** Issue #119: sells an investor's position in a funded invoice to another
+ * wallet via the `transfer_position` contract function. */
+export function useTransferPositionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ invoiceId, amount }: TopUpMutationVars) =>
-      topUpInvoice(invoiceId, amount),
+    mutationFn: ({
+      invoiceId,
+      buyer,
+      salePriceXlm,
+      walletAddress,
+      token,
+    }: TransferPositionMutationVars) =>
+      transferInvoicePosition(
+        invoiceId,
+        buyer,
+        salePriceXlm,
+        walletAddress,
+        token ?? undefined
+      ),
+
+    onSuccess: () => {
+      toast.success("Position transferred successfully");
+      // Removes the transferred position from the investor's portfolio list
+      // (issue #119's "position removed from list after confirmed transfer").
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+    },
 
     onError: () => {
-      toast.error("Top-up failed. Please try again.");
-    },
-
-    onSuccess: (data, { amount }) => {
-      toast.success(`Top-up of ${amount.toLocaleString()} XLM successful. New total: ${data.new_total.toLocaleString()} XLM`, {
-        duration: 5000,
-      });
-    },
-
-    onSettled: (_data, _error, { invoiceId }) => {
-      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] });
-      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
+      toast.error("Position transfer failed");
     },
   });
 }

@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { HoldingActionsMenu } from "@/components/dashboard/HoldingActionsMenu";
 import { TopUpModal } from "@/components/invoices/TopUpModal";
+import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
+import { PositionTransferModal } from "@/components/dashboard/PositionTransferModal";
+import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
 import type { InvestmentPosition } from "@/lib/portfolio";
 
 function formatCommittedXlm(amount: number): string {
@@ -53,6 +56,11 @@ export function PositionCard({ position }: PositionCardProps) {
               remainingCapacity={position.remaining_capacity ?? 0}
             />
           )}
+          {position.status === "active" && (
+            <PositionTransferModal position={position} />
+          )}
+          {hasTransferableBalance && <KeyTransferModal position={position} />}
+          {hasTransferableBalance && <BurnKeyModal position={position} />}
           <InvoiceStatusBadge status={position.status} />
         </div>
       </CardContent>

@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import { AdminInvoiceReview } from "@/components/admin/AdminInvoiceReview";
+import { AdminSettlements } from "@/components/admin/AdminSettlements";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { TimelockProposalsPanel } from "@/components/admin/TimelockProposalsPanel";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
-    "invoices" | "audit-log" | "timelock"
-import { TradingControlsPanel } from "@/components/admin/TradingControlsPanel";
-
-export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<
-    "invoices" | "audit-log" | "trading-controls"
+    "invoices" | "settlements" | "audit-log"
   >("invoices");
 
   return (
@@ -28,6 +24,18 @@ export default function AdminPage() {
           onClick={() => setActiveTab("invoices")}
         >
           Invoices
+        </button>
+        <button
+          type="button"
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "settlements"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setActiveTab("settlements")}
+          data-testid="settlements-tab"
+        >
+          Settlements
         </button>
         <button
           type="button"
@@ -64,9 +72,8 @@ export default function AdminPage() {
       </div>
 
       {activeTab === "invoices" && <AdminInvoiceReview />}
+      {activeTab === "settlements" && <AdminSettlements />}
       {activeTab === "audit-log" && <AuditLogViewer />}
-      {activeTab === "timelock" && <TimelockProposalsPanel />}
-      {activeTab === "trading-controls" && <TradingControlsPanel />}
     </div>
   );
 }

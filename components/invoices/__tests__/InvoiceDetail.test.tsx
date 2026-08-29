@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { InvoiceDetail } from "../InvoiceDetail";
 
 vi.mock("@/lib/api", () => ({
   fetchInvoiceDetail: vi.fn(),
+  fetchProtocolStatus: vi.fn().mockResolvedValue({ min_investment: 1 }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -34,7 +35,7 @@ vi.mock("@/lib/logger", () => ({
   logError: vi.fn(),
 }));
 
-import { fetchInvoiceDetail } from "@/lib/api";
+import { fetchInvoiceDetail, fetchProtocolStatus } from "@/lib/api";
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -154,5 +155,46 @@ describe("InvoiceDetail - Invest Button Visibility", () => {
       wrapper: createWrapper(),
     });
     expect(container.querySelector("[class*='animate-pulse']")).toBeInTheDocument();
+  });
+});
+
+describe("InvoiceDetail - minimum investment (issue #116)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("passes the minimum investment from GET /protocol/status to the invest modal, not a hardcoded value", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(makeInvoice({ status: "open" }));
+    vi.mocked(fetchProtocolStatus).mockResolvedValue({ min_investment: 250 });
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invest-button")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("invest-button"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText("250 - 5000")
+      ).toBeInTheDocument();
+    });
+    expect(fetchProtocolStatus).toHaveBeenCalled();
+  });
+
+  it("falls back to the previous default while /protocol/status is loading", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(makeInvoice({ status: "open" }));
+    vi.mocked(fetchProtocolStatus).mockReturnValue(new Promise(() => {}));
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invest-button")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("invest-button"));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("1 - 5000")).toBeInTheDocument();
+    });
   });
 });
