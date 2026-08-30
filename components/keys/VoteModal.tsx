@@ -44,13 +44,18 @@ export function VoteModal({
 
   const handleSubmit = async () => {
     if (!address || selectedOption === null) return;
-    await voteMutation.mutateAsync({
-      proposalId: proposal.id,
-      optionIndex: selectedOption,
-      walletAddress: address,
-      token: jwt,
-    });
-    setRecorded(true);
+    try {
+      await voteMutation.mutateAsync({
+        proposalId: proposal.id,
+        optionIndex: selectedOption,
+        walletAddress: address,
+        token: jwt,
+      });
+      setRecorded(true);
+    } catch {
+      // react-query exposes the rejection as voteMutation.error so the error
+      // message below can be rendered; nothing else to do here.
+    }
   };
 
   return (
@@ -106,6 +111,17 @@ export function VoteModal({
           {recorded && (
             <p className="text-sm font-medium text-emerald-600">
               Your vote has been recorded
+            </p>
+          )}
+
+          {voteMutation.isError && (
+            <p
+              data-testid="vote-error-message"
+              className="text-sm font-medium text-red-600"
+            >
+              {voteMutation.error instanceof Error
+                ? voteMutation.error.message
+                : "Vote submission failed. Please try again."}
             </p>
           )}
 
