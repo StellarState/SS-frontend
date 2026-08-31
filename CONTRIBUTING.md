@@ -1,4 +1,4 @@
-## 🔒 Branch Protection Rules
+## 🔒 Branch Protection Rules!!
 
 ### `main` Branch
 - ✅ Require pull request before merging
