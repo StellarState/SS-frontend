@@ -78,4 +78,43 @@ describe("PositionCard", () => {
 
     expect(screen.getByTestId("position-share")).toHaveTextContent("12.35%");
   });
+
+  it("renders Top Up button for active positions with remaining capacity", () => {
+    render(
+      <PositionCard
+        position={makePosition({
+          status: "active",
+          remaining_capacity: 1000,
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("top-up-button")).toBeInTheDocument();
+  });
+
+  it("does not render Top Up button for settled positions", () => {
+    render(
+      <PositionCard
+        position={makePosition({
+          status: "settled",
+          remaining_capacity: 1000,
+        })}
+      />
+    );
+
+    expect(screen.queryByTestId("top-up-button")).not.toBeInTheDocument();
+  });
+
+  it("does not render Top Up button when remaining capacity is zero", () => {
+    render(
+      <PositionCard
+        position={makePosition({
+          status: "active",
+          remaining_capacity: 0,
+        })}
+      />
+    );
+
+    expect(screen.queryByTestId("top-up-button")).not.toBeInTheDocument();
+  });
 });

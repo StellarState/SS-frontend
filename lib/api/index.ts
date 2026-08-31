@@ -1030,6 +1030,16 @@ export async function distributeDividend(
   token?: string
 ): Promise<DividendDistributionResult> {
   const res = await fetch(`${API_BASE}/keys/${keyId}/distribute-dividend`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ amount, wallet: walletAddress }),
+  });
+  if (!res.ok) throw new Error("Dividend distribution failed");
+  return normalizeDividendResult(await res.json(), amount);
+}
 
 export type WalletActivityType =
   | "buy"
@@ -1308,10 +1318,6 @@ export async function approveKeyPause(
       "Content-Type": "application/json",
       ...authHeaders(token),
     },
-    body: JSON.stringify({ amount, wallet: walletAddress }),
-  });
-  if (!res.ok) throw new Error("Dividend distribution failed");
-  return normalizeDividendResult(await res.json(), amount);
   });
   if (!res.ok) {
     throw new Error(await readErrorMessage(res, "Failed to approve pause"));

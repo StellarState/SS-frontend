@@ -2,6 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { HoldingActionsMenu } from "@/components/dashboard/HoldingActionsMenu";
+import { TopUpModal } from "@/components/invoices/TopUpModal";
 import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
 import { PositionTransferModal } from "@/components/dashboard/PositionTransferModal";
 import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
@@ -29,6 +31,7 @@ interface PositionCardProps {
 export function PositionCard({ position }: PositionCardProps) {
   const shareDisplay = formatSharePercent(position.share_percent);
   const isKeyHolding = Boolean(position.key_id);
+  const canTopUp = position.status === "active" && (position.remaining_capacity ?? 0) > 0;
 
   return (
     <Card data-testid="position-card">
@@ -45,6 +48,14 @@ export function PositionCard({ position }: PositionCardProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {isKeyHolding && <HoldingActionsMenu position={position} />}
+          {canTopUp && (
+            <TopUpModal
+              invoiceId={position.invoice_id}
+              currentCommittedAmount={position.committed_amount}
+              remainingCapacity={position.remaining_capacity ?? 0}
+            />
+          )}
           {position.status === "active" && (
             <PositionTransferModal position={position} />
           )}

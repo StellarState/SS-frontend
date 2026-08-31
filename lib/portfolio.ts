@@ -10,6 +10,7 @@ export interface InvestmentPosition {
     key_title?: string;
     quantity?: number;
     lockup_expires_at?: string | null;
+    remaining_capacity?: number;
 }
 
 export interface PortfolioSummary {
