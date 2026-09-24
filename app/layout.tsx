@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -19,8 +20,11 @@ export default function RootLayout({
       <body>
         <Providers>
           <Navbar />
+          <MobileNav />
           {children}
           <Toaster />
+          {/* Bottom padding for mobile tab bar */}
+          <div className="h-14 md:hidden" />
         </Providers>
       </body>
     </html>

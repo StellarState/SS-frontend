@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { WalletChip } from "@/components/wallet/WalletChip";
 import { useUnreadCount } from "@/hooks/useNotifications";
+import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
 
 export function Navbar() {
   const { address, network, isConnected, isConnecting, connect, disconnect, refreshNetwork } =
@@ -21,13 +22,14 @@ export function Navbar() {
           StellarSettle
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-4">
           <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">
             Marketplace
           </Link>
           <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground">
             Profile
           </Link>
+          <CurrencyToggle />
           <Link
             href="/investor/notifications"
             className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"

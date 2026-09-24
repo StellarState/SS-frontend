@@ -160,6 +160,8 @@ export default function MarketplacePage() {
     minYield: initialMinYield,
     fromDate: initialFromDate,
     toDate: initialToDate,
+    minAmount: Number(searchParams.get("minAmount")) || 0,
+    maxAmount: Number(searchParams.get("maxAmount")) || 0,
   });
 
   const [status, setStatus] = useState<"open" | "funded" | "settled" | "all">(initialStatus);
@@ -184,6 +186,12 @@ export default function MarketplacePage() {
       }
       if (newFilters.toDate) {
         params.set("toDate", newFilters.toDate);
+      }
+      if (newFilters.minAmount > 0) {
+        params.set("minAmount", newFilters.minAmount.toString());
+      }
+      if (newFilters.maxAmount > 0) {
+        params.set("maxAmount", newFilters.maxAmount.toString());
       }
       if (newStatus !== "all") {
         params.set("status", newStatus);
@@ -308,6 +316,8 @@ export default function MarketplacePage() {
       minYield: 0,
       fromDate: "",
       toDate: "",
+      minAmount: 0,
+      maxAmount: 0,
     };
     setPanelFilters(emptyFilters);
     setStatus("all");
@@ -361,13 +371,25 @@ export default function MarketplacePage() {
         matchesToDate = invTime <= toTime;
       }
 
+      let matchesMinAmount = true;
+      if (panelFilters.minAmount > 0) {
+        matchesMinAmount = inv.amount >= panelFilters.minAmount;
+      }
+
+      let matchesMaxAmount = true;
+      if (panelFilters.maxAmount > 0) {
+        matchesMaxAmount = inv.amount <= panelFilters.maxAmount;
+      }
+
       return (
         matchesBarStatus &&
         matchesSearch &&
         matchesPanelStatus &&
         matchesYield &&
         matchesFromDate &&
-        matchesToDate
+        matchesToDate &&
+        matchesMinAmount &&
+        matchesMaxAmount
       );
     });
 
