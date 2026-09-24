@@ -100,7 +100,7 @@ export function AdminSettlements({ isAdmin: propIsAdmin }: AdminSettlementsProps
 
       {executedBanner && (
         <div
-          className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900"
+          className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3 text-sm font-medium text-emerald-900 dark:text-emerald-200"
           data-testid="settlement-executed-banner"
         >
           Settlement executed
@@ -141,7 +141,7 @@ export function AdminSettlements({ isAdmin: propIsAdmin }: AdminSettlementsProps
 
                   {hasProposal && (
                     <div
-                      className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900"
+                      className="inline-flex items-center gap-2 rounded-full bg-amber-100 dark:bg-amber-900 px-3 py-1 text-xs font-medium text-amber-900 dark:text-amber-100"
                       data-testid={`pending-settlement-badge-${row.invoice_id}`}
                     >
                       Pending settlement — {formatXLM(row.proposal!.amount)}

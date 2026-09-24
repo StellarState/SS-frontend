@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Briefcase, Bell, User, Menu, X, Eye } from "lucide-react";
+import { Home, Briefcase, Bell, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const TABS = [
   { href: "/marketplace", label: "Marketplace", icon: Home },
@@ -15,7 +16,6 @@ const TABS = [
 ] as const;
 
 const SECONDARY_LINKS = [
-  { href: "/investor/watchlist", label: "Watchlist" },
   { href: "/investor/keys", label: "Keys" },
   { href: "/kyc", label: "KYC" },
 ] as const;
@@ -53,6 +53,10 @@ export function MobileNav() {
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               More
             </p>
+            <div className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground">
+              <span>Theme</span>
+              <ThemeToggle />
+            </div>
             {SECONDARY_LINKS.map((link) => (
               <Link
                 key={link.href}

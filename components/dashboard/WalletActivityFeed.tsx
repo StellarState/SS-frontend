@@ -27,27 +27,27 @@ const ACTIVITY_TYPE_STYLES: Record<WalletActivityType, ActivityTypeStyle> = {
   buy: {
     icon: ArrowUpRight,
     label: "Bought",
-    className: "bg-green-100 text-green-700",
+    className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
   },
   sell: {
     icon: ArrowDownRight,
     label: "Sold",
-    className: "bg-red-100 text-red-700",
+    className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
   },
   transfer: {
     icon: ArrowLeftRight,
     label: "Transferred",
-    className: "bg-blue-100 text-blue-700",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
   },
   burn: {
     icon: Flame,
     label: "Burned",
-    className: "bg-orange-100 text-orange-700",
+    className: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
   },
   dividend: {
     icon: Coins,
     label: "Dividend from",
-    className: "bg-yellow-100 text-yellow-700",
+    className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
   },
 };
 

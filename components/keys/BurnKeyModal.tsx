@@ -128,7 +128,7 @@ export function BurnKeyModal({
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-900 dark:text-red-200">
                 Burning keys is permanent and cannot be undone.
               </div>
 
