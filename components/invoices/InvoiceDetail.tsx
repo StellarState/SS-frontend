@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchInvoiceDetail, type InvoiceDetail } from "@/lib/api";
+import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { CountdownTimer, isExpired } from "@/components/marketplace";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
+import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
 import { recordView } from "@/lib/recentlyViewed";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
 
@@ -100,9 +100,11 @@ interface InvoiceDetailProps {
 }
 
 export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
-  const { data: invoice, isLoading } = useQuery({
-    queryKey: ["invoice", invoiceId],
-    queryFn: () => fetchInvoiceDetail(invoiceId),
+  // Real-time status polling (issue #282): the detail query refetches every
+  // 30s until the invoice reaches a terminal state, toasts on transitions,
+  // and invalidates dependent caches.
+  const { data: invoice, isLoading } = useInvoiceStatusPolling({
+    invoiceId,
   });
   const { data: protocolStatus } = useProtocolStatus();
   const minInvestment = protocolStatus?.min_investment ?? DEFAULT_MIN_INVESTMENT;
@@ -174,9 +176,13 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <p data-testid="invest-expired-message">This invoice has expired</p>
         )}
         {invoice.status === "settled" && (
-          <p data-testid="invest-settled-message">
-            This invoice has been settled
-          </p>
+          <>
+            <p data-testid="invest-settled-message">
+              This invoice has been settled
+            </p>
+            {/* Pro-rata return breakdown for settled invoices (#284) */}
+            <ReturnsBreakdown invoiceId={invoice.id} />
+          </>
         )}
         {invoice.status === "funded" && (
           <p data-testid="invest-funded-message">
