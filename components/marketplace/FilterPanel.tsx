@@ -14,6 +14,8 @@ export interface MarketplaceFilterState {
   minYield: number;
   fromDate: string;
   toDate: string;
+  minAmount: number;
+  maxAmount: number;
 }
 
 interface FilterPanelProps {
@@ -44,7 +46,9 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
     filters.statuses.length +
     (filters.minYield > 0 ? 1 : 0) +
     (filters.fromDate ? 1 : 0) +
-    (filters.toDate ? 1 : 0);
+    (filters.toDate ? 1 : 0) +
+    (filters.minAmount > 0 ? 1 : 0) +
+    (filters.maxAmount > 0 ? 1 : 0);
 
   return (
     <div className="w-full md:w-64 shrink-0 space-y-4">
@@ -170,6 +174,127 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
               </div>
             </div>
           </div>
+
+          {/* Amount Range */}
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Amount Range (XLM)
+            </Label>
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="min-amount" className="text-xs text-muted-foreground mb-1 block">
+                  Min
+                </Label>
+                <Input
+                  id="min-amount"
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={filters.minAmount || ""}
+                  onChange={(e) =>
+                    onFilterChange({ ...filters, minAmount: Number(e.target.value) || 0 })
+                  }
+                  placeholder="0"
+                  data-testid="min-amount-input"
+                />
+              </div>
+              <div>
+                <Label htmlFor="max-amount" className="text-xs text-muted-foreground mb-1 block">
+                  Max
+                </Label>
+                <Input
+                  id="max-amount"
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={filters.maxAmount || ""}
+                  onChange={(e) =>
+                    onFilterChange({ ...filters, maxAmount: Number(e.target.value) || 0 })
+                  }
+                  placeholder="Any"
+                  data-testid="max-amount-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Active Filter Chips */}
+          {activeCount > 0 && (
+            <div className="space-y-2" data-testid="active-filter-chips">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Active Filters
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {filters.statuses.map((s) => (
+                  <Badge key={s} variant="secondary" className="text-xs gap-1">
+                    {s}
+                    <button
+                      onClick={() => handleStatusToggle(s)}
+                      className="ml-0.5 hover:text-foreground"
+                      aria-label={`Remove ${s} filter`}
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                {filters.minYield > 0 && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    Yield ≥ {filters.minYield}%
+                    <button
+                      onClick={() => onFilterChange({ ...filters, minYield: 0 })}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {filters.fromDate && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    From {filters.fromDate}
+                    <button
+                      onClick={() => onFilterChange({ ...filters, fromDate: "" })}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {filters.toDate && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    To {filters.toDate}
+                    <button
+                      onClick={() => onFilterChange({ ...filters, toDate: "" })}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {filters.minAmount > 0 && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    Min {filters.minAmount} XLM
+                    <button
+                      onClick={() => onFilterChange({ ...filters, minAmount: 0 })}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {filters.maxAmount > 0 && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    Max {filters.maxAmount} XLM
+                    <button
+                      onClick={() => onFilterChange({ ...filters, maxAmount: 0 })}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
