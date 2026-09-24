@@ -26,7 +26,7 @@ function PositionRowSkeleton() {
 }
 
 export function InvestorPortfolio() {
-  const [activeTab, setActiveTab] = useState<"positions" | "payouts">("positions");
+  const [activeTab, setActiveTab] = useState<"active" | "history" | "payouts">("active");
   const { data, isLoading, isFetching } = usePortfolio();
 
   // Show full skeleton only on initial load
@@ -49,6 +49,8 @@ export function InvestorPortfolio() {
   }
 
   const positions = data.positions;
+  const activePositions = positions.filter((position) => position.status === "active");
+  const historicalPositions = positions.filter((position) => position.status !== "active");
   const { formattedTotal } = calculateActiveTotal(positions);
 
   return (
@@ -79,22 +81,30 @@ export function InvestorPortfolio() {
         <button
           type="button"
           className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "positions"
+          activeTab === "active"
               ? "border-primary text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
-          onClick={() => setActiveTab("positions")}
+          onClick={() => setActiveTab("active")}
           data-testid="tab-active-positions"
         >
-          Active Positions
+          Active Positions ({activePositions.length})
         </button>
         <button
           type="button"
           className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "payouts"
+          activeTab === "history"
               ? "border-primary text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
+          onClick={() => setActiveTab("history")}
+          data-testid="tab-position-history"
+        >
+          Position History ({historicalPositions.length})
+        </button>
+        <button
+          type="button"
+          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === "payouts" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           onClick={() => setActiveTab("payouts")}
           data-testid="tab-payout-history"
         >
@@ -102,10 +112,10 @@ export function InvestorPortfolio() {
         </button>
       </div>
 
-      {activeTab === "positions" ? (
+      {activeTab === "active" ? (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Active Positions</h2>
-          {positions.length === 0 ? (
+          {activePositions.length === 0 ? (
             <div
               className="flex flex-col items-center gap-4 py-12 text-center"
               data-testid="investor-portfolio-empty"
@@ -118,10 +128,19 @@ export function InvestorPortfolio() {
               </Button>
             </div>
           ) : (
-            positions.map((position) => (
+            activePositions.map((position) => (
               <PositionCard key={position.invoice_id} position={position} />
             ))
           )}
+        </div>
+      ) : activeTab === "history" ? (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Historical Positions</h2>
+          {historicalPositions.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground">No historical positions yet</p>
+          ) : historicalPositions.map((position) => (
+            <PositionCard key={position.invoice_id} position={position} />
+          ))}
         </div>
       ) : (
         <div className="space-y-4">

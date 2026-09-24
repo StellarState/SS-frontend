@@ -5,6 +5,7 @@ import { PublishInvoiceForm } from "../PublishInvoiceForm";
 import * as api from "@/lib/api";
 
 vi.mock("@/lib/api");
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ jwt: "test-token" }) }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),

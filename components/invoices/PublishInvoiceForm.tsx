@@ -18,6 +18,8 @@ import {
   MIN_INVOICE_FACE_VALUE,
   validateFaceValue,
 } from "@/lib/validation/face-value";
+import { validateDeadline } from "@/lib/validation/deadline";
+import { useAuth } from "@/hooks/useAuth";
 
 const detailsSchema = z.object({
   title: z.string().min(1, "Invoice title is required"),
@@ -52,6 +54,7 @@ const STEP_LABELS: Record<Step, string> = {
 
 export function PublishInvoiceForm() {
   const router = useRouter();
+  const { jwt } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentCid, setDocumentCid] = useState<string | null>(null);
@@ -67,6 +70,7 @@ export function PublishInvoiceForm() {
     trigger,
     getValues,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<DetailsFormData>({
     resolver: zodResolver(detailsSchema),
@@ -116,7 +120,7 @@ export function PublishInvoiceForm() {
       });
     }, 200);
 
-    uploadDocumentToIpfs(file)
+    uploadDocumentToIpfs(file, jwt ?? undefined)
       .then((result) => {
         clearInterval(interval);
         setUploadProgress(100);
@@ -130,7 +134,7 @@ export function PublishInvoiceForm() {
       .finally(() => {
         setIsUploading(false);
       });
-  }, []);
+  }, [jwt]);
 
   const handlePublish = useCallback(async () => {
     if (!documentCid) return;
@@ -144,14 +148,14 @@ export function PublishInvoiceForm() {
         faceValue: Number(values.faceValue),
         fundingDeadline: values.fundingDeadline,
         documentCid,
-      });
+      }, jwt ?? undefined);
       router.push(`/dashboard/seller/publish/success?invoiceId=${result.id}`);
     } catch {
       toast.error("Failed to publish invoice. Please try again.");
     } finally {
       setIsPublishing(false);
     }
-  }, [documentCid, getValues]);
+  }, [documentCid, getValues, jwt, router]);
 
   if (publishedInvoiceId) {
     return (
@@ -211,11 +215,9 @@ export function PublishInvoiceForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="invoice-face-value">Face Value (XLM)</Label>
-              <Input
-                id="invoice-face-value"
-                inputMode="decimal"
-                {...register("faceValue")}
+              <FaceValueInput
+                defaultValue={watch("faceValue")}
+                onValidAmountChange={handleFaceValueChange}
               />
               {errors.faceValue && (
                 <p className="text-sm text-destructive">

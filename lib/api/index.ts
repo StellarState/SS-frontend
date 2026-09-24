@@ -147,11 +147,12 @@ export interface IpfsUploadResult {
   url: string;
 }
 
-export async function uploadDocumentToIpfs(file: File): Promise<IpfsUploadResult> {
+export async function uploadDocumentToIpfs(file: File, token?: string): Promise<IpfsUploadResult> {
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch(`${API_BASE}/ipfs/upload`, {
     method: "POST",
+    headers: authHeaders(token),
     body: formData,
   });
   if (!res.ok) throw new Error("Document upload failed");
@@ -171,11 +172,12 @@ export interface PublishInvoiceResult {
 }
 
 export async function publishInvoice(
-  input: PublishInvoiceInput
+  input: PublishInvoiceInput,
+  token?: string
 ): Promise<PublishInvoiceResult> {
   const res = await fetch(`${API_BASE}/invoices`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new Error("Failed to publish invoice");
@@ -485,7 +487,7 @@ function authHeaders(token?: string): Record<string, string> {
 }
 
 /** Reads a server-provided error message, falling back to a generic one. */
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+async function readConflictErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
     const payload = await res.json();
     const message = payload?.message ?? payload?.error;
@@ -876,7 +878,7 @@ export async function updateKeySupplyCap(
 
   if (res.status === 409) {
     throw conflictError(
-      await readErrorMessage(
+      await readConflictErrorMessage(
         res,
         "Supply cap conflicts with the current circulating supply"
       )

@@ -31,6 +31,7 @@ interface PositionCardProps {
 export function PositionCard({ position }: PositionCardProps) {
   const shareDisplay = formatSharePercent(position.share_percent);
   const isKeyHolding = Boolean(position.key_id);
+  const hasTransferableBalance = isKeyHolding && (position.quantity ?? 0) > 0;
   const canTopUp = position.status === "active" && (position.remaining_capacity ?? 0) > 0;
 
   return (

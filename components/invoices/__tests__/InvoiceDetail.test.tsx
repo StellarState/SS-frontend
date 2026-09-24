@@ -149,6 +149,21 @@ describe("InvoiceDetail - Invest Button Visibility", () => {
     expect(screen.getByText("Open")).toBeInTheDocument();
   });
 
+  it("shows each investor's fractional ownership of the invoice", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(
+      makeInvoice({
+        amount: 10000,
+        investors: [
+          { address: "GABCD", amount: 2500, timestamp: "2026-01-01T00:00:00Z" },
+        ],
+      }),
+    );
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText(/25\.00% of invoice/)).toBeInTheDocument();
+  });
+
   it("shows loading skeleton before data loads", () => {
     vi.mocked(fetchInvoiceDetail).mockReturnValue(new Promise(() => {}));
     const { container } = render(<InvoiceDetail invoiceId="inv-1" />, {
