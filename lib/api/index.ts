@@ -265,6 +265,80 @@ export async function updateNotificationPreference(
   return res.json();
 }
 
+/* ─── Notification centre (issue #283) ──────────────────────────────────── */
+
+export interface NotificationItem {
+  id: string;
+  /** Short notification title, e.g. "Invoice fully funded". */
+  title?: string;
+  /** Alternative message field some backend versions return. */
+  message?: string;
+  /** Optional longer body text. */
+  body?: string;
+  /** Where clicking the notification should navigate, e.g. /marketplace/123. */
+  link?: string;
+  read: boolean;
+  created_at?: string;
+}
+
+export async function fetchNotifications(): Promise<NotificationItem[]> {
+  const res = await fetch(`${API_BASE}/notifications`);
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function fetchUnreadCount(): Promise<{ count: number }> {
+  const res = await fetch(`${API_BASE}/notifications/unread-count`);
+  if (!res.ok) throw new Error("Failed to fetch unread count");
+  return res.json();
+}
+
+export async function markNotificationAsRead(
+  notificationId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to mark notification as read");
+  return res.json();
+}
+
+export async function markAllNotificationsAsRead(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/read-all`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to mark all notifications as read");
+  return res.json();
+}
+
+/* ─── Settled-invoice pro-rata returns (issue #284) ─────────────────────── */
+
+export interface InvoiceReturnRow {
+  investor_wallet: string;
+  /** Share of the invoice principal, in percent (0–100). */
+  share_percentage: number;
+  principal_invested: number;
+  return_amount: number;
+  net_profit: number;
+}
+
+export interface InvoiceReturnsResponse {
+  invoice_id: string;
+  /** Backend calculation method the frontend must mirror in tooltips. */
+  calculation: "floor_division" | string;
+  settled_at: string;
+  total_return_amount: number;
+  returns: InvoiceReturnRow[];
+}
+
+export async function fetchInvoiceReturns(
+  invoiceId: string
+): Promise<InvoiceReturnsResponse> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/returns`);
+  if (!res.ok) throw new Error("Failed to fetch invoice returns");
+  return res.json();
+}
+
 export interface AdminInvoiceRow {
   invoiceId: string;
   sellerName: string;
