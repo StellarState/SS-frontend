@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Briefcase, Bell, User, Menu, X } from "lucide-react";
+import { Home, Briefcase, Bell, User, Menu, X, Eye } from "lucide-react";
 import { useState } from "react";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
@@ -15,6 +15,7 @@ const TABS = [
 ] as const;
 
 const SECONDARY_LINKS = [
+  { href: "/investor/watchlist", label: "Watchlist" },
   { href: "/investor/keys", label: "Keys" },
   { href: "/kyc", label: "KYC" },
 ] as const;

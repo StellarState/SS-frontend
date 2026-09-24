@@ -11,5 +11,8 @@ export { SettlementReturnCard } from "./SettlementReturnCard";
 export { PublishInvoiceForm } from "./PublishInvoiceForm";
 export { EditInvoiceForm } from "./EditInvoiceForm";
 export { ShareInvoiceButton } from "./ShareInvoiceButton";
+export { WatchlistButton } from "./WatchlistButton";
+export { DeadlineExtensionForm } from "./DeadlineExtensionForm";
+export { InvoiceTimeline } from "./InvoiceTimeline";
 
 export { InvoiceBackButton } from "./InvoiceBackButton";

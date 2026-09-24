@@ -10,6 +10,9 @@ import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DocumentPreview } from "@/components/invoices/DocumentPreview";
 import { CountdownTimer, isExpired } from "@/components/marketplace";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
+import { WatchlistButton } from "@/components/invoices/WatchlistButton";
+import { InvoiceTimeline } from "@/components/invoices/InvoiceTimeline";
+import { InvoiceMetaTags } from "@/components/invoices/InvoiceMetaTags";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
@@ -132,6 +135,13 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
 
   return (
     <div className="space-y-6">
+      <InvoiceMetaTags
+        title={invoice.title}
+        status={invoice.status}
+        amount={invoice.amount}
+        invoiceId={invoice.id}
+      />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
@@ -141,6 +151,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <InvoiceStatusBadge status={invoice.status} />
+              <WatchlistButton invoiceId={invoice.id} />
               <ShareInvoiceButton />
             </div>
           </div>
@@ -234,6 +245,8 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <DocumentPreview documentUrl={invoice.document_url} />
         </CardContent>
       </Card>
+
+      <InvoiceTimeline status={invoice.status} />
     </div>
   );
 }
