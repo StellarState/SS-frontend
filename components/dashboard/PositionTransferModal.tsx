@@ -10,6 +10,7 @@ import type { InvestmentPosition } from "@/lib/portfolio";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransferPositionMutation } from "@/hooks/useInvestments";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 interface PositionTransferModalProps {
   position: InvestmentPosition;
@@ -70,6 +71,12 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
     setSalePrice("");
   };
 
+  // Escape and Tab-cycling both close the dialog, matching the close button.
+  const dialogRef = useDialogFocus(open, () => {
+    setOpen(false);
+    reset();
+  });
+
   const handleSubmit = async () => {
     if (!senderAddress || !canSubmit) return;
 
@@ -105,9 +112,14 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
 
       {open && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
+          // -1 only, so the container itself is not a tab stop; it exists as
+          // a focus target for the trap's "nothing else to focus" fallback.
+          tabIndex={-1}
+          aria-labelledby={`transfer-position-title-${position.invoice_id}`}
           data-testid="position-transfer-modal"
         >
           <Card className="w-full max-w-lg">
@@ -117,7 +129,9 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
                   <p className="text-sm font-medium text-muted-foreground">
                     Transfer Position
                   </p>
-                  <h2 className="text-xl font-semibold">{position.invoice_title}</h2>
+                  <h2 id={`transfer-position-title-${position.invoice_id}`} className="text-xl font-semibold">
+                    {position.invoice_title}
+                  </h2>
                 </div>
                 <Button
                   type="button"
@@ -129,7 +143,7 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
                   }}
                   aria-label="Close transfer modal"
                 >
-                  <X className="h-4 w-4" />
+                  <X aria-hidden="true" className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
@@ -154,6 +168,8 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
                   onChange={(event) => setBuyer(event.target.value)}
                   placeholder="G..."
                   aria-invalid={Boolean(validationError)}
+                  aria-describedby={validationError ? "transfer-position-error" : undefined}
+                  data-autofocus
                   data-testid="transfer-position-buyer-input"
                 />
               </div>
@@ -221,7 +237,7 @@ export function PositionTransferModal({ position }: PositionTransferModalProps) 
                   data-testid="transfer-position-confirm-button"
                 >
                   {transferMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   )}
                   {transferMutation.isPending ? "Signing..." : "Confirm Transfer"}
                 </Button>

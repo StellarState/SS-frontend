@@ -10,6 +10,7 @@ import type { InvestmentPosition } from "@/lib/portfolio";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransferCreatorKeyMutation } from "@/hooks/useCreatorKeys";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 interface KeyTransferModalProps {
   position: InvestmentPosition;
@@ -81,6 +82,12 @@ export function KeyTransferModal({
     setQuantity("1");
   };
 
+  // Escape and Tab-cycling both close the dialog, matching the close button.
+  const dialogRef = useDialogFocus(open, () => {
+    setOpen(false);
+    reset();
+  });
+
   const handleSubmit = async () => {
     if (!senderAddress || validationError) return;
 
@@ -112,9 +119,14 @@ export function KeyTransferModal({
 
       {open && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
+          // -1 only, so the container itself is not a tab stop; it exists as
+          // a focus target for the trap's "nothing else to focus" fallback.
+          tabIndex={-1}
+          aria-labelledby={`transfer-key-title-${keyId}`}
         >
           <Card className="w-full max-w-lg">
             <CardHeader>
@@ -123,7 +135,7 @@ export function KeyTransferModal({
                   <p className="text-sm font-medium text-muted-foreground">
                     Transfer Key
                   </p>
-                  <h2 className="text-xl font-semibold">{title}</h2>
+                  <h2 id={`transfer-key-title-${keyId}`} className="text-xl font-semibold">{title}</h2>
                 </div>
                 <Button
                   type="button"
@@ -135,13 +147,13 @@ export function KeyTransferModal({
                   }}
                   aria-label="Close transfer modal"
                 >
-                  <X className="h-4 w-4" />
+                  <X aria-hidden="true" className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
               {lockupActive && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <div role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                   Transfers may be blocked until your lockup expires on{" "}
                   {new Date(position.lockup_expires_at ?? "").toLocaleString()}.
                 </div>
@@ -157,6 +169,8 @@ export function KeyTransferModal({
                   onChange={(event) => setRecipient(event.target.value)}
                   placeholder="G..."
                   aria-invalid={Boolean(validationError)}
+                  aria-describedby={validationError ? "key-transfer-error" : undefined}
+                  data-autofocus
                 />
               </div>
 
@@ -172,14 +186,24 @@ export function KeyTransferModal({
                   step="1"
                   value={quantity}
                   onChange={(event) => setQuantity(event.target.value)}
+                  aria-invalid={Boolean(validationError)}
+                  aria-describedby={
+                    validationError
+                      ? "key-transfer-error key-transfer-balance"
+                      : "key-transfer-balance"
+                  }
                 />
-                <p className="text-xs text-muted-foreground">
+                <p id="key-transfer-balance" className="text-xs text-muted-foreground">
                   Available balance: {heldBalance.toLocaleString()}
                 </p>
               </div>
 
               {validationError && (
-                <p className="text-sm font-medium text-destructive">
+                <p
+                  id="key-transfer-error"
+                  role="alert"
+                  className="text-sm font-medium text-destructive"
+                >
                   {validationError}
                 </p>
               )}
@@ -198,7 +222,7 @@ export function KeyTransferModal({
                 </Button>
                 <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
                   {transferMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   )}
                   {transferMutation.isPending ? "Signing..." : "Confirm Transfer"}
                 </Button>
