@@ -226,18 +226,33 @@ export type SellerKycStatusValue =
   | "requires_resubmission"
   | "not_submitted";
 
+export interface SellerKycSubmission {
+  fullName: string;
+  country: string;
+  idType: string;
+}
+
 export interface SellerKycStatus {
   status: SellerKycStatusValue;
   rejection_reason?: string | null;
   rejectionReason?: string | null;
   reason?: string | null;
+  previousSubmission?: SellerKycSubmission | null;
 }
 
 function normalizeSellerKycStatus(raw: any): SellerKycStatus {
+  const submission = raw.previous_submission ?? raw.previousSubmission ?? null;
   return {
     status: raw.status ?? raw.kyc_status ?? raw.kycStatus ?? "not_submitted",
     rejection_reason:
       raw.rejection_reason ?? raw.rejectionReason ?? raw.reason ?? null,
+    previousSubmission: submission
+      ? {
+          fullName: submission.full_name ?? submission.fullName ?? "",
+          country: submission.country ?? "",
+          idType: submission.id_type ?? submission.idType ?? "",
+        }
+      : null,
   };
 }
 
