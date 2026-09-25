@@ -64,13 +64,19 @@ export function ShareInvoiceButton() {
       variant="outline"
       size="sm"
       onClick={handleShare}
+      // The label is static so it does not churn; the confirmation lives in
+      // a polite live region below, because swapping the accessible name in
+      // place is not reliably announced.
       aria-label="Share invoice"
     >
       {copied ? (
-        "Copied!"
+        <span aria-hidden="true">Copied!</span>
       ) : (
         <Share2 aria-hidden="true" data-testid="share-icon" />
       )}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "Invoice link copied to clipboard" : ""}
+      </span>
     </Button>
   );
 }

@@ -175,26 +175,38 @@ export function PublishInvoiceForm() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          {([1, 2, 3] as Step[]).map((s) => (
-            <span
-              key={s}
-              className={s === step ? "font-semibold text-foreground" : ""}
-            >
-              {s > 1 && <span className="mx-2">›</span>}
-              {s}. {STEP_LABELS[s]}
-            </span>
-          ))}
-        </div>
+        {/* aria-current="step" is what tells a screen reader which of the
+            three steps is showing; the bold styling conveyed it visually
+            only. */}
+        <nav aria-label="Publish invoice progress">
+          <ol className="flex items-center gap-1 text-sm text-muted-foreground">
+            {([1, 2, 3] as Step[]).map((s) => (
+              <li
+                key={s}
+                aria-current={s === step ? "step" : undefined}
+                className={s === step ? "font-semibold text-foreground" : ""}
+              >
+                {s > 1 && <span aria-hidden="true" className="mx-2">›</span>}
+                {s}. {STEP_LABELS[s]}
+                {s < step && <span className="sr-only"> (completed)</span>}
+              </li>
+            ))}
+          </ol>
+        </nav>
       </CardHeader>
       <CardContent className="space-y-6">
         {step === 1 && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="invoice-title">Invoice Title</Label>
-              <Input id="invoice-title" {...register("title")} />
+              <Input
+                id="invoice-title"
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? "invoice-title-error" : undefined}
+                {...register("title")}
+              />
               {errors.title && (
-                <p className="text-sm text-destructive">
+                <p id="invoice-title-error" role="alert" className="text-sm text-destructive">
                   {errors.title.message}
                 </p>
               )}
@@ -202,9 +214,14 @@ export function PublishInvoiceForm() {
 
             <div className="space-y-2">
               <Label htmlFor="invoice-description">Description</Label>
-              <Input id="invoice-description" {...register("description")} />
+              <Input
+                id="invoice-description"
+                aria-invalid={Boolean(errors.description)}
+                aria-describedby={errors.description ? "invoice-description-error" : undefined}
+                {...register("description")}
+              />
               {errors.description && (
-                <p className="text-sm text-destructive">
+                <p id="invoice-description-error" role="alert" className="text-sm text-destructive">
                   {errors.description.message}
                 </p>
               )}
@@ -215,10 +232,12 @@ export function PublishInvoiceForm() {
               <Input
                 id="invoice-face-value"
                 inputMode="decimal"
+                aria-invalid={Boolean(errors.faceValue)}
+                aria-describedby={errors.faceValue ? "invoice-face-value-error" : undefined}
                 {...register("faceValue")}
               />
               {errors.faceValue && (
-                <p className="text-sm text-destructive">
+                <p id="invoice-face-value-error" role="alert" className="text-sm text-destructive">
                   {errors.faceValue.message}
                 </p>
               )}
@@ -229,10 +248,12 @@ export function PublishInvoiceForm() {
               <Input
                 id="invoice-deadline"
                 type="date"
+                aria-invalid={Boolean(errors.fundingDeadline)}
+                aria-describedby={errors.fundingDeadline ? "invoice-deadline-error" : undefined}
                 {...register("fundingDeadline")}
               />
               {errors.fundingDeadline && (
-                <p className="text-sm text-destructive">
+                <p id="invoice-deadline-error" role="alert" className="text-sm text-destructive">
                   {errors.fundingDeadline.message}
                 </p>
               )}
@@ -252,11 +273,16 @@ export function PublishInvoiceForm() {
               <div className="space-y-1">
                 <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
                   <div
+                    role="progressbar"
+                    aria-label="Document upload progress"
+                    aria-valuenow={uploadProgress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
                     className="h-full bg-primary transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p role="status" className="text-xs text-muted-foreground">
                   {documentCid
                     ? "Upload complete"
                     : `Uploading... ${uploadProgress}%`}

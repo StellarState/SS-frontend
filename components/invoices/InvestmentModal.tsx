@@ -41,12 +41,14 @@ export function InvestmentModal({
       <PopoverTrigger asChild>
         <Button data-testid="invest-button">Invest</Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80">
+      <PopoverContent className="w-80" aria-label="Invest in this invoice">
         <div className="space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold">Invest in this Invoice</h3>
+            <h3 className="font-semibold" id="invest-popover-title">
+              Invest in this Invoice
+            </h3>
             <p className="text-sm text-muted-foreground">
-              Enter the amount you'd like to invest
+              Enter the amount you&apos;d like to invest
             </p>
           </div>
 

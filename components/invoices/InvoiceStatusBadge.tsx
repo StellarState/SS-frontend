@@ -28,9 +28,18 @@ export function InvoiceStatusBadge({ status }: InvoiceStatusBadgeProps) {
     }
 
     const config = statusConfig[status] ?? { label: "Unknown", variant: "secondary" as const, tooltip: "" };
+    const tooltipId = `invoice-status-tooltip-${status}`;
 
     return (
         <div className="relative inline-block">
+            {/* The badge is the *referent*, not the tooltip. It previously
+                carried role="tooltip" itself while the real tooltip was an
+                unlabelled div nothing pointed at, so the explanation was
+                announced to nobody. The tooltip is now always in the DOM and
+                referenced by aria-describedby, which means it is read when
+                the badge takes focus rather than only when it happens to be
+                rendered. Keeping it mounted also avoids the description being
+                swapped in after the focus event has already fired. */}
             <Badge
                 variant={config.variant}
                 tabIndex={0}
@@ -39,12 +48,19 @@ export function InvoiceStatusBadge({ status }: InvoiceStatusBadgeProps) {
                 onFocus={() => setShowTooltip(true)}
                 onBlur={() => setShowTooltip(false)}
                 className="cursor-help"
-                role="tooltip"
+                aria-describedby={config.tooltip ? tooltipId : undefined}
             >
                 {config.label}
             </Badge>
-            {showTooltip && config.tooltip && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded border border-input whitespace-nowrap pointer-events-none z-50">
+            {config.tooltip && (
+                <div
+                    id={tooltipId}
+                    role="tooltip"
+                    aria-hidden={!showTooltip}
+                    className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded border border-input whitespace-nowrap pointer-events-none z-50 transition-opacity ${
+                        showTooltip ? "opacity-100" : "opacity-0 invisible"
+                    }`}
+                >
                     {config.tooltip}
                 </div>
             )}

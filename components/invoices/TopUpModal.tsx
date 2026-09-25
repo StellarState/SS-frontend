@@ -91,7 +91,9 @@ export function TopUpModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Current committed amount</Label>
+            {/* Not a form control, so a <Label> with no htmlFor here was an
+                orphaned label. A plain heading is the honest element. */}
+            <p className="text-sm font-medium leading-none">Current committed amount</p>
             <p className="text-sm font-medium">
               {currentCommittedAmount.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -121,7 +123,7 @@ export function TopUpModal({
 
           {additionalAmount && !error && (
             <div className="space-y-1.5">
-              <Label>New total position</Label>
+              <p className="text-sm font-medium leading-none">New total position</p>
               <p className="text-sm font-medium">
                 {newTotal.toLocaleString(undefined, {
                   minimumFractionDigits: 2,

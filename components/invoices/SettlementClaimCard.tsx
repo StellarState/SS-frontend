@@ -94,7 +94,13 @@ export function ClaimedHistoryCard({ entry }: ClaimedHistoryCardProps) {
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
             data-testid="tx-link"
           >
-            View Transaction <ExternalLink className="h-3 w-3" />
+            View Transaction
+            {/* The icon was not hidden from assistive tech, so it was
+                announced as a stray "external link" graphic. The new-tab
+                behaviour is stated in text instead, since it is not
+                otherwise conveyed. */}
+            <ExternalLink aria-hidden="true" className="h-3 w-3" />
+            <span className="sr-only">(opens in a new tab)</span>
           </a>
         )}
       </CardContent>
