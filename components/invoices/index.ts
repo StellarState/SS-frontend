@@ -16,3 +16,5 @@ export { DeadlineExtensionForm } from "./DeadlineExtensionForm";
 export { InvoiceTimeline } from "./InvoiceTimeline";
 
 export { InvoiceBackButton } from "./InvoiceBackButton";
+export { InvoiceProtectionInfo } from "./InvoiceProtectionInfo";
+export { FeeTierDisplay } from "./FeeTierDisplay";
