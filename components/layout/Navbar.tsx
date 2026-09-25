@@ -7,6 +7,7 @@ import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { WalletChip } from "@/components/wallet/WalletChip";
 import { NotificationCenter } from "@/components/layout/NotificationCenter";
 import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function Navbar() {
   const { address, network, isConnected, isConnecting, connect, disconnect, refreshNetwork } =
@@ -27,6 +28,7 @@ export function Navbar() {
             Profile
           </Link>
           <CurrencyToggle />
+          <ThemeToggle />
 
           {/* Notification centre (issue #283): bell + dropdown panel with
               read/unread state management. */}
