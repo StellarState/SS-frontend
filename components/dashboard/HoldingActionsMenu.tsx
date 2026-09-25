@@ -34,10 +34,13 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
             type="button"
             variant="outline"
             size="sm"
-            aria-label="Holding actions"
+            // Several of these render on one page, so a generic "Holding
+            // actions" gave a screen reader user no way to tell them apart.
+            aria-label={`Holding actions for ${position.key_title ?? position.invoice_title}`}
+            aria-haspopup="menu"
             data-testid={`holding-actions-${keyId}`}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -46,7 +49,7 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
             onSelect={() => setTransferOpen(true)}
             data-testid={`transfer-action-${keyId}`}
           >
-            <Send className="h-4 w-4" />
+            <Send aria-hidden="true" className="h-4 w-4" />
             Transfer
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -54,7 +57,7 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
             onSelect={() => setBurnOpen(true)}
             data-testid={`burn-action-${keyId}`}
           >
-            <Flame className="h-4 w-4" />
+            <Flame aria-hidden="true" className="h-4 w-4" />
             Burn
           </DropdownMenuItem>
         </DropdownMenuContent>

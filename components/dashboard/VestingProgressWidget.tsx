@@ -86,9 +86,17 @@ export function VestingProgressWidget({ positions }: VestingProgressWidgetProps)
                     claimMutation.mutate({ keyId: schedule.keyId })
                   }
                   disabled={schedule.claimableAmount <= 0 || isClaiming}
+                  // One "Claim" button renders per schedule, so the bare
+                  // label left them indistinguishable when navigating by
+                  // button. Also explains why it is disabled.
+                  aria-label={
+                    schedule.claimableAmount > 0
+                      ? `Claim vested ${schedule.keyTitle ?? `key ${schedule.keyId}`}`
+                      : `No vested ${schedule.keyTitle ?? `key ${schedule.keyId}`} to claim yet`
+                  }
                   data-testid={`claim-vested-${schedule.keyId}`}
                 >
-                  {isClaiming && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isClaiming && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
                   Claim
                 </Button>
               </div>

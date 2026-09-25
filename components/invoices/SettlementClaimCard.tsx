@@ -32,11 +32,11 @@ export function ClaimableSettlementCard({ settlement, onClaim, isClaiming }: Cla
           </div>
           <div>
             <span className="text-muted-foreground">Return</span>
-            <p className="font-medium text-emerald-500">{format(settlement.return_amount)}</p>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">{format(settlement.return_amount)}</p>
           </div>
           <div>
             <span className="text-muted-foreground">Net Profit</span>
-            <p className="font-medium text-emerald-500">+{format(settlement.net_profit)}</p>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">+{format(settlement.net_profit)}</p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
@@ -94,7 +94,13 @@ export function ClaimedHistoryCard({ entry }: ClaimedHistoryCardProps) {
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
             data-testid="tx-link"
           >
-            View Transaction <ExternalLink className="h-3 w-3" />
+            View Transaction
+            {/* The icon was not hidden from assistive tech, so it was
+                announced as a stray "external link" graphic. The new-tab
+                behaviour is stated in text instead, since it is not
+                otherwise conveyed. */}
+            <ExternalLink aria-hidden="true" className="h-3 w-3" />
+            <span className="sr-only">(opens in a new tab)</span>
           </a>
         )}
       </CardContent>

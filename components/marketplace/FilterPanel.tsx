@@ -57,16 +57,27 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 font-semibold text-sm hover:text-foreground transition-colors"
+          aria-expanded={isOpen}
+          aria-controls="marketplace-filter-panel"
           data-testid="toggle-filter-panel"
         >
-          <Filter className="size-4" />
+          <Filter aria-hidden="true" className="size-4" />
           <span>Filters</span>
           {activeCount > 0 && (
-            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+            <Badge
+              variant="secondary"
+              className="ml-1 px-1.5 py-0 text-xs"
+              // "3" alone reads as a stray number; spell out what is counted.
+              aria-label={`${activeCount} ${activeCount === 1 ? "filter" : "filters"} active`}
+            >
               {activeCount}
             </Badge>
           )}
-          {isOpen ? <ChevronUp className="size-4 ml-auto" /> : <ChevronDown className="size-4 ml-auto" />}
+          {isOpen ? (
+            <ChevronUp aria-hidden="true" className="size-4 ml-auto" />
+          ) : (
+            <ChevronDown aria-hidden="true" className="size-4 ml-auto" />
+          )}
         </button>
 
         {activeCount > 0 && (
@@ -77,19 +88,23 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
             className="h-8 px-2 text-xs"
             data-testid="clear-filters-btn"
           >
-            <X className="size-3 mr-1" />
+            <X aria-hidden="true" className="size-3 mr-1" />
             Clear
           </Button>
         )}
       </div>
 
       {isOpen && (
-        <div className="rounded-lg border p-4 space-y-6 bg-card" data-testid="filter-panel-content">
+        <div
+          id="marketplace-filter-panel"
+          className="rounded-lg border p-4 space-y-6 bg-card"
+          data-testid="filter-panel-content"
+        >
           {/* Funding Status Multi-select */}
-          <div className="space-y-3">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <fieldset className="space-y-3">
+            <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Funding Status
-            </Label>
+            </legend>
             <div className="flex flex-col gap-2">
               {STATUS_OPTIONS.map((opt) => {
                 const checked = filters.statuses.includes(opt.value);
@@ -110,18 +125,25 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                 );
               })}
             </div>
-          </div>
+          </fieldset>
 
           {/* Minimum Yield Slider */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <Label
+                htmlFor="min-yield-slider"
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
                 Min Yield (%)
               </Label>
               <span className="text-sm font-medium">{filters.minYield}%</span>
             </div>
+            {/* The slider had a visible caption that no label pointed at, so
+                it had no accessible name at all. aria-valuetext spells the
+                value out because a bare "12" is ambiguous on a range input. */}
             <input
               type="range"
+              id="min-yield-slider"
               min="0"
               max="30"
               step="1"
@@ -129,10 +151,11 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
               onChange={(e) =>
                 onFilterChange({ ...filters, minYield: Number(e.target.value) })
               }
+              aria-valuetext={`${filters.minYield} percent`}
               className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
               data-testid="min-yield-slider"
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-muted-foreground" aria-hidden="true">
               <span>0%</span>
               <span>30%</span>
             </div>
@@ -140,9 +163,9 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
 
           {/* Due Date Range Picker */}
           <div className="space-y-3">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Due Date Range
-            </Label>
+            </h3>
             <div className="space-y-2">
               <div>
                 <Label htmlFor="from-date" className="text-xs text-muted-foreground mb-1 block">
@@ -177,9 +200,9 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
 
           {/* Amount Range */}
           <div className="space-y-3">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Amount Range (XLM)
-            </Label>
+            </h3>
             <div className="space-y-2">
               <div>
                 <Label htmlFor="min-amount" className="text-xs text-muted-foreground mb-1 block">
@@ -221,19 +244,20 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
           {/* Active Filter Chips */}
           {activeCount > 0 && (
             <div className="space-y-2" data-testid="active-filter-chips">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Active Filters
-              </Label>
+              </h3>
               <div className="flex flex-wrap gap-1.5">
                 {filters.statuses.map((s) => (
                   <Badge key={s} variant="secondary" className="text-xs gap-1">
                     {s}
                     <button
+                      type="button"
                       onClick={() => handleStatusToggle(s)}
                       className="ml-0.5 hover:text-foreground"
                       aria-label={`Remove ${s} filter`}
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 ))}
@@ -241,10 +265,12 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                   <Badge variant="secondary" className="text-xs gap-1">
                     Yield ≥ {filters.minYield}%
                     <button
+                      type="button"
                       onClick={() => onFilterChange({ ...filters, minYield: 0 })}
                       className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove minimum yield filter"
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 )}
@@ -252,10 +278,12 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                   <Badge variant="secondary" className="text-xs gap-1">
                     From {filters.fromDate}
                     <button
+                      type="button"
                       onClick={() => onFilterChange({ ...filters, fromDate: "" })}
                       className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove from-date filter"
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 )}
@@ -263,10 +291,12 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                   <Badge variant="secondary" className="text-xs gap-1">
                     To {filters.toDate}
                     <button
+                      type="button"
                       onClick={() => onFilterChange({ ...filters, toDate: "" })}
                       className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove to-date filter"
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 )}
@@ -274,10 +304,12 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                   <Badge variant="secondary" className="text-xs gap-1">
                     Min {filters.minAmount} XLM
                     <button
+                      type="button"
                       onClick={() => onFilterChange({ ...filters, minAmount: 0 })}
                       className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove minimum amount filter"
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 )}
@@ -285,10 +317,12 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                   <Badge variant="secondary" className="text-xs gap-1">
                     Max {filters.maxAmount} XLM
                     <button
+                      type="button"
                       onClick={() => onFilterChange({ ...filters, maxAmount: 0 })}
                       className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove maximum amount filter"
                     >
-                      ×
+                      <X aria-hidden="true" className="size-3" />
                     </button>
                   </Badge>
                 )}

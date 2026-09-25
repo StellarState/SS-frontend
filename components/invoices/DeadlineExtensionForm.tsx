@@ -85,22 +85,31 @@ export function DeadlineExtensionForm({
         </div>
 
         {state === "pending" && (
-          <div className="flex items-center gap-2 p-3 rounded-md bg-blue-500/10 text-blue-500 text-sm">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <div
+            role="status"
+            className="flex items-center gap-2 p-3 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 text-sm"
+          >
+            <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
             Extension request pending admin review.
           </div>
         )}
 
         {state === "approved" && (
-          <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 text-emerald-500 text-sm">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <div
+            role="status"
+            className="flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-sm"
+          >
+            <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
             Extension approved! New deadline is now active.
           </div>
         )}
 
         {state === "rejected" && rejectionReason && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-red-500/10 text-red-500 text-sm">
-            <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 rounded-md bg-red-500/10 text-red-700 dark:text-red-400 text-sm"
+          >
+            <XCircle aria-hidden="true" className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">Extension rejected</p>
               <p className="text-xs mt-1 opacity-80">{rejectionReason}</p>

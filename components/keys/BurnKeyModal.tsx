@@ -9,6 +9,7 @@ import type { InvestmentPosition } from "@/lib/portfolio";
 import { useAuth } from "@/hooks/useAuth";
 import { useBurnCreatorKeyMutation } from "@/hooks/useCreatorKeys";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 const CONFIRM_PHRASE = "BURN";
 
@@ -70,6 +71,12 @@ export function BurnKeyModal({
     setConfirmText("");
   };
 
+  // Escape and Tab-cycling both close the dialog, matching the close button.
+  const dialogRef = useDialogFocus(open, () => {
+    setOpen(false);
+    reset();
+  });
+
   const handleSubmit = async () => {
     if (!senderAddress || !canSubmit || validationError) return;
 
@@ -100,9 +107,15 @@ export function BurnKeyModal({
 
       {open && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
+          // -1 only, so the container itself is not a tab stop; it exists as
+          // a focus target for the trap's "nothing else to focus" fallback.
+          tabIndex={-1}
+          aria-labelledby={`burn-key-title-${position.key_id ?? "none"}`}
+          aria-describedby="burn-key-warning"
         >
           <Card className="w-full max-w-lg">
             <CardHeader>
@@ -111,7 +124,7 @@ export function BurnKeyModal({
                   <p className="text-sm font-medium text-muted-foreground">
                     Burn Key
                   </p>
-                  <h2 className="text-xl font-semibold">{title}</h2>
+                  <h2 id={`burn-key-title-${position.key_id ?? "none"}`} className="text-xl font-semibold">{title}</h2>
                 </div>
                 <Button
                   type="button"
@@ -123,12 +136,15 @@ export function BurnKeyModal({
                   }}
                   aria-label="Close burn modal"
                 >
-                  <X className="h-4 w-4" />
+                  <X aria-hidden="true" className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <div
+                id="burn-key-warning"
+                className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900"
+              >
                 Burning keys is permanent and cannot be undone.
               </div>
 
@@ -145,15 +161,23 @@ export function BurnKeyModal({
                   value={quantity}
                   onChange={(event) => setQuantity(event.target.value)}
                   aria-invalid={Boolean(validationError)}
+                  aria-describedby={
+                    validationError
+                      ? "burn-quantity-error burn-quantity-balance"
+                      : "burn-quantity-balance"
+                  }
+                  data-autofocus
                   data-testid="burn-quantity-input"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p id="burn-quantity-balance" className="text-xs text-muted-foreground">
                   Available balance: {heldBalance.toLocaleString()}
                 </p>
               </div>
 
               {validationError && (
                 <p
+                  id="burn-quantity-error"
+                  role="alert"
                   className="text-sm font-medium text-destructive"
                   data-testid="burn-quantity-error"
                 >
@@ -194,7 +218,7 @@ export function BurnKeyModal({
                   data-testid="burn-confirm-button"
                 >
                   {burnMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   )}
                   {burnMutation.isPending ? "Signing..." : "Confirm Burn"}
                 </Button>

@@ -56,7 +56,9 @@ describe("InvoiceCard funding progress", () => {
         advanceAnimation();
 
         expect(screen.getByText("100.0%")).toBeInTheDocument();
-        expect(screen.getByTestId("funding-progress-bar")).toHaveClass("bg-green-500");
+        // green-700, not green-500: the bar fill is a meaningful graphic and
+        // has to clear 3:1 against the card (SC 1.4.11). green-500 was 2.28:1.
+        expect(screen.getByTestId("funding-progress-bar")).toHaveClass("bg-green-700");
     });
 
     it("renders a 0% bar when nothing has been raised", () => {

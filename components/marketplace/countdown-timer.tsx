@@ -17,6 +17,20 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(days).padStart(2, "0")}:${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+/** Spells the remaining time out, since "00:12:34" is read as a time of day. */
+function describeCountdown(totalSeconds: number): string {
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+  if (days === 0) parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+
+  return parts.length > 0 ? parts.join(" ") : "less than a minute";
+}
+
 export function CountdownTimer({ deadline, published }: CountdownTimerProps) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -41,7 +55,13 @@ export function CountdownTimer({ deadline, published }: CountdownTimerProps) {
   }
 
   return (
-    <span className="font-mono text-sm tabular-nums text-muted-foreground">
+    <span
+      className="font-mono text-sm tabular-nums text-muted-foreground"
+      // role="timer" is implicit-live: an assertive live region would fire
+      // every minute as the clock ticks, which is pure noise for a screen
+      // reader user. The name carries the meaning, the text stays compact.
+      aria-label={`Funding closes in ${describeCountdown(remaining)}`}
+    >
       {formatCountdown(remaining)}
     </span>
   );

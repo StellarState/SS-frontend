@@ -54,10 +54,20 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
         id="document-upload"
         type="file"
         accept=".pdf,application/pdf"
+        aria-invalid={error !== null}
+        // Without this the message rendered next to the field but was not
+        // part of the field's accessible description, so a screen reader
+        // user heard only that the input was invalid.
+        aria-describedby={error ? "document-upload-hint document-upload-error" : "document-upload-hint"}
         onChange={handleChange}
       />
+      <p id="document-upload-hint" className="text-xs text-muted-foreground">
+        PDF only, up to 10 MB.
+      </p>
       {error && (
-        <p className="text-sm text-destructive">{ERROR_MESSAGES[error]}</p>
+        <p id="document-upload-error" role="alert" className="text-sm text-destructive">
+          {ERROR_MESSAGES[error]}
+        </p>
       )}
     </div>
   );

@@ -32,12 +32,16 @@ export function PositionCard({ position }: PositionCardProps) {
   const shareDisplay = formatSharePercent(position.share_percent);
   const isKeyHolding = Boolean(position.key_id);
   const canTopUp = position.status === "active" && (position.remaining_capacity ?? 0) > 0;
+  // Transfer and burn both act on creator keys, so they only make sense for a
+  // key holding that actually holds a balance. This mirrors the `hasBalance`
+  // check HoldingActionsMenu already applies to the same two actions.
+  const hasTransferableBalance = isKeyHolding && (position.quantity ?? 0) > 0;
 
   return (
     <Card data-testid="position-card">
       <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-semibold">{position.invoice_title}</p>
+          <h3 className="font-semibold">{position.invoice_title}</h3>
           <p className="text-sm text-muted-foreground">
             <span data-testid="position-committed">
               {formatCommittedXlm(position.committed_amount)} XLM committed

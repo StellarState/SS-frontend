@@ -92,14 +92,17 @@ export function ListSharesForm({ invoiceId, maxShares, onSubmit }: ListSharesFor
   const isValid = shares > 0 && shares <= maxShares && price > 0;
 
   return (
-    <Card data-testid="list-shares-form">
+    <Card data-testid="list-shares-form" id="list-shares-form">
       <CardHeader>
         <CardTitle className="text-sm">List Shares for Resale</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <label className="text-xs text-muted-foreground">Shares to List (max {maxShares})</label>
+          <label htmlFor={`shares-${invoiceId}`} className="text-xs text-muted-foreground">
+            Shares to List (max {maxShares})
+          </label>
           <Input
+            id={`shares-${invoiceId}`}
             type="number"
             min={1}
             max={maxShares}
@@ -109,8 +112,11 @@ export function ListSharesForm({ invoiceId, maxShares, onSubmit }: ListSharesFor
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Price per Share (XLM)</label>
+          <label htmlFor={`price-per-share-${invoiceId}`} className="text-xs text-muted-foreground">
+            Price per Share (XLM)
+          </label>
           <Input
+            id={`price-per-share-${invoiceId}`}
             type="number"
             min="0"
             step="0.01"

@@ -195,39 +195,70 @@ export function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Invoice Title</Label>
-            <Input id="title" {...register("title")} />
+            <Input
+              id="title"
+              aria-invalid={Boolean(errors.title)}
+              aria-describedby={errors.title ? "title-error" : undefined}
+              {...register("title")}
+            />
             {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
+              <p id="title-error" role="alert" className="text-sm text-destructive">
+                {errors.title.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" {...register("description")} rows={3} />
+            <Textarea
+              id="description"
+              aria-invalid={Boolean(errors.description)}
+              aria-describedby={errors.description ? "description-error" : undefined}
+              {...register("description")}
+              rows={3}
+            />
             {errors.description && (
-              <p className="text-sm text-destructive">{errors.description.message}</p>
+              <p id="description-error" role="alert" className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="faceValue">Face Value (XLM)</Label>
-            <Input id="faceValue" inputMode="decimal" {...register("faceValue")} />
+            <Input
+              id="faceValue"
+              inputMode="decimal"
+              aria-invalid={Boolean(errors.faceValue)}
+              aria-describedby={errors.faceValue ? "faceValue-error" : undefined}
+              {...register("faceValue")}
+            />
             {errors.faceValue && (
-              <p className="text-sm text-destructive">{errors.faceValue.message}</p>
+              <p id="faceValue-error" role="alert" className="text-sm text-destructive">
+                {errors.faceValue.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="fundingDeadline">Funding Deadline</Label>
-            <Input id="fundingDeadline" type="date" {...register("fundingDeadline")} />
+            <Input
+              id="fundingDeadline"
+              type="date"
+              aria-invalid={Boolean(errors.fundingDeadline)}
+              aria-describedby={errors.fundingDeadline ? "fundingDeadline-error" : undefined}
+              {...register("fundingDeadline")}
+            />
             {errors.fundingDeadline && (
-              <p className="text-sm text-destructive">{errors.fundingDeadline.message}</p>
+              <p id="fundingDeadline-error" role="alert" className="text-sm text-destructive">
+                {errors.fundingDeadline.message}
+              </p>
             )}
           </div>
 
           {/* Document Section */}
           <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
-            <Label className="text-base font-semibold">Supporting Document</Label>
+            <h3 className="text-base font-semibold">Supporting Document</h3>
 
             {documentCid ? (
               <div className="space-y-2">
@@ -255,11 +286,18 @@ export function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   <div className="space-y-1">
                     <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
                       <div
+                        role="progressbar"
+                        aria-label="Document upload progress"
+                        aria-valuenow={uploadProgress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
                         className="h-full bg-primary transition-all duration-300"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">Uploading document... {uploadProgress}%</p>
+                    <p role="status" className="text-xs text-muted-foreground">
+                      Uploading document... {uploadProgress}%
+                    </p>
                   </div>
                 )}
 

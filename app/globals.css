@@ -13,10 +13,15 @@
   --secondary: hsl(210 40% 96.1%);
   --secondary-foreground: hsl(222.2 47.4% 11.2%);
   --muted: hsl(210 40% 96.1%);
-  --muted-foreground: hsl(215.4 16.3% 46.9%);
+  /* 42% lightness, not the stock shadcn 46.9%: 46.9% is only 4.34:1 on
+     --muted/--secondary, which is where most of our secondary text sits. */
+  --muted-foreground: hsl(215.4 16.3% 42%);
   --accent: hsl(210 40% 96.1%);
   --accent-foreground: hsl(222.2 47.4% 11.2%);
-  --destructive: hsl(0 84.2% 60.2%);
+  /* Dark enough to serve as body text on --card (6.47:1) as well as a
+     background behind --destructive-foreground (6.17:1). The stock 60.2%
+     only reached 3.76:1, failing 1.4.3 for every `text-destructive` error. */
+  --destructive: hsl(0 72% 42%);
   --destructive-foreground: hsl(210 40% 98%);
   --border: hsl(214.3 31.8% 91.4%);
   --input: hsl(214.3 31.8% 91.4%);
@@ -39,8 +44,11 @@
   --muted-foreground: hsl(215 20.2% 65.1%);
   --accent: hsl(217.2 32.6% 17.5%);
   --accent-foreground: hsl(210 40% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(210 40% 98%);
+  /* Inverted versus light mode: --destructive has to read as text on the
+     dark background (5.74:1), so the foreground goes dark rather than
+     near-white, which would only have reached 3.33:1 on this red. */
+  --destructive: hsl(0 72% 63%);
+  --destructive-foreground: hsl(222.2 84% 4.9%);
   --border: hsl(217.2 32.6% 17.5%);
   --input: hsl(217.2 32.6% 17.5%);
   --ring: hsl(212.7 26.8% 83.9%);
@@ -78,4 +86,53 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+}
+
+/* Focus indicator safety net (WCAG 2.1 AA, SC 2.4.7 Focus Visible).
+   Wrapped in :where() so it stays at zero specificity and never fights
+   a component that opts into a ring of its own. Covers the elements
+   that previously had no focus styling at all: bare <a>/<Link>, Radix
+   triggers and menu items, and the plain <button> elements in the
+   marketplace and portfolio pages. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-to-content link (SC 2.4.1 Bypass Blocks). Off-screen until it
+   takes focus, then pinned to the top-left where it cannot be missed. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* The wrapper the skip link targets: focusable so the browser can move
+   the caret there, but with no ring of its own since it is a layout
+   container rather than a control. */
+#main-content:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

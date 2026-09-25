@@ -58,7 +58,7 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
 
   if (isError || !data) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         Failed to load the returns breakdown.
       </div>
     );
@@ -98,11 +98,11 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
             data-testid="returns-export-btn"
             onClick={handleExportCsv}
           >
-            <Download className="mr-1 h-3.5 w-3.5" />
+            <Download aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
             Export CSV
           </Button>
           {exported && (
-            <span className="text-xs text-muted-foreground" data-testid="returns-exported-note">
+            <span role="status" className="text-xs text-muted-foreground" data-testid="returns-exported-note">
               Downloaded
             </span>
           )}
@@ -111,13 +111,18 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm" data-testid="returns-table">
+          <caption className="sr-only">
+            Pro-rata return breakdown for this settled invoice, showing each
+            investor&apos;s share percentage, principal, return and net profit
+            in XLM. Your own row is highlighted.
+          </caption>
           <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th className="p-2 font-medium">Investor Wallet</th>
-              <th className="p-2 font-medium">Share %</th>
-              <th className="p-2 font-medium">Principal (XLM)</th>
-              <th className="p-2 font-medium">Return (XLM)</th>
-              <th className="p-2 font-medium">Net Profit (XLM)</th>
+              <th scope="col" className="p-2 font-medium">Investor Wallet</th>
+              <th scope="col" className="p-2 font-medium">Share %</th>
+              <th scope="col" className="p-2 font-medium">Principal (XLM)</th>
+              <th scope="col" className="p-2 font-medium">Return (XLM)</th>
+              <th scope="col" className="p-2 font-medium">Net Profit (XLM)</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -132,11 +137,14 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
                     isCurrentUser ? "bg-primary/10 font-medium" : "hover:bg-muted/30"
                   }
                 >
-                  <td className="p-2 font-mono text-xs">{row.investor_wallet}</td>
+                  <th scope="row" className="p-2 text-left font-mono text-xs font-normal">
+                    {row.investor_wallet}
+                    {isCurrentUser && <span className="sr-only"> (your wallet)</span>}
+                  </th>
                   <td className="p-2">{row.share_percentage.toFixed(2)}%</td>
                   <td className="p-2 font-mono">{row.principal_invested.toLocaleString()}</td>
                   <td className="p-2 font-mono">{row.return_amount.toLocaleString()}</td>
-                  <td className="p-2 font-mono text-green-700">
+                  <td className="p-2 font-mono text-green-700 dark:text-green-500">
                     {row.net_profit.toLocaleString()}
                   </td>
                 </tr>
@@ -158,17 +166,25 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
 /** Tooltip explaining the pro-rata floor-division methodology. */
 function ProRataTooltip() {
   return (
-    <span className="group relative inline-flex cursor-help" data-testid="returns-tooltip">
-      <span
-        aria-hidden="true"
-        className="flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/40 text-[10px] text-muted-foreground"
+    <span className="group relative inline-flex" data-testid="returns-tooltip">
+      {/*
+        The trigger used to be an aria-hidden span revealed only by
+        group-hover, so the pro-rata explanation was unreachable by keyboard
+        and invisible to screen readers entirely. It is now a real button,
+        visible on focus, that owns the description via aria-describedby.
+      */}
+      <button
+        type="button"
+        className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-muted-foreground/60 text-[10px] text-muted-foreground focus-visible:opacity-100"
+        aria-describedby="returns-tooltip-content"
       >
-        ?
-      </span>
+        <span aria-hidden="true">?</span>
+      </button>
       <span
+        id="returns-tooltip-content"
         role="tooltip"
         data-testid="returns-tooltip-content"
-        className="invisible absolute left-4 top-5 z-10 w-64 rounded-md border border-border bg-popover p-2 text-xs leading-relaxed text-popover-foreground shadow-lg group-hover:visible"
+        className="invisible absolute left-4 top-5 z-10 w-64 rounded-md border border-border bg-popover p-2 text-xs leading-relaxed text-popover-foreground shadow-lg group-hover:visible group-focus-within:visible"
       >
         Each investor's return is computed with{" "}
         <strong>floor division</strong>:
