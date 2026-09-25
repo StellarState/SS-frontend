@@ -75,31 +75,39 @@ export function InvestorPortfolio() {
         </CardContent>
       </Card>
 
-      <div className="flex border-b gap-4">
-        <button
-          type="button"
-          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "positions"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-          onClick={() => setActiveTab("positions")}
-          data-testid="tab-active-positions"
+      <div className="flex items-center justify-between border-b gap-4">
+        <div className="flex gap-4">
+          <button
+            type="button"
+            className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === "positions"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("positions")}
+            data-testid="tab-active-positions"
+          >
+            Active Positions
+          </button>
+          <button
+            type="button"
+            className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === "payouts"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("payouts")}
+            data-testid="tab-payout-history"
+          >
+            Payout History
+          </button>
+        </div>
+        <Link
+          href="/investor/settlements"
+          className="pb-2 text-sm text-primary hover:underline"
         >
-          Active Positions
-        </button>
-        <button
-          type="button"
-          className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "payouts"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-          onClick={() => setActiveTab("payouts")}
-          data-testid="tab-payout-history"
-        >
-          Payout History
-        </button>
+          Claim settlements
+        </Link>
       </div>
 
       {activeTab === "positions" ? (

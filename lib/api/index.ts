@@ -89,6 +89,17 @@ export async function fetchProtocolStatus(): Promise<ProtocolStatus> {
   return res.json();
 }
 
+export interface XlmUsdRate {
+  rate: number;
+}
+
+/** Live XLM/USD exchange rate for the currency toggle. */
+export async function fetchXlmUsdRate(): Promise<XlmUsdRate> {
+  const res = await fetch(`${API_BASE}/rates/xlm-usd`);
+  if (!res.ok) throw new Error("Failed to fetch XLM/USD rate");
+  return res.json();
+}
+
 export async function investInInvoice(
   invoiceId: string,
   amount: number
@@ -124,6 +135,64 @@ export async function transferInvoicePosition(
     }),
   });
   if (!res.ok) throw new Error("Failed to transfer position");
+  return res.json();
+}
+
+export interface ResaleListing {
+  id: string;
+  invoice_id: string;
+  invoice_title: string;
+  seller: string;
+  shares_offered: number;
+  price_per_share: number;
+  total_value: number;
+  listed_at: string;
+  status: "active" | "sold" | "cancelled";
+}
+
+export async function fetchResaleListings(
+  invoiceId: string
+): Promise<ResaleListing[]> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/resale-listings`);
+  if (!res.ok) throw new Error("Failed to fetch resale listings");
+  return res.json();
+}
+
+export async function createResaleListing(
+  invoiceId: string,
+  shares: number,
+  pricePerShare: number
+): Promise<ResaleListing> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/resale-listings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ shares, price_per_share: pricePerShare }),
+  });
+  if (!res.ok) throw new Error("Failed to create resale listing");
+  return res.json();
+}
+
+export async function cancelResaleListing(
+  invoiceId: string,
+  listingId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${invoiceId}/resale-listings/${listingId}/cancel`,
+    { method: "POST" }
+  );
+  if (!res.ok) throw new Error("Failed to cancel resale listing");
+  return res.json();
+}
+
+export async function buyResaleListing(
+  invoiceId: string,
+  listingId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${invoiceId}/resale-listings/${listingId}/buy`,
+    { method: "POST" }
+  );
+  if (!res.ok) throw new Error("Failed to buy resale listing");
   return res.json();
 }
 
@@ -226,18 +295,33 @@ export type SellerKycStatusValue =
   | "requires_resubmission"
   | "not_submitted";
 
+export interface SellerKycSubmission {
+  fullName: string;
+  country: string;
+  idType: string;
+}
+
 export interface SellerKycStatus {
   status: SellerKycStatusValue;
   rejection_reason?: string | null;
   rejectionReason?: string | null;
   reason?: string | null;
+  previousSubmission?: SellerKycSubmission | null;
 }
 
 function normalizeSellerKycStatus(raw: any): SellerKycStatus {
+  const submission = raw.previous_submission ?? raw.previousSubmission ?? null;
   return {
     status: raw.status ?? raw.kyc_status ?? raw.kycStatus ?? "not_submitted",
     rejection_reason:
       raw.rejection_reason ?? raw.rejectionReason ?? raw.reason ?? null,
+    previousSubmission: submission
+      ? {
+          fullName: submission.full_name ?? submission.fullName ?? "",
+          country: submission.country ?? "",
+          idType: submission.id_type ?? submission.idType ?? "",
+        }
+      : null,
   };
 }
 
@@ -923,15 +1007,6 @@ function conflictError(message: string): ApiConflictError {
   error.name = "ApiConflictError";
   error.isConflict = true;
   return error;
-}
-
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const payload = await res.json();
-    return payload?.message ?? payload?.error ?? fallback;
-  } catch {
-    return fallback;
-  }
 }
 
 export async function updateKeySupplyCap(
