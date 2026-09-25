@@ -1398,3 +1398,82 @@ export async function approveKeyPause(
   }
   return normalizeAdminKeyControl(await res.json());
 }
+// #305 — Admin user management: searchable user table with role assignment
+// and suspension controls.
+
+export type AdminUserRole = "user" | "seller" | "admin";
+
+export interface AdminUserRow {
+  wallet: string;
+  role: AdminUserRole;
+  suspended: boolean;
+  joined_at: string;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserRow[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export async function fetchAdminUsers(
+  search = "",
+  cursor?: string,
+  token?: string
+): Promise<AdminUsersResponse> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${API_BASE}/admin/users?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to fetch users"));
+  }
+  return res.json();
+}
+
+export async function updateAdminUserRole(
+  wallet: string,
+  role: AdminUserRole,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to update role"));
+  }
+  return res.json();
+}
+
+export async function suspendAdminUser(
+  wallet: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/suspend`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to suspend user"));
+  }
+  return res.json();
+}
+
+export async function unsuspendAdminUser(
+  wallet: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/unsuspend`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to unsuspend user"));
+  }
+  return res.json();
+}
