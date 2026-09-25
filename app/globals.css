@@ -87,3 +87,52 @@ body {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/* Focus indicator safety net (WCAG 2.1 AA, SC 2.4.7 Focus Visible).
+   Wrapped in :where() so it stays at zero specificity and never fights
+   a component that opts into a ring of its own. Covers the elements
+   that previously had no focus styling at all: bare <a>/<Link>, Radix
+   triggers and menu items, and the plain <button> elements in the
+   marketplace and portfolio pages. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-to-content link (SC 2.4.1 Bypass Blocks). Off-screen until it
+   takes focus, then pinned to the top-left where it cannot be missed. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* The wrapper the skip link targets: focusable so the browser can move
+   the caret there, but with no ring of its own since it is a layout
+   container rather than a control. */
+#main-content:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

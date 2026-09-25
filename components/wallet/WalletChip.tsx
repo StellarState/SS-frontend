@@ -42,15 +42,15 @@ export function WalletChip({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2 cursor-default">
+        <Button variant="outline" className="gap-2">
           <span>{truncateAddress(address)}</span>
           {network && (
             <Badge
               variant={network === "mainnet" ? "default" : "secondary"}
               className={
                 network === "mainnet"
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-yellow-400 text-black hover:bg-yellow-500"
+                  ? "bg-green-700 text-white hover:bg-green-600"
+                  : "bg-yellow-300 text-black hover:bg-yellow-200"
               }
             >
               {network === "mainnet" ? "Mainnet" : "Testnet"}

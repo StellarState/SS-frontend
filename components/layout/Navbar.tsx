@@ -40,8 +40,8 @@ export function Navbar() {
               onNetworkChange={refreshNetwork}
             />
           ) : (
-            <Button onClick={connect} disabled={isConnecting} className="cursor-default">
-              <Wallet className="mr-2 h-4 w-4" />
+            <Button onClick={connect} disabled={isConnecting}>
+              <Wallet aria-hidden="true" className="mr-2 h-4 w-4" />
               {isConnecting ? "Connecting..." : "Connect Wallet"}
             </Button>
           )}
