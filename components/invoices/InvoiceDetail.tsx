@@ -16,8 +16,17 @@ import { InvoiceMetaTags } from "@/components/invoices/InvoiceMetaTags";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
+import { ResaleMarketplaceTab } from "@/components/marketplace";
 import { recordView } from "@/lib/recentlyViewed";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
+import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { usePortfolio } from "@/hooks/usePortfolio";
+import {
+  useBuyResaleListingMutation,
+  useCancelResaleListingMutation,
+  useCreateResaleListingMutation,
+  useResaleListings,
+} from "@/hooks/useResaleListings";
 
 /** Fallback while /protocol/status is loading or unavailable — matches the
  * previous hardcoded value so behaviour degrades gracefully rather than
@@ -111,6 +120,13 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
   });
   const { data: protocolStatus } = useProtocolStatus();
   const minInvestment = protocolStatus?.min_investment ?? DEFAULT_MIN_INVESTMENT;
+
+  const { address } = useStellarWallet();
+  const { data: portfolio } = usePortfolio();
+  const { data: resaleListings } = useResaleListings(invoiceId);
+  const createListingMutation = useCreateResaleListingMutation();
+  const cancelListingMutation = useCancelResaleListingMutation();
+  const buyListingMutation = useBuyResaleListingMutation();
 
   usePageTitle(invoice?.title ?? null);
 
@@ -245,6 +261,42 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <DocumentPreview documentUrl={invoice.document_url} />
         </CardContent>
       </Card>
+
+      {(invoice.status === "funded" || invoice.status === "settled") && (
+        <Card>
+          <CardContent className="pt-6">
+            <ResaleMarketplaceTab
+              invoiceId={invoice.id}
+              invoiceTitle={invoice.title}
+              myShares={
+                portfolio?.positions.find((p) => p.invoice_id === invoice.id)
+                  ?.quantity ?? 0
+              }
+              listings={(resaleListings ?? []).map((listing) => ({
+                id: listing.id,
+                invoiceId: listing.invoice_id,
+                invoiceTitle: listing.invoice_title,
+                seller: listing.seller,
+                sharesOffered: listing.shares_offered,
+                pricePerShare: listing.price_per_share,
+                totalValue: listing.total_value,
+                listedAt: listing.listed_at,
+                status: listing.status,
+              }))}
+              currentAddress={address ?? undefined}
+              onList={({ invoiceId, shares, pricePerShare }) =>
+                createListingMutation.mutate({ invoiceId, shares, pricePerShare })
+              }
+              onCancel={(listingId) =>
+                cancelListingMutation.mutate({ invoiceId: invoice.id, listingId })
+              }
+              onBuy={(listingId) =>
+                buyListingMutation.mutate({ invoiceId: invoice.id, listingId })
+              }
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <InvoiceTimeline status={invoice.status} />
     </div>

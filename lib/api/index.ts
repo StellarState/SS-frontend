@@ -127,6 +127,64 @@ export async function transferInvoicePosition(
   return res.json();
 }
 
+export interface ResaleListing {
+  id: string;
+  invoice_id: string;
+  invoice_title: string;
+  seller: string;
+  shares_offered: number;
+  price_per_share: number;
+  total_value: number;
+  listed_at: string;
+  status: "active" | "sold" | "cancelled";
+}
+
+export async function fetchResaleListings(
+  invoiceId: string
+): Promise<ResaleListing[]> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/resale-listings`);
+  if (!res.ok) throw new Error("Failed to fetch resale listings");
+  return res.json();
+}
+
+export async function createResaleListing(
+  invoiceId: string,
+  shares: number,
+  pricePerShare: number
+): Promise<ResaleListing> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/resale-listings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ shares, price_per_share: pricePerShare }),
+  });
+  if (!res.ok) throw new Error("Failed to create resale listing");
+  return res.json();
+}
+
+export async function cancelResaleListing(
+  invoiceId: string,
+  listingId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${invoiceId}/resale-listings/${listingId}/cancel`,
+    { method: "POST" }
+  );
+  if (!res.ok) throw new Error("Failed to cancel resale listing");
+  return res.json();
+}
+
+export async function buyResaleListing(
+  invoiceId: string,
+  listingId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${invoiceId}/resale-listings/${listingId}/buy`,
+    { method: "POST" }
+  );
+  if (!res.ok) throw new Error("Failed to buy resale listing");
+  return res.json();
+}
+
 export type NotificationEventType = "new_invoice" | "funding_milestone" | "settlement";
 export type NotificationChannel = "email" | "in_app";
 

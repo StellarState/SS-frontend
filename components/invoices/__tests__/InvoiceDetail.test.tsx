@@ -7,6 +7,11 @@ import { InvoiceDetail } from "../InvoiceDetail";
 vi.mock("@/lib/api", () => ({
   fetchInvoiceDetail: vi.fn(),
   fetchProtocolStatus: vi.fn().mockResolvedValue({ min_investment: 1 }),
+  fetchPortfolio: vi.fn().mockResolvedValue({ positions: [] }),
+  fetchResaleListings: vi.fn().mockResolvedValue([]),
+  createResaleListing: vi.fn(),
+  cancelResaleListing: vi.fn(),
+  buyResaleListing: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -24,11 +29,16 @@ vi.mock("@/components/marketplace", () => ({
   CountdownTimer: ({ deadline, published }: { deadline: string; published: boolean }) =>
     published ? <span data-testid="countdown">Countdown</span> : null,
   isExpired: (deadline: string) => new Date(deadline).getTime() <= Date.now(),
+  ResaleMarketplaceTab: () => <div data-testid="resale-marketplace-tab" />,
 }));
 
 vi.mock("@/components/invoices/DocumentPreview", () => ({
   DocumentPreview: ({ documentUrl }: { documentUrl: string }) =>
     documentUrl ? <div data-testid="document-preview">Preview</div> : null,
+}));
+
+vi.mock("@/hooks/useStellarWallet", () => ({
+  useStellarWallet: () => ({ address: null, isConnected: false, isInitializing: false }),
 }));
 
 vi.mock("@/lib/logger", () => ({
