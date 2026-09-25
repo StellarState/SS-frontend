@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { SellerDashboard } from "../SellerDashboard";
@@ -252,5 +252,96 @@ describe("SellerDashboard", () => {
     render(<SellerDashboard />, { wrapper: createWrapper() });
 
     expect(screen.getByTestId("onboarding-checklist")).toBeInTheDocument();
+  });
+});
+
+describe("SellerDashboard - pipeline breakdown (issue #313)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useSellerKycStatus).mockReturnValue({
+      data: undefined,
+    } as any);
+  });
+
+  function makePipelineData() {
+    return makeDashboardData([
+      makeInvoice({ id: "inv-draft", status: "draft" }),
+      makeInvoice({ id: "inv-open-1", status: "open" }),
+      makeInvoice({ id: "inv-open-2", status: "open" }),
+      makeInvoice({ id: "inv-funded", status: "funded" }),
+      makeInvoice({ id: "inv-settled", status: "settled" }),
+      makeInvoice({ id: "inv-rejected", status: "rejected" }),
+    ]);
+  }
+
+  it("shows an accurate count per pipeline stage", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makePipelineData(),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    expect(screen.getByTestId("pipeline-stage-all")).toHaveTextContent("All (6)");
+    expect(screen.getByTestId("pipeline-stage-draft")).toHaveTextContent("Draft (1)");
+    expect(screen.getByTestId("pipeline-stage-open")).toHaveTextContent("Active (2)");
+    expect(screen.getByTestId("pipeline-stage-funded")).toHaveTextContent("Funded (1)");
+    expect(screen.getByTestId("pipeline-stage-settled")).toHaveTextContent("Settled (1)");
+    expect(screen.getByTestId("pipeline-stage-rejected")).toHaveTextContent("Rejected (1)");
+  });
+
+  it("filters the invoice list to the selected stage", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makePipelineData(),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTestId("pipeline-stage-funded"));
+
+    expect(screen.getByText("Test Invoice")).toBeInTheDocument();
+    // Only one card should render for the funded stage.
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(1);
+  });
+
+  it("shows a stage-specific empty state when a stage has no invoices", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makeDashboardData([makeInvoice({ status: "open" })]),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTestId("pipeline-stage-rejected"));
+
+    expect(screen.getByTestId("seller-invoices-stage-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("seller-invoices-empty")).not.toBeInTheDocument();
+  });
+
+  it("returns to the full list when 'All' is reselected", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makePipelineData(),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTestId("pipeline-stage-funded"));
+    fireEvent.click(screen.getByTestId("pipeline-stage-all"));
+
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(6);
+  });
+
+  it("shows a persistent quick action to submit a new invoice", () => {
+    vi.mocked(useSellerDashboard).mockReturnValue({
+      data: makePipelineData(),
+      isLoading: false,
+    } as any);
+
+    render(<SellerDashboard />, { wrapper: createWrapper() });
+
+    const link = screen.getByTestId("quick-action-submit-invoice");
+    expect(link).toHaveAttribute("href", "/seller/publish");
   });
 });
