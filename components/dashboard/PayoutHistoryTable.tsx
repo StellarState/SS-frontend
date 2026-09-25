@@ -53,15 +53,21 @@ export function PayoutHistoryTable() {
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-md border bg-card">
+        {/* No <caption>, and the <th>s had no scope, so assistive tech had no
+            reliable way to tie a cell back to its column (SC 1.3.1). */}
         <table className="w-full text-left text-sm" data-testid="payout-history-table">
+          <caption className="sr-only">
+            Settled invoices you have invested in, with the amount invested,
+            the amount received, the yield and the settlement date.
+          </caption>
           <thead className="border-b bg-muted/50 text-muted-foreground">
             <tr>
-              <th className="p-3 font-medium">Invoice ID</th>
-              <th className="p-3 font-medium">Seller Name</th>
-              <th className="p-3 font-medium">Amount Invested</th>
-              <th className="p-3 font-medium">Amount Received</th>
-              <th className="p-3 font-medium">Yield</th>
-              <th className="p-3 font-medium">Settled At</th>
+              <th scope="col" className="p-3 font-medium">Invoice ID</th>
+              <th scope="col" className="p-3 font-medium">Seller Name</th>
+              <th scope="col" className="p-3 font-medium">Amount Invested</th>
+              <th scope="col" className="p-3 font-medium">Amount Received</th>
+              <th scope="col" className="p-3 font-medium">Yield</th>
+              <th scope="col" className="p-3 font-medium">Settled At</th>
             </tr>
           </thead>
           <tbody className="divide-y">
