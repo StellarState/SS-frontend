@@ -36,7 +36,7 @@ export function PayoutHistoryTable() {
 
   if (isError) {
     return (
-      <p className="py-8 text-center text-red-500">
+      <p className="py-8 text-center text-destructive">
         Failed to load payout history.
       </p>
     );

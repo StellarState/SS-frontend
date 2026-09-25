@@ -43,10 +43,12 @@ export function FundingProgressBar({ raised, target, investorCount }: FundingPro
                     <div
                         data-testid="funding-progress-bar"
                         role="progressbar"
+                        aria-label="Funding progress"
+                        aria-valuetext={`${formatAmount(raisedAmount)} XLM of ${formatAmount(target)} XLM raised`}
                         aria-valuenow={Math.round(percentage)}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        className={`h-full transition-all duration-1000 ease-out ${isFullyFunded ? "bg-green-500" : "bg-primary"}`}
+                        className={`h-full transition-all duration-1000 ease-out ${isFullyFunded ? "bg-green-700 dark:bg-green-500" : "bg-primary"}`}
                         style={{ width: `${animatedWidth}%` }}
                     />
                 </div>
@@ -57,7 +59,7 @@ export function FundingProgressBar({ raised, target, investorCount }: FundingPro
                 </p>
                 <div className="flex items-center gap-2">
                     {isFullyFunded && (
-                        <span className="inline-flex items-center rounded-full border border-transparent bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                        <span className="inline-flex items-center rounded-full border border-transparent bg-green-100 dark:bg-green-950 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:text-green-300">
                             Funded
                         </span>
                     )}

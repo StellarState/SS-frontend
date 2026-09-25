@@ -108,18 +108,19 @@ export function InvoiceTimeline({ status, events }: InvoiceTimelineProps) {
                 <div key={step.stage} className="flex gap-4 pb-8 last:pb-0">
                   <div className="flex flex-col items-center">
                     {step.isRejected ? (
-                      <XCircle className="h-6 w-6 text-red-500 shrink-0" />
+                      <XCircle aria-hidden="true" className="h-6 w-6 text-red-700 dark:text-red-400 shrink-0" />
                     ) : isCompleted ? (
-                      <CheckCircle2 className="h-6 w-6 text-emerald-500 shrink-0" />
+                      <CheckCircle2 aria-hidden="true" className="h-6 w-6 text-emerald-700 dark:text-emerald-400 shrink-0" />
                     ) : isCurrent ? (
-                      <Clock className="h-6 w-6 text-blue-500 shrink-0" />
+                      <Clock aria-hidden="true" className="h-6 w-6 text-blue-700 dark:text-blue-400 shrink-0" />
                     ) : (
-                      <Circle className="h-6 w-6 text-muted-foreground/40 shrink-0" />
+                      <Circle aria-hidden="true" className="h-6 w-6 text-muted-foreground shrink-0" />
                     )}
                     {!isLast && (
                       <div
+                        aria-hidden="true"
                         className={`w-px flex-1 mt-2 ${
-                          isCompleted ? "bg-emerald-500" : "bg-muted-foreground/20"
+                          isCompleted ? "bg-emerald-700 dark:bg-emerald-400" : "bg-muted-foreground/40"
                         }`}
                       />
                     )}
@@ -128,11 +129,11 @@ export function InvoiceTimeline({ status, events }: InvoiceTimelineProps) {
                     <p
                       className={`font-medium text-sm ${
                         isCurrent
-                          ? "text-blue-500"
+                          ? "text-blue-700 dark:text-blue-400"
                           : isCompleted
                           ? "text-foreground"
                           : step.isRejected
-                          ? "text-red-500"
+                          ? "text-red-700 dark:text-red-400"
                           : "text-muted-foreground"
                       }`}
                     >
@@ -155,7 +156,7 @@ export function InvoiceTimeline({ status, events }: InvoiceTimelineProps) {
                       </p>
                     )}
                     {step.isRejected && step.rejectionReason && (
-                      <p className="text-xs text-red-400 mt-1">
+                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">
                         {step.rejectionReason}
                       </p>
                     )}
@@ -178,26 +179,27 @@ export function InvoiceTimeline({ status, events }: InvoiceTimelineProps) {
                   <div
                     className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                       step.isRejected
-                        ? "bg-red-500/20 text-red-500"
+                        ? "bg-red-500/20 text-red-700 dark:text-red-400"
                         : isCompleted
-                        ? "bg-emerald-500/20 text-emerald-500"
+                        ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
                         : isCurrent
-                        ? "bg-blue-500/20 text-blue-500 ring-2 ring-blue-500"
+                        ? "bg-blue-500/20 text-blue-700 dark:text-blue-400 ring-2 ring-blue-500"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {step.isRejected ? (
-                      <XCircle className="h-3.5 w-3.5" />
+                      <XCircle aria-hidden="true" className="h-3.5 w-3.5" />
                     ) : isCompleted ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />
                     ) : (
                       idx + 1
                     )}
                   </div>
                   {idx < steps.length - 1 && (
                     <div
+                      aria-hidden="true"
                       className={`w-4 h-px ${
-                        isCompleted ? "bg-emerald-500" : "bg-muted-foreground/20"
+                        isCompleted ? "bg-emerald-700 dark:bg-emerald-400" : "bg-muted-foreground/40"
                       }`}
                     />
                   )}
@@ -208,10 +210,10 @@ export function InvoiceTimeline({ status, events }: InvoiceTimelineProps) {
           <p className="text-xs text-muted-foreground mt-2 text-center">
             {STAGE_LABELS[status as TimelineStage] ?? status}
             {isTerminal && status === "rejected" && (
-              <span className="text-red-500 ml-1">(Rejected)</span>
+              <span className="text-red-700 dark:text-red-400 ml-1">(Rejected)</span>
             )}
             {isTerminal && status === "expired" && (
-              <span className="text-red-500 ml-1">(Expired)</span>
+              <span className="text-red-700 dark:text-red-400 ml-1">(Expired)</span>
             )}
           </p>
         </div>

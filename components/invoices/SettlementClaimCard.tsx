@@ -32,11 +32,11 @@ export function ClaimableSettlementCard({ settlement, onClaim, isClaiming }: Cla
           </div>
           <div>
             <span className="text-muted-foreground">Return</span>
-            <p className="font-medium text-emerald-500">{format(settlement.return_amount)}</p>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">{format(settlement.return_amount)}</p>
           </div>
           <div>
             <span className="text-muted-foreground">Net Profit</span>
-            <p className="font-medium text-emerald-500">+{format(settlement.net_profit)}</p>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">+{format(settlement.net_profit)}</p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
