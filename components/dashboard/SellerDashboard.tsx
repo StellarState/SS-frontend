@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProfileStatsSkeleton } from "@/components/ui/skeletons";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { KycStatusBanner } from "@/components/dashboard/KycStatusBanner";
@@ -26,17 +27,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <CardContent className="pt-6">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatCardSkeleton() {
-  return (
-    <Card>
-      <CardContent className="pt-6 space-y-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-7 w-20" />
       </CardContent>
     </Card>
   );
@@ -65,12 +55,8 @@ export function SellerDashboard() {
 
   if (isLoading || !data) {
     return (
-      <div className="space-y-6" data-testid="seller-dashboard-loading">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <StatCardSkeleton key={i} />
-          ))}
-        </div>
+      <div className="space-y-6" data-testid="seller-dashboard-loading" aria-busy="true">
+        <ProfileStatsSkeleton />
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <InvoiceRowSkeleton key={i} />

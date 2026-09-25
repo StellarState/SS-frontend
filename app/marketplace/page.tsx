@@ -7,6 +7,7 @@ import { fetchInvoices, type Invoice } from "@/lib/api";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { FundingProgressBar } from "@/components/invoices";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InvoiceCardSkeleton } from "@/components/ui/skeletons";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -93,39 +94,6 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
             target={invoice.amount}
             investorCount={invoice.investor_count}
           />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SkeletonRow() {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-5 w-16" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-4 gap-4">
-          <div>
-            <Skeleton className="h-4 w-20 mb-1" />
-            <Skeleton className="h-3 w-12" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-12 mb-1" />
-            <Skeleton className="h-3 w-10" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-8 mb-1" />
-            <Skeleton className="h-3 w-14" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-24 mb-1" />
-            <Skeleton className="h-3 w-16" />
-          </div>
         </div>
       </CardContent>
     </Card>
@@ -416,9 +384,9 @@ export default function MarketplacePage() {
           <div className="w-full md:w-64 shrink-0">
             <Skeleton className="h-64 w-full" />
           </div>
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-4" aria-busy="true" data-testid="marketplace-loading">
             {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonRow key={i} />
+              <InvoiceCardSkeleton key={i} />
             ))}
           </div>
         </div>
@@ -483,7 +451,7 @@ export default function MarketplacePage() {
             )}
             {isFetchingNextPage &&
               Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonRow key={`skeleton-${i}`} />
+                <InvoiceCardSkeleton key={`skeleton-${i}`} />
               ))}
             {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
             {!hasNextPage && filtered.length > 0 && (
