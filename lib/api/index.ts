@@ -1477,3 +1477,67 @@ export async function unsuspendAdminUser(
   }
   return res.json();
 }
+
+// #319 — Public creator profile: issued invoices, funding stats, and
+// settlement track record. Public endpoints; no wallet connection required.
+
+export interface CreatorProfileStats {
+  total_invoices: number;
+  total_funded: number;
+  settlement_success_rate: number;
+}
+
+export interface CreatorProfileInvoice {
+  id: string;
+  title: string;
+  amount: number;
+  funded_amount: number;
+  status: Invoice["status"];
+  created_at: string;
+}
+
+export interface CreatorProfileResponse {
+  wallet: string;
+  display_name?: string | null;
+  displayName?: string | null;
+  joined_at: string;
+  joinedAt?: string;
+  kyc_verified: boolean;
+  kycVerified?: boolean;
+  stats: CreatorProfileStats;
+  invoices: CreatorProfileInvoice[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+function normalizeCreatorProfile(raw: any): CreatorProfileResponse {
+  return {
+    wallet: raw.wallet ?? raw.address ?? "",
+    display_name: raw.display_name ?? raw.displayName ?? null,
+    joined_at: raw.joined_at ?? raw.joinedAt ?? raw.created_at ?? "",
+    kyc_verified: Boolean(raw.kyc_verified ?? raw.kycVerified),
+    stats: {
+      total_invoices: raw.stats?.total_invoices ?? raw.total_invoices ?? 0,
+      total_funded: raw.stats?.total_funded ?? raw.total_funded ?? 0,
+      settlement_success_rate:
+        raw.stats?.settlement_success_rate ?? raw.settlement_success_rate ?? 0,
+    },
+    invoices: raw.invoices ?? [],
+    has_more: Boolean(raw.has_more),
+    next_cursor: raw.next_cursor ?? null,
+  };
+}
+
+export async function fetchCreatorProfile(
+  wallet: string,
+  cursor?: string
+): Promise<CreatorProfileResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${API_BASE}/creators/${wallet}?${params}`);
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to fetch creator profile"));
+  }
+  return normalizeCreatorProfile(await res.json());
+}
