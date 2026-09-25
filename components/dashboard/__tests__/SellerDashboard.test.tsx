@@ -9,6 +9,15 @@ vi.mock("@/hooks/useSellerDashboard", () => ({
   useSellerKycStatus: vi.fn(),
 }));
 
+vi.mock("@/hooks/useStellarWallet", () => ({
+  useStellarWallet: vi.fn().mockReturnValue({
+    address: "GWALLET1111111111111111111111111111111111111111111111",
+    isConnected: true,
+    isConnecting: false,
+    isInitializing: false,
+  }),
+}));
+
 import {
   useSellerDashboard,
   useSellerKycStatus,
@@ -230,7 +239,7 @@ describe("SellerDashboard", () => {
     );
   });
 
-  it("shows onboarding checklist until KYC, profile, and first invoice are complete", () => {
+  it("shows onboarding checklist until wallet, KYC, and first invoice are complete", () => {
     vi.mocked(useSellerDashboard).mockReturnValue({
       data: {
         ...makeDashboardData([]),

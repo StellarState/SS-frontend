@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { OnboardingChecklist, OnboardingUserData } from "../OnboardingChecklist";
+import { OnboardingChecklist, ChecklistKycStatus } from "../OnboardingChecklist";
 
 describe("OnboardingChecklist", () => {
   beforeEach(() => {
@@ -11,71 +11,87 @@ describe("OnboardingChecklist", () => {
     localStorage.clear();
   });
 
-  const baseData: OnboardingUserData = {
-    kycStatus: null,
-    displayName: null,
-    avatarUrl: null,
+  const baseProps = {
+    walletConnected: false,
+    kycStatus: "not_submitted" as ChecklistKycStatus,
     invoiceCount: 0,
   };
 
-  it("Step 1 is incomplete when kycStatus is null and complete when kycStatus is pending or approved", () => {
-    const { rerender } = render(<OnboardingChecklist data={{ ...baseData, kycStatus: null }} />);
+  it("Step 1 (connect wallet) reflects the real wallet connection state", () => {
+    const { rerender } = render(
+      <OnboardingChecklist {...baseProps} walletConnected={false} />
+    );
     expect(screen.getByTestId("step-1-incomplete")).toBeInTheDocument();
-    expect(screen.queryByTestId("step-1-complete")).not.toBeInTheDocument();
 
-    rerender(<OnboardingChecklist data={{ ...baseData, kycStatus: "pending" }} />);
-    expect(screen.getByTestId("step-1-complete")).toBeInTheDocument();
-    expect(screen.queryByTestId("step-1-incomplete")).not.toBeInTheDocument();
-
-    rerender(<OnboardingChecklist data={{ ...baseData, kycStatus: "approved" }} />);
+    rerender(<OnboardingChecklist {...baseProps} walletConnected={true} />);
     expect(screen.getByTestId("step-1-complete")).toBeInTheDocument();
     expect(screen.queryByTestId("step-1-incomplete")).not.toBeInTheDocument();
   });
 
-  it("Step 2 is incomplete until displayName and avatarUrl are set", () => {
-    const { rerender } = render(<OnboardingChecklist data={{ ...baseData, displayName: null }} />);
-    expect(screen.getByTestId("step-2-incomplete")).toBeInTheDocument();
-    expect(screen.queryByTestId("step-2-complete")).not.toBeInTheDocument();
-
-    rerender(<OnboardingChecklist data={{ ...baseData, displayName: "Alice" }} />);
+  it("Step 2 (KYC) is complete only when the API reports approved", () => {
+    const { rerender } = render(
+      <OnboardingChecklist {...baseProps} kycStatus="pending" />
+    );
     expect(screen.getByTestId("step-2-incomplete")).toBeInTheDocument();
 
     rerender(
-      <OnboardingChecklist
-        data={{ ...baseData, displayName: "Alice", avatarUrl: "/avatar.png" }}
-      />
+      <OnboardingChecklist {...baseProps} kycStatus="approved" />
     );
     expect(screen.getByTestId("step-2-complete")).toBeInTheDocument();
     expect(screen.queryByTestId("step-2-incomplete")).not.toBeInTheDocument();
   });
 
-  it("Step 3 is incomplete when invoiceCount is 0 and complete when invoiceCount is at least 1", () => {
-    const { rerender } = render(<OnboardingChecklist data={{ ...baseData, invoiceCount: 0 }} />);
+  it("Step 3 (first invoice) is complete once at least one invoice exists", () => {
+    const { rerender } = render(
+      <OnboardingChecklist {...baseProps} invoiceCount={0} />
+    );
     expect(screen.getByTestId("step-3-incomplete")).toBeInTheDocument();
-    expect(screen.queryByTestId("step-3-complete")).not.toBeInTheDocument();
 
-    rerender(<OnboardingChecklist data={{ ...baseData, invoiceCount: 1 }} />);
-    expect(screen.getByTestId("step-3-complete")).toBeInTheDocument();
-    expect(screen.queryByTestId("step-3-incomplete")).not.toBeInTheDocument();
-
-    rerender(<OnboardingChecklist data={{ ...baseData, invoiceCount: 5 }} />);
+    rerender(<OnboardingChecklist {...baseProps} invoiceCount={1} />);
     expect(screen.getByTestId("step-3-complete")).toBeInTheDocument();
     expect(screen.queryByTestId("step-3-incomplete")).not.toBeInTheDocument();
   });
 
-  it("checklist is hidden when all three steps are complete", () => {
-    const completeData: OnboardingUserData = {
-      kycStatus: "approved",
-      displayName: "Alice",
-      avatarUrl: "/avatar.png",
-      invoiceCount: 1,
-    };
-    render(<OnboardingChecklist data={completeData} />);
+  it("each incomplete step links to its action page", () => {
+    render(<OnboardingChecklist {...baseProps} />);
+
+    expect(screen.getByTestId("step-1-link")).toHaveAttribute("href", "/connect-wallet");
+    expect(screen.getByTestId("step-2-link")).toHaveAttribute("href", "/kyc/status");
+    expect(screen.getByTestId("step-3-link")).toHaveAttribute("href", "/seller/publish");
+  });
+
+  it("shows the progress percentage and updates it as steps complete", () => {
+    const { rerender } = render(<OnboardingChecklist {...baseProps} />);
+    expect(screen.getByTestId("checklist-progress")).toHaveTextContent("0% complete");
+
+    rerender(
+      <OnboardingChecklist {...baseProps} walletConnected={true} />
+    );
+    expect(screen.getByTestId("checklist-progress")).toHaveTextContent("33% complete");
+
+    rerender(
+      <OnboardingChecklist
+        {...baseProps}
+        walletConnected={true}
+        kycStatus="approved"
+      />
+    );
+    expect(screen.getByTestId("checklist-progress")).toHaveTextContent("67% complete");
+  });
+
+  it("auto-dismisses when all steps are complete", () => {
+    render(
+      <OnboardingChecklist
+        walletConnected={true}
+        kycStatus="approved"
+        invoiceCount={1}
+      />
+    );
     expect(screen.queryByTestId("onboarding-checklist")).not.toBeInTheDocument();
   });
 
   it("dismissal writes to localStorage and hides the checklist", () => {
-    render(<OnboardingChecklist data={baseData} />);
+    render(<OnboardingChecklist {...baseProps} />);
     expect(screen.getByTestId("onboarding-checklist")).toBeInTheDocument();
 
     const dismissBtn = screen.getByTestId("dismiss-checklist-btn");
