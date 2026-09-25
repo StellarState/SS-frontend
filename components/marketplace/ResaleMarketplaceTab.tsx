@@ -35,8 +35,11 @@ export function ResaleMarketplaceTab({
         <h3 className="text-lg font-semibold">Secondary Market</h3>
         {myShares > 0 && (
           <button
+            type="button"
             onClick={() => setShowListForm(!showListForm)}
             className="text-sm text-primary hover:underline"
+            aria-expanded={showListForm}
+            aria-controls="list-shares-form"
             data-testid="toggle-list-form"
           >
             {showListForm ? "Cancel" : "List My Shares"}

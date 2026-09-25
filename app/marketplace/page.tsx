@@ -35,16 +35,26 @@ function SortHeader({
   onSort: (field: SortField) => void;
 }) {
   const isActive = activeField === field;
+  // The arrow glyph carries the sort direction visually, but it is a
+  // decorative SVG, so the state has to be spelled out in the name or a
+  // screen reader announces only "Face Value, button".
+  const directionLabel = isActive
+    ? activeDirection === "asc"
+      ? "sorted ascending"
+      : "sorted descending"
+    : "not sorted";
   return (
     <button
       type="button"
       onClick={() => onSort(field)}
       className="inline-flex items-center gap-1 text-sm font-medium hover:text-foreground transition-colors"
+      aria-label={`Sort by ${label}, ${directionLabel}`}
+      aria-pressed={isActive}
       data-testid={`sort-${field}`}
     >
       {label}
-      {isActive && activeDirection === "asc" && <ArrowUp className="size-3" />}
-      {isActive && activeDirection === "desc" && <ArrowDown className="size-3" />}
+      {isActive && activeDirection === "asc" && <ArrowUp aria-hidden="true" className="size-3" />}
+      {isActive && activeDirection === "desc" && <ArrowDown aria-hidden="true" className="size-3" />}
     </button>
   );
 }
@@ -448,13 +458,20 @@ export default function MarketplacePage() {
           />
 
           {isFetching && !isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
-              <Loader2 className="size-3 animate-spin" />
+            <div
+              role="status"
+              className="flex items-center gap-2 text-sm text-muted-foreground my-4"
+            >
+              <Loader2 aria-hidden="true" className="size-3 animate-spin" />
               Refreshing…
             </div>
           )}
 
-          <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
+          <div
+            role="group"
+            aria-label="Sort invoices"
+            className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground"
+          >
             <SortHeader
               label="Face Value"
               field="amount"
