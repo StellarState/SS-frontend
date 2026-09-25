@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { notifyApiError } from "@/lib/apiErrors";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { AccreditationProvider } from "@/context/AccreditationContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,8 +30,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {children}
-          <Toaster position="top-right" />
+          <AccreditationProvider>
+            {children}
+            <Toaster position="top-right" />
+          </AccreditationProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
