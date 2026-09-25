@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { InvoiceDetail } from "../InvoiceDetail";
+import { AccreditationProvider } from "@/context/AccreditationContext";
 
 vi.mock("@/lib/api", () => ({
   fetchInvoiceDetail: vi.fn(),
@@ -43,7 +44,9 @@ function createWrapper() {
   });
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <AccreditationProvider>{children}</AccreditationProvider>
+      </QueryClientProvider>
     );
   };
 }
@@ -124,6 +127,53 @@ describe("InvoiceDetail - Invest Button Visibility", () => {
     expect(screen.queryByTestId("invest-button")).not.toBeInTheDocument();
   });
 
+  it("shows a maturity countdown for a funded invoice with a future maturity date", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(
+      makeInvoice({
+        status: "funded",
+        maturity_date: new Date(Date.now() + 5 * 86400000).toISOString(),
+      })
+    );
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("maturity-countdown")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("invoice-matured-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows a matured banner with settlement pending label once the maturity date has passed", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(
+      makeInvoice({
+        status: "funded",
+        maturity_date: new Date("2025-01-01T00:00:00Z").toISOString(),
+      })
+    );
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invoice-matured-banner")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("settlement-pending-label")).toBeInTheDocument();
+    expect(screen.queryByTestId("maturity-countdown")).not.toBeInTheDocument();
+  });
+
+  it("shows no maturity UI for a funded invoice when the backend has not supplied a maturity date", async () => {
+    vi.mocked(fetchInvoiceDetail).mockResolvedValue(
+      makeInvoice({ status: "funded", maturity_date: undefined })
+    );
+
+    render(<InvoiceDetail invoiceId="inv-1" />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invest-funded-message")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("maturity-countdown")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("invoice-matured-banner")).not.toBeInTheDocument();
+  });
+
   it("hides invest button with no message for draft invoice", async () => {
     vi.mocked(fetchInvoiceDetail).mockResolvedValue(makeInvoice({ status: "draft" }));
 
@@ -174,6 +224,12 @@ describe("InvoiceDetail - minimum investment (issue #116)", () => {
     });
     fireEvent.click(screen.getByTestId("invest-button"));
 
+    // Clear the accreditation gate (issue #312) before the investment
+    // amount form is reachable.
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
+
     await waitFor(() => {
       expect(
         screen.getByPlaceholderText("250 - 5000")
@@ -192,6 +248,12 @@ describe("InvoiceDetail - minimum investment (issue #116)", () => {
       expect(screen.getByTestId("invest-button")).toBeInTheDocument();
     });
     fireEvent.click(screen.getByTestId("invest-button"));
+
+    // Clear the accreditation gate (issue #312) before the investment
+    // amount form is reachable.
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
+    fireEvent.click(screen.getByTestId("accreditation-step-next"));
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText("1 - 5000")).toBeInTheDocument();

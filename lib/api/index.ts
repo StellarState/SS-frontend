@@ -11,6 +11,10 @@ export interface Invoice {
   rejection_reason?: string;
   has_more: boolean;
   next_cursor: string | null;
+  /** Settlement maturity date once an invoice is funded (issue #314). Optional
+   * because older backend responses may not populate it yet — UI must
+   * degrade gracefully when absent rather than assume it's always present. */
+  maturity_date?: string | null;
 }
 
 export interface InvoiceDetail extends Invoice {

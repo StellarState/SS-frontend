@@ -17,6 +17,7 @@ import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
 import { InvoiceProtectionInfo } from "@/components/invoices/InvoiceProtectionInfo";
+import { InvoiceMaturityStatus } from "@/components/invoices/InvoiceMaturityStatus";
 import { recordView } from "@/lib/recentlyViewed";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
 
@@ -198,9 +199,13 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           </>
         )}
         {invoice.status === "funded" && (
-          <p data-testid="invest-funded-message">
-            This invoice is fully funded
-          </p>
+          <>
+            <p data-testid="invest-funded-message">
+              This invoice is fully funded
+            </p>
+            {/* Maturity countdown / matured banner (issue #314) */}
+            <InvoiceMaturityStatus maturityDate={invoice.maturity_date} />
+          </>
         )}
         {invoice.status === "draft" && null}
       </div>
