@@ -58,7 +58,7 @@ export function ReturnsBreakdown({ invoiceId }: { invoiceId: string }) {
 
   if (isError || !data) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-300">
         Failed to load the returns breakdown.
       </div>
     );

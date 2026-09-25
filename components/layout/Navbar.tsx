@@ -7,6 +7,7 @@ import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { WalletChip } from "@/components/wallet/WalletChip";
 import { NotificationCenter } from "@/components/layout/NotificationCenter";
 import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function Navbar() {
   const { address, network, isConnected, isConnecting, connect, disconnect, refreshNetwork } =
@@ -26,6 +27,7 @@ export function Navbar() {
           <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground">
             Profile
           </Link>
+          <ThemeToggle />
           <CurrencyToggle />
 
           {/* Notification centre (issue #283): bell + dropdown panel with
@@ -46,6 +48,12 @@ export function Navbar() {
             </Button>
           )}
         </nav>
+
+        {/* The nav above is hidden below the `md` breakpoint, so a phone would
+            otherwise have no way to override the system theme. */}
+        <div className="md:hidden">
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

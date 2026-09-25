@@ -102,7 +102,7 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                       type="checkbox"
                       checked={checked}
                       onChange={() => handleStatusToggle(opt.value)}
-                      className="size-4 rounded border-gray-300 accent-primary"
+                      className="size-4 rounded border-gray-300 dark:border-gray-600 accent-primary"
                       data-testid={`filter-status-${opt.value}`}
                     />
                     <span>{opt.label}</span>

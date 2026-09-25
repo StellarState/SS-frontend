@@ -141,7 +141,7 @@ export function KeyTransferModal({
             </CardHeader>
             <CardContent className="space-y-5">
               {lockupActive && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-900 dark:text-amber-200">
                   Transfers may be blocked until your lockup expires on{" "}
                   {new Date(position.lockup_expires_at ?? "").toLocaleString()}.
                 </div>

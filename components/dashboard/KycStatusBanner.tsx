@@ -27,7 +27,7 @@ export function KycStatusBanner({ status, reason }: KycStatusBannerProps) {
     return (
       <div
         role="alert"
-        className="flex items-center justify-between gap-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        className="flex items-center justify-between gap-4 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
         data-testid="kyc-resubmission-banner"
       >
         <p>Additional documents required. Please update your KYC.</p>

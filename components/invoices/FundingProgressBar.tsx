@@ -57,7 +57,7 @@ export function FundingProgressBar({ raised, target, investorCount }: FundingPro
                 </p>
                 <div className="flex items-center gap-2">
                     {isFullyFunded && (
-                        <span className="inline-flex items-center rounded-full border border-transparent bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                        <span className="inline-flex items-center rounded-full border border-transparent bg-green-100 dark:bg-green-950 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:text-green-200">
                             Funded
                         </span>
                     )}

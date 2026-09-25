@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/layout";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,16 +17,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // next-themes writes the theme class onto <html> from an inline script that
+    // runs before hydration, so this element must opt out of mismatch warnings.
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Providers>
-          <Navbar />
-          <MobileNav />
-          {children}
-          <Toaster />
-          {/* Bottom padding for mobile tab bar */}
-          <div className="h-14 md:hidden" />
-        </Providers>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Providers>
+            <Navbar />
+            <MobileNav />
+            {children}
+            <Toaster />
+            {/* Bottom padding for mobile tab bar */}
+            <div className="h-14 md:hidden" />
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

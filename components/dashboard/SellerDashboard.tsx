@@ -145,10 +145,10 @@ export function SellerDashboard() {
               <CardContent>
                 {invoice.status === "rejected" && invoice.rejection_reason && (
                   <div
-                    className="mb-4 rounded-md border border-red-200 bg-red-50 p-4"
+                    className="mb-4 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4"
                     data-testid="rejected-banner"
                   >
-                    <p className="text-sm text-red-800">
+                    <p className="text-sm text-red-800 dark:text-red-200">
                       This invoice was not approved: {invoice.rejection_reason}
                     </p>
                     <Button
