@@ -5,25 +5,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PortfolioRowSkeleton } from "@/components/ui/skeletons";
 import { PositionCard } from "@/components/dashboard/PositionCard";
 import { PayoutHistoryTable } from "@/components/dashboard/PayoutHistoryTable";
 import { VestingProgressWidget } from "@/components/dashboard/VestingProgressWidget";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { calculateActiveTotal } from "@/lib/portfolio";
-
-function PositionRowSkeleton() {
-  return (
-    <Card>
-      <CardContent className="flex items-center justify-between pt-6">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-3 w-28" />
-        </div>
-        <Skeleton className="h-5 w-16" />
-      </CardContent>
-    </Card>
-  );
-}
 
 export function InvestorPortfolio() {
   const [activeTab, setActiveTab] = useState<"positions" | "payouts">("positions");
@@ -32,7 +19,7 @@ export function InvestorPortfolio() {
   // Show full skeleton only on initial load
   if (isLoading || !data) {
     return (
-      <div className="space-y-6" data-testid="investor-portfolio-loading">
+      <div className="space-y-6" data-testid="investor-portfolio-loading" aria-busy="true">
         <Card>
           <CardContent className="pt-6 space-y-2">
             <Skeleton className="h-4 w-40" />
@@ -41,7 +28,7 @@ export function InvestorPortfolio() {
         </Card>
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <PositionRowSkeleton key={i} />
+            <PortfolioRowSkeleton key={i} />
           ))}
         </div>
       </div>

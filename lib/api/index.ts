@@ -127,7 +127,15 @@ export async function transferInvoicePosition(
   return res.json();
 }
 
-export type NotificationEventType = "new_invoice" | "funding_milestone" | "settlement";
+export type NotificationEventType =
+  | "new_invoice"
+  | "funding_milestone"
+  | "settlement"
+  | "invoice_funded"
+  | "invoice_settled"
+  | "invoice_matured"
+  | "invoice_rejected"
+  | "deadline_extended";
 export type NotificationChannel = "email" | "in_app";
 
 export interface NotificationPreference {

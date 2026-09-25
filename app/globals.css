@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Dark mode is class-driven (next-themes toggles `.dark` on <html>), so the
+   Tailwind v4 `dark:` variant must follow the class strategy instead of the
+   default `prefers-color-scheme` media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: hsl(210 40% 98%);
   --foreground: hsl(222.2 47.4% 11.2%);

@@ -25,6 +25,7 @@ import {
   UNREAD_COUNT_QUERY_KEY,
 } from "@/hooks/useNotifications";
 import { NotificationBellBadge } from "@/components/layout/NotificationBellBadge";
+import { NotificationItemSkeleton } from "@/components/ui/skeletons";
 import type { NotificationItem } from "@/lib/api";
 
 function notificationTitle(notification: NotificationItem): string {
@@ -106,8 +107,14 @@ export function NotificationCenter() {
           </div>
 
           {isLoading ? (
-            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-              Loading…
+            <div
+              className="py-1"
+              aria-busy="true"
+              data-testid="notifications-loading"
+            >
+              {Array.from({ length: 3 }).map((_, i) => (
+                <NotificationItemSkeleton key={i} />
+              ))}
             </div>
           ) : isError ? (
             <div className="px-3 py-6 text-center text-xs text-red-500">
