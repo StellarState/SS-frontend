@@ -17,6 +17,21 @@ export interface InvoiceDetail extends Invoice {
   description: string;
   investors: { address: string; amount: number; timestamp: string }[];
   document_url: string;
+  early_repayment?: {
+    amount: number;
+    original_maturity_date: string;
+    new_settlement_date: string;
+  };
+  risk_rating?: {
+    tier: "A" | "B" | "C" | "D";
+    score: number;
+    breakdown: {
+      seller_history: number;
+      invoice_age: number;
+      amount: number;
+      sector: number;
+    };
+  };
 }
 
 export interface InvoicesResponse {

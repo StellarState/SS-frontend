@@ -16,6 +16,8 @@ import {
   MarketplaceFilterState,
   FundingStatus,
   isExpired,
+  ComparisonProvider,
+  InvoiceComparisonBar,
 } from "@/components/marketplace";
 import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
 
@@ -395,74 +397,77 @@ export default function MarketplacePage() {
   }
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Invoice Marketplace</h1>
+    <ComparisonProvider>
+      <main className="container mx-auto px-4 py-8 pb-24">
+        <h1 className="text-2xl font-bold mb-6">Invoice Marketplace</h1>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Collapsible Filter Panel on the left */}
-        <FilterPanel
-          filters={panelFilters}
-          onFilterChange={handleFilterChange}
-          onClear={handleClearAll}
-        />
-
-        <div className="flex-1 space-y-4">
-          <MarketplaceFilterBar
-            status={status}
-            search={search}
-            onStatusChange={handleStatusChange}
-            onSearchChange={handleSearchChange}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Collapsible Filter Panel on the left */}
+          <FilterPanel
+            filters={panelFilters}
+            onFilterChange={handleFilterChange}
             onClear={handleClearAll}
           />
 
-          {isFetching && !isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
-              <Loader2 className="size-3 animate-spin" />
-              Refreshing…
+          <div className="flex-1 space-y-4">
+            <MarketplaceFilterBar
+              status={status}
+              search={search}
+              onStatusChange={handleStatusChange}
+              onSearchChange={handleSearchChange}
+              onClear={handleClearAll}
+            />
+
+            {isFetching && !isLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground my-4">
+                <Loader2 className="size-3 animate-spin" />
+                Refreshing…
+              </div>
+            )}
+
+            <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
+              <SortHeader
+                label="Face Value"
+                field="amount"
+                activeField={sortField}
+                activeDirection={sortDirection}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Deadline"
+                field="due_date"
+                activeField={sortField}
+                activeDirection={sortDirection}
+                onSort={handleSort}
+              />
             </div>
-          )}
 
-          <div className="flex items-center gap-6 mb-4 mt-4 text-sm text-muted-foreground">
-            <SortHeader
-              label="Face Value"
-              field="amount"
-              activeField={sortField}
-              activeDirection={sortDirection}
-              onSort={handleSort}
-            />
-            <SortHeader
-              label="Deadline"
-              field="due_date"
-              activeField={sortField}
-              activeDirection={sortDirection}
-              onSort={handleSort}
-            />
-          </div>
-
-          <div className="space-y-4">
-            {filtered.length === 0 ? (
-              <p className="py-12 text-center text-muted-foreground" data-testid="no-invoices-msg">
-                No invoices match your filters.
-              </p>
-            ) : (
-              filtered.map((invoice) => (
-                <InvoiceRow key={invoice.id} invoice={invoice} />
-              ))
-            )}
-            {isFetchingNextPage &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <InvoiceCardSkeleton key={`skeleton-${i}`} />
-              ))}
-            {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
-            {!hasNextPage && filtered.length > 0 && (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                No more invoices
-              </p>
-            )}
+            <div className="space-y-4">
+              {filtered.length === 0 ? (
+                <p className="py-12 text-center text-muted-foreground" data-testid="no-invoices-msg">
+                  No invoices match your filters.
+                </p>
+              ) : (
+                filtered.map((invoice) => (
+                  <InvoiceRow key={invoice.id} invoice={invoice} />
+                ))
+              )}
+              {isFetchingNextPage &&
+                Array.from({ length: 3 }).map((_, i) => (
+                  <InvoiceCardSkeleton key={`skeleton-${i}`} />
+                ))}
+              {hasNextPage && <div ref={sentinelRefCallback} className="h-4" />}
+              {!hasNextPage && filtered.length > 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  No more invoices
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <InvoiceComparisonBar />
+    </ComparisonProvider>
   );
 }
 
