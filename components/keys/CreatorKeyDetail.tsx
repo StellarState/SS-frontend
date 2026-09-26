@@ -13,6 +13,7 @@ import { CreatorRevenueSection } from "@/components/keys/CreatorRevenueSection";
 import { DistributeDividendsPanel } from "@/components/keys/DistributeDividendsPanel";
 import { SupplyCapSettings } from "@/components/keys/SupplyCapSettings";
 import { WhitelistManager } from "@/components/keys/WhitelistManager";
+import { CurveMigrationTimeline } from "@/components/keys/CurveMigrationTimeline";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -172,7 +173,10 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
           )}
 
           {activeTab === "settings" && creatorKey.is_creator && (
-            <SupplyCapSettings keyId={creatorKey.id} />
+            <>
+              <CurveMigrationTimeline keyId={creatorKey.id} isCreator={creatorKey.is_creator} />
+              <SupplyCapSettings keyId={creatorKey.id} />
+            </>
           )}
 
           {activeTab === "governance" && (

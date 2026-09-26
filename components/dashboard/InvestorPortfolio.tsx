@@ -9,6 +9,7 @@ import { PortfolioRowSkeleton } from "@/components/ui/skeletons";
 import { PositionCard } from "@/components/dashboard/PositionCard";
 import { PayoutHistoryTable } from "@/components/dashboard/PayoutHistoryTable";
 import { VestingProgressWidget } from "@/components/dashboard/VestingProgressWidget";
+import { DividendEarningsCard } from "@/components/dashboard/DividendEarningsCard";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { calculateActiveTotal } from "@/lib/portfolio";
 
@@ -42,27 +43,30 @@ export function InvestorPortfolio() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Total Committed (Active)
-              </p>
-              <p className="text-2xl font-bold">{formattedTotal}</p>
-            </div>
-            {isFetching && (
-              <div
-                className="text-xs text-muted-foreground flex items-center gap-1"
-                data-testid="portfolio-refreshing"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" />
-                Refreshing…
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total Committed (Active)
+                </p>
+                <p className="text-2xl font-bold">{formattedTotal}</p>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {isFetching && (
+                <div
+                  className="text-xs text-muted-foreground flex items-center gap-1"
+                  data-testid="portfolio-refreshing"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" />
+                  Refreshing…
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <DividendEarningsCard />
+      </div>
 
       <div className="flex border-b gap-4">
         <button
