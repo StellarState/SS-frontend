@@ -237,7 +237,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
                 <div>
                   <p className="font-mono text-sm">{investor.address}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(investor.timestamp).toLocaleDateString()}
+                    {new Date(investor.timestamp).toLocaleDateString()} · {invoice.amount > 0 ? ((investor.amount / invoice.amount) * 100).toFixed(2) : "0.00"}% of invoice
                   </p>
                 </div>
               </div>

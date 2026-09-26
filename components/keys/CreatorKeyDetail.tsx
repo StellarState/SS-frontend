@@ -40,8 +40,7 @@ function CreatorKeyDetailSkeleton() {
 
 export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "governance" | "settings"
-    "overview" | "governance" | "whitelist"
+    "overview" | "governance" | "settings" | "whitelist"
   >("overview");
   const { jwt } = useAuth();
   const { data: creatorKey, isLoading } = useCreatorKey(keyId, jwt);
@@ -110,6 +109,7 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               Governance
             </button>
             {creatorKey.is_creator && (
+              <>
               <button
                 type="button"
                 className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
@@ -121,6 +121,10 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
                 data-testid="settings-tab"
               >
                 Settings
+              </button>
+              <button
+                type="button"
+                className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
                   activeTab === "whitelist"
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -130,6 +134,7 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               >
                 Whitelist
               </button>
+              </>
             )}
           </div>
 

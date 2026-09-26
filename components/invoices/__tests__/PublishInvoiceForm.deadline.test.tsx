@@ -6,10 +6,15 @@ vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("@/lib/api", () => ({
   uploadDocumentToIpfs: vi.fn(),
   publishInvoice: vi.fn(),
 }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ jwt: null }) }));
 
 describe("PublishInvoiceForm - Deadline Validation", () => {
   beforeEach(() => {
