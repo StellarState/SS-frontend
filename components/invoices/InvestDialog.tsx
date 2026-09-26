@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInput";
+import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { useInvestMutation } from "@/hooks/useInvestments";
 import { Loader2 } from "lucide-react";
 
@@ -76,6 +77,8 @@ export function InvestDialog({
               max={remainingAmount}
               onValidAmountChange={setAmount}
             />
+
+            <FeeTierDisplay amount={amount} />
 
             <div className="flex gap-3">
               <Button

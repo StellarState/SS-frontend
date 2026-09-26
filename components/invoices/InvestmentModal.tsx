@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInput";
+import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { useInvestMutation } from "@/hooks/useInvestments";
 import {
   Popover,
@@ -55,6 +56,8 @@ export function InvestmentModal({
             max={maxInvestment}
             onValidAmountChange={setValidAmount}
           />
+
+          <FeeTierDisplay amount={validAmount} />
 
           <div className="flex gap-2 pt-2">
             <Button
