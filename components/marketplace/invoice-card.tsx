@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { CountdownTimer, isExpired } from "./countdown-timer";
+import { useComparison } from "./InvoiceComparisonContext";
+import { Scale } from "lucide-react";
 import type { Invoice } from "@/lib/api";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -19,6 +21,8 @@ interface InvoiceCardProps {
 export function InvoiceCard({ invoice, onInvest }: InvoiceCardProps) {
   const published = invoice.status === "open";
   const expired = isExpired(invoice.due_date);
+  const { addToCompare, isInCompare, compareInvoices } = useComparison();
+  const canAddToCompare = !isInCompare(invoice.id) && compareInvoices.length < 2;
 
   return (
     <Card className="flex flex-col">
@@ -47,13 +51,24 @@ export function InvoiceCard({ invoice, onInvest }: InvoiceCardProps) {
           investorCount={invoice.investor_count}
         />
 
-        <Button
-          className="mt-auto w-full"
-          disabled={!published || expired}
-          onClick={() => onInvest?.(invoice.id)}
-        >
-          {expired ? "Expired" : "Invest"}
-        </Button>
+        <div className="flex gap-2 mt-auto">
+          <Button
+            className="flex-1"
+            disabled={!published || expired}
+            onClick={() => onInvest?.(invoice.id)}
+          >
+            {expired ? "Expired" : "Invest"}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!canAddToCompare}
+            onClick={() => addToCompare(invoice)}
+            title="Add to compare"
+          >
+            <Scale className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

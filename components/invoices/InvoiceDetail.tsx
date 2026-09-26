@@ -152,6 +152,9 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <InvoiceStatusBadge status={invoice.status} />
+              {invoice.risk_rating && (
+                <RiskRatingBadge tier={invoice.risk_rating.tier} score={invoice.risk_rating.score} />
+              )}
               <WatchlistButton invoiceId={invoice.id} />
               <ShareInvoiceButton />
             </div>
@@ -176,6 +179,18 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           />
         </CardContent>
       </Card>
+
+      {invoice.status === "funded" && invoice.early_repayment && (
+        <EarlyRepaymentBanner
+          amount={invoice.early_repayment.amount}
+          originalMaturityDate={invoice.early_repayment.original_maturity_date}
+          newSettlementDate={invoice.early_repayment.new_settlement_date}
+        />
+      )}
+
+      {invoice.risk_rating && (
+        <RiskRatingBreakdown breakdown={invoice.risk_rating.breakdown} />
+      )}
 
       <div data-testid="invest-section">
         {invoice.status === "open" && !expired && (

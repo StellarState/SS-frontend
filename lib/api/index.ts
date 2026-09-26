@@ -17,6 +17,21 @@ export interface InvoiceDetail extends Invoice {
   description: string;
   investors: { address: string; amount: number; timestamp: string }[];
   document_url: string;
+  early_repayment?: {
+    amount: number;
+    original_maturity_date: string;
+    new_settlement_date: string;
+  };
+  risk_rating?: {
+    tier: "A" | "B" | "C" | "D";
+    score: number;
+    breakdown: {
+      seller_history: number;
+      invoice_age: number;
+      amount: number;
+      sector: number;
+    };
+  };
 }
 
 export interface InvoicesResponse {
@@ -210,11 +225,45 @@ export interface SellerDashboardData {
   displayName?: string | null;
   avatar_url?: string | null;
   avatarUrl?: string | null;
+  royalty_earnings?: number;
+}
+
+export interface RoyaltyEarning {
+  id: string;
+  invoice_id: string;
+  invoice_title: string;
+  transfer_date: string;
+  transfer_amount: number;
+  royalty_earned: number;
+  claimed: boolean;
+  claimed_at?: string;
+  transaction_hash?: string;
+}
+
+export interface RoyaltyEarningsResponse {
+  total_earnings: number;
+  claimable_earnings: number;
+  earnings: RoyaltyEarning[];
 }
 
 export async function fetchSellerDashboard(): Promise<SellerDashboardData> {
   const res = await fetch(`${API_BASE}/seller/analytics`);
   if (!res.ok) throw new Error("Failed to fetch seller dashboard");
+  return res.json();
+}
+
+export async function fetchRoyaltyEarnings(): Promise<RoyaltyEarningsResponse> {
+  const res = await fetch(`${API_BASE}/seller/royalty-earnings`);
+  if (!res.ok) throw new Error("Failed to fetch royalty earnings");
+  return res.json();
+}
+
+export async function claimRoyalties(): Promise<{ success: boolean; transaction_hash?: string }> {
+  const res = await fetch(`${API_BASE}/seller/claim-royalties`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to claim royalties");
   return res.json();
 }
 

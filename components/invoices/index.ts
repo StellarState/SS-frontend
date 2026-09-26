@@ -14,6 +14,9 @@ export { ShareInvoiceButton } from "./ShareInvoiceButton";
 export { WatchlistButton } from "./WatchlistButton";
 export { DeadlineExtensionForm } from "./DeadlineExtensionForm";
 export { InvoiceTimeline } from "./InvoiceTimeline";
+export { EarlyRepaymentBanner } from "./EarlyRepaymentBanner";
+export { RiskRatingBadge } from "./RiskRatingBadge";
+export { RiskRatingBreakdown } from "./RiskRatingBreakdown";
 
 export { InvoiceBackButton } from "./InvoiceBackButton";
 export { InvoiceProtectionInfo } from "./InvoiceProtectionInfo";
