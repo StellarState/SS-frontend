@@ -17,6 +17,21 @@ export interface InvoiceDetail extends Invoice {
   description: string;
   investors: { address: string; amount: number; timestamp: string }[];
   document_url: string;
+  early_repayment?: {
+    amount: number;
+    original_maturity_date: string;
+    new_settlement_date: string;
+  };
+  risk_rating?: {
+    tier: "A" | "B" | "C" | "D";
+    score: number;
+    breakdown: {
+      seller_history: number;
+      invoice_age: number;
+      amount: number;
+      sector: number;
+    };
+  };
 }
 
 export interface InvoicesResponse {
@@ -127,7 +142,15 @@ export async function transferInvoicePosition(
   return res.json();
 }
 
-export type NotificationEventType = "new_invoice" | "funding_milestone" | "settlement";
+export type NotificationEventType =
+  | "new_invoice"
+  | "funding_milestone"
+  | "settlement"
+  | "invoice_funded"
+  | "invoice_settled"
+  | "invoice_matured"
+  | "invoice_rejected"
+  | "deadline_extended";
 export type NotificationChannel = "email" | "in_app";
 
 export interface NotificationPreference {
@@ -204,11 +227,45 @@ export interface SellerDashboardData {
   displayName?: string | null;
   avatar_url?: string | null;
   avatarUrl?: string | null;
+  royalty_earnings?: number;
+}
+
+export interface RoyaltyEarning {
+  id: string;
+  invoice_id: string;
+  invoice_title: string;
+  transfer_date: string;
+  transfer_amount: number;
+  royalty_earned: number;
+  claimed: boolean;
+  claimed_at?: string;
+  transaction_hash?: string;
+}
+
+export interface RoyaltyEarningsResponse {
+  total_earnings: number;
+  claimable_earnings: number;
+  earnings: RoyaltyEarning[];
 }
 
 export async function fetchSellerDashboard(): Promise<SellerDashboardData> {
   const res = await fetch(`${API_BASE}/seller/analytics`);
   if (!res.ok) throw new Error("Failed to fetch seller dashboard");
+  return res.json();
+}
+
+export async function fetchRoyaltyEarnings(): Promise<RoyaltyEarningsResponse> {
+  const res = await fetch(`${API_BASE}/seller/royalty-earnings`);
+  if (!res.ok) throw new Error("Failed to fetch royalty earnings");
+  return res.json();
+}
+
+export async function claimRoyalties(): Promise<{ success: boolean; transaction_hash?: string }> {
+  const res = await fetch(`${API_BASE}/seller/claim-royalties`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to claim royalties");
   return res.json();
 }
 
@@ -264,6 +321,80 @@ export async function updateNotificationPreference(
     body: JSON.stringify({ channel, enabled }),
   });
   if (!res.ok) throw new Error("Failed to update notification preference");
+  return res.json();
+}
+
+/* ─── Notification centre (issue #283) ──────────────────────────────────── */
+
+export interface NotificationItem {
+  id: string;
+  /** Short notification title, e.g. "Invoice fully funded". */
+  title?: string;
+  /** Alternative message field some backend versions return. */
+  message?: string;
+  /** Optional longer body text. */
+  body?: string;
+  /** Where clicking the notification should navigate, e.g. /marketplace/123. */
+  link?: string;
+  read: boolean;
+  created_at?: string;
+}
+
+export async function fetchNotifications(): Promise<NotificationItem[]> {
+  const res = await fetch(`${API_BASE}/notifications`);
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json();
+}
+
+export async function fetchUnreadCount(): Promise<{ count: number }> {
+  const res = await fetch(`${API_BASE}/notifications/unread-count`);
+  if (!res.ok) throw new Error("Failed to fetch unread count");
+  return res.json();
+}
+
+export async function markNotificationAsRead(
+  notificationId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to mark notification as read");
+  return res.json();
+}
+
+export async function markAllNotificationsAsRead(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/notifications/read-all`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to mark all notifications as read");
+  return res.json();
+}
+
+/* ─── Settled-invoice pro-rata returns (issue #284) ─────────────────────── */
+
+export interface InvoiceReturnRow {
+  investor_wallet: string;
+  /** Share of the invoice principal, in percent (0–100). */
+  share_percentage: number;
+  principal_invested: number;
+  return_amount: number;
+  net_profit: number;
+}
+
+export interface InvoiceReturnsResponse {
+  invoice_id: string;
+  /** Backend calculation method the frontend must mirror in tooltips. */
+  calculation: "floor_division" | string;
+  settled_at: string;
+  total_return_amount: number;
+  returns: InvoiceReturnRow[];
+}
+
+export async function fetchInvoiceReturns(
+  invoiceId: string
+): Promise<InvoiceReturnsResponse> {
+  const res = await fetch(`${API_BASE}/invoices/${invoiceId}/returns`);
+  if (!res.ok) throw new Error("Failed to fetch invoice returns");
   return res.json();
 }
 
@@ -853,15 +984,6 @@ function conflictError(message: string): ApiConflictError {
   return error;
 }
 
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const payload = await res.json();
-    return payload?.message ?? payload?.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 export async function updateKeySupplyCap(
   keyId: string,
   supplyCap: number,
@@ -1325,4 +1447,435 @@ export async function approveKeyPause(
     throw new Error(await readErrorMessage(res, "Failed to approve pause"));
   }
   return normalizeAdminKeyControl(await res.json());
+}
+// #305 — Admin user management: searchable user table with role assignment
+// and suspension controls.
+
+export type AdminUserRole = "user" | "seller" | "admin";
+
+export interface AdminUserRow {
+  wallet: string;
+  role: AdminUserRole;
+  suspended: boolean;
+  joined_at: string;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserRow[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+export async function fetchAdminUsers(
+  search = "",
+  cursor?: string,
+  token?: string
+): Promise<AdminUsersResponse> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${API_BASE}/admin/users?${params}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to fetch users"));
+  }
+  return res.json();
+}
+
+export async function updateAdminUserRole(
+  wallet: string,
+  role: AdminUserRole,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to update role"));
+  }
+  return res.json();
+}
+
+export async function suspendAdminUser(
+  wallet: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/suspend`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to suspend user"));
+  }
+  return res.json();
+}
+
+export async function unsuspendAdminUser(
+  wallet: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/users/${wallet}/unsuspend`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to unsuspend user"));
+  }
+  return res.json();
+}
+
+// #319 — Public creator profile: issued invoices, funding stats, and
+// settlement track record. Public endpoints; no wallet connection required.
+
+export interface CreatorProfileStats {
+  total_invoices: number;
+  total_funded: number;
+  settlement_success_rate: number;
+}
+
+export interface CreatorProfileInvoice {
+  id: string;
+  title: string;
+  amount: number;
+  funded_amount: number;
+  status: Invoice["status"];
+  created_at: string;
+}
+
+export interface CreatorProfileResponse {
+  wallet: string;
+  display_name?: string | null;
+  displayName?: string | null;
+  joined_at: string;
+  joinedAt?: string;
+  kyc_verified: boolean;
+  kycVerified?: boolean;
+  stats: CreatorProfileStats;
+  invoices: CreatorProfileInvoice[];
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+function normalizeCreatorProfile(raw: any): CreatorProfileResponse {
+  return {
+    wallet: raw.wallet ?? raw.address ?? "",
+    display_name: raw.display_name ?? raw.displayName ?? null,
+    joined_at: raw.joined_at ?? raw.joinedAt ?? raw.created_at ?? "",
+    kyc_verified: Boolean(raw.kyc_verified ?? raw.kycVerified),
+    stats: {
+      total_invoices: raw.stats?.total_invoices ?? raw.total_invoices ?? 0,
+      total_funded: raw.stats?.total_funded ?? raw.total_funded ?? 0,
+      settlement_success_rate:
+        raw.stats?.settlement_success_rate ?? raw.settlement_success_rate ?? 0,
+    },
+    invoices: raw.invoices ?? [],
+    has_more: Boolean(raw.has_more),
+    next_cursor: raw.next_cursor ?? null,
+  };
+}
+
+export async function fetchCreatorProfile(
+  wallet: string,
+  cursor?: string
+): Promise<CreatorProfileResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${API_BASE}/creators/${wallet}?${params}`);
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to fetch creator profile"));
+  }
+  return normalizeCreatorProfile(await res.json());
+}
+
+// ─── Leaderboard (top investors) ──────────────────────────────────────────
+// NB: useLeaderboard imports this; provide a tolerant normalizer so snake_case
+// and camelCase backend payloads both work.
+
+export interface LeaderboardInvestor {
+  address: string;
+  total_committed: number;
+  invoice_count: number;
+}
+
+function normalizeLeaderboardInvestor(raw: any): LeaderboardInvestor {
+  return {
+    address:
+      raw.address ?? raw.wallet ?? raw.wallet_address ?? raw.walletAddress ?? "",
+    total_committed:
+      raw.total_committed ?? raw.totalCommitted ?? raw.total ?? 0,
+    invoice_count:
+      raw.invoice_count ?? raw.invoiceCount ?? raw.invoices_count ?? 0,
+  };
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardInvestor[]> {
+  const res = await fetch(`${API_BASE}/leaderboard`);
+  if (!res.ok) throw new Error("Failed to fetch leaderboard");
+  const payload = await res.json();
+  const list = Array.isArray(payload) ? payload : payload.investors ?? [];
+  return list.map(normalizeLeaderboardInvestor);
+}
+
+// ─── Investor reputation (#342) ───────────────────────────────────────────
+
+export type ReputationTier = "Verified" | "Trusted" | "New";
+
+export function getReputationTier(score: number): ReputationTier {
+  if (score >= 800) return "Verified";
+  if (score >= 500) return "Trusted";
+  return "New";
+}
+
+export interface ReputationScoreHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface InvestorReputation {
+  wallet: string;
+  score: number;
+  tier: ReputationTier;
+  investments_completed: number;
+  governance_votes: number;
+  platform_tenure_days: number;
+  history: ReputationScoreHistoryPoint[];
+}
+
+function normalizeReputationHistory(raw: any): ReputationScoreHistoryPoint[] {
+  const list = Array.isArray(raw) ? raw : raw?.history ?? raw?.points ?? [];
+  return (Array.isArray(list) ? list : []).map((p: any) => ({
+    date: String(p.date ?? p.timestamp ?? p.created_at ?? ""),
+    score: Number(p.score ?? p.value ?? 0),
+  }));
+}
+
+function normalizeInvestorReputation(raw: any, wallet: string): InvestorReputation {
+  const score = Number(
+    raw.score ?? raw.reputation_score ?? raw.reputationScore ?? 0
+  );
+  const breakdown = raw.breakdown ?? raw;
+  return {
+    wallet: raw.wallet ?? raw.address ?? wallet,
+    score,
+    tier: (raw.tier as ReputationTier) ?? getReputationTier(score),
+    investments_completed: Number(
+      raw.investments_completed ??
+        breakdown.investments_completed ??
+        breakdown.investmentsCompleted ??
+        raw.investmentsCompleted ??
+        0
+    ),
+    governance_votes: Number(
+      raw.governance_votes ??
+        breakdown.governance_votes ??
+        breakdown.governanceVotes ??
+        raw.governanceVotes ??
+        0
+    ),
+    platform_tenure_days: Number(
+      raw.platform_tenure_days ??
+        breakdown.platform_tenure_days ??
+        breakdown.platformTenureDays ??
+        raw.platformTenureDays ??
+        raw.tenure_days ??
+        0
+    ),
+    history: normalizeReputationHistory(raw.history ?? raw.score_history ?? raw),
+  };
+}
+
+export async function fetchInvestorReputation(
+  wallet: string
+): Promise<InvestorReputation> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/reputation`
+  );
+  if (!res.ok) throw new Error("Failed to fetch investor reputation");
+  return normalizeInvestorReputation(await res.json(), wallet);
+}
+
+// ─── Platform activity feed (#341) ────────────────────────────────────────
+
+export type PlatformActivityEventType =
+  | "new_investment"
+  | "invoice_funded"
+  | "invoice_settled"
+  | "new_listing";
+
+export interface PlatformActivityEvent {
+  id: string;
+  type: PlatformActivityEventType;
+  invoice_id: string;
+  title: string;
+  amount?: number;
+  created_at: string;
+}
+
+const PLATFORM_ACTIVITY_TYPES: PlatformActivityEventType[] = [
+  "new_investment",
+  "invoice_funded",
+  "invoice_settled",
+  "new_listing",
+];
+
+function normalizePlatformActivityType(raw: any): PlatformActivityEventType {
+  const v = String(raw ?? "").toLowerCase();
+  if ((PLATFORM_ACTIVITY_TYPES as string[]).includes(v))
+    return v as PlatformActivityEventType;
+  // Tolerate backend aliases.
+  if (v === "investment" || v === "new investment") return "new_investment";
+  if (v === "funded" || v === "invoice fully funded") return "invoice_funded";
+  if (v === "settled" || v === "settlement") return "invoice_settled";
+  if (v === "listing" || v === "new invoice") return "new_listing";
+  return "new_listing";
+}
+
+function normalizePlatformActivityEvent(raw: any): PlatformActivityEvent {
+  return {
+    id: String(raw.id ?? raw.event_id ?? raw.eventId ?? ""),
+    type: normalizePlatformActivityType(
+      raw.type ?? raw.event_type ?? raw.eventType
+    ),
+    invoice_id: String(
+      raw.invoice_id ?? raw.invoiceId ?? raw.invoice ?? ""
+    ),
+    title: String(raw.title ?? raw.invoice_title ?? raw.description ?? ""),
+    amount:
+      raw.amount !== undefined && raw.amount !== null
+        ? Number(raw.amount)
+        : undefined,
+    created_at: String(
+      raw.created_at ?? raw.createdAt ?? raw.timestamp ?? ""
+    ),
+  };
+}
+
+export async function fetchPlatformActivity(
+  limit = 20
+): Promise<PlatformActivityEvent[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${API_BASE}/activity?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch platform activity");
+  const payload = await res.json();
+  const events = Array.isArray(payload)
+    ? payload
+    : payload.events ?? payload.activity ?? [];
+  return events
+    .map(normalizePlatformActivityEvent)
+    .slice(0, limit);
+}
+
+// ─── Sell tax + buyback pool (#343) ───────────────────────────────────────
+
+export interface InvoiceProtectionInfo {
+  invoice_id: string;
+  sell_tax_percentage: number;
+  buyback_pool_balance: number;
+}
+
+function normalizeProtectionInfo(raw: any, invoiceId: string): InvoiceProtectionInfo {
+  return {
+    invoice_id: raw.invoice_id ?? raw.invoiceId ?? invoiceId,
+    sell_tax_percentage: Number(
+      raw.sell_tax_percentage ?? raw.sellTaxPercentage ?? raw.sell_tax ?? 0
+    ),
+    buyback_pool_balance: Number(
+      raw.buyback_pool_balance ??
+        raw.buybackPoolBalance ??
+        raw.buyback_pool ??
+        0
+    ),
+  };
+}
+
+export async function fetchInvoiceProtection(
+  invoiceId: string
+): Promise<InvoiceProtectionInfo> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/protection`
+  );
+  if (!res.ok) throw new Error("Failed to fetch sell tax info");
+  return normalizeProtectionInfo(await res.json(), invoiceId);
+}
+
+/** Sell tax percentage for an invoice (issue #343). */
+export async function fetchSellTax(invoiceId: string): Promise<number> {
+  const info = await fetchInvoiceProtection(invoiceId);
+  return info.sell_tax_percentage;
+}
+
+/** Buyback pool balance in XLM (issue #343). */
+export async function fetchBuybackPool(invoiceId: string): Promise<number> {
+  const info = await fetchInvoiceProtection(invoiceId);
+  return info.buyback_pool_balance;
+}
+
+// ─── Dynamic fee tier (#345) ──────────────────────────────────────────────
+
+export interface FeeTierEntry {
+  tier: string;
+  min_volume: number;
+  fee_percentage: number;
+}
+
+export interface FeeTierInfo {
+  fee_percentage: number;
+  tier_label: string;
+  volume_24h: number;
+  tiers: FeeTierEntry[];
+  is_lowest_tier: boolean;
+}
+
+export const FEE_TIERS: FeeTierEntry[] = [
+  { tier: "Standard", min_volume: 0, fee_percentage: 2.5 },
+  { tier: "Silver", min_volume: 100_000, fee_percentage: 2.0 },
+  { tier: "Gold", min_volume: 500_000, fee_percentage: 1.5 },
+  { tier: "Platinum", min_volume: 1_000_000, fee_percentage: 1.0 },
+];
+
+function normalizeFeeTierEntry(raw: any): FeeTierEntry {
+  return {
+    tier: String(raw.tier ?? raw.label ?? raw.name ?? ""),
+    min_volume: Number(raw.min_volume ?? raw.minVolume ?? raw.threshold ?? 0),
+    fee_percentage: Number(
+      raw.fee_percentage ?? raw.feePercentage ?? raw.fee ?? 0
+    ),
+  };
+}
+
+function normalizeFeeTierInfo(raw: any): FeeTierInfo {
+  const tiers = Array.isArray(raw.tiers)
+    ? raw.tiers.map(normalizeFeeTierEntry)
+    : FEE_TIERS;
+  const fee_percentage = Number(
+    raw.fee_percentage ?? raw.feePercentage ?? raw.fee ?? 0
+  );
+  const tier_label = String(
+    raw.tier_label ?? raw.tierLabel ?? raw.tier ?? ""
+  );
+  const volume_24h = Number(
+    raw.volume_24h ?? raw.volume24h ?? raw.volume ?? 0
+  );
+  const lowestFee = Math.min(...tiers.map((t) => t.fee_percentage));
+  return {
+    fee_percentage,
+    tier_label,
+    volume_24h,
+    tiers,
+    is_lowest_tier:
+      typeof raw.is_lowest_tier === "boolean"
+        ? raw.is_lowest_tier
+        : fee_percentage <= lowestFee,
+  };
+}
+
+export async function fetchFeeTier(): Promise<FeeTierInfo> {
+  const res = await fetch(`${API_BASE}/protocol/fee-tier`);
+  if (!res.ok) throw new Error("Failed to fetch fee tier");
+  return normalizeFeeTierInfo(await res.json());
 }

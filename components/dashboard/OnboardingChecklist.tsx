@@ -1,24 +1,40 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { CheckCircle2, Circle, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export interface OnboardingUserData {
-  kycStatus: "pending" | "approved" | "rejected" | null;
-  displayName: string | null;
-  avatarUrl: string | null;
-  invoiceCount: number;
-}
+export type ChecklistKycStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "requires_resubmission"
+  | "not_submitted"
+  | null;
 
 export interface OnboardingChecklistProps {
-  data: OnboardingUserData;
+  walletConnected: boolean;
+  kycStatus: ChecklistKycStatus;
+  invoiceCount: number;
 }
 
 const STORAGE_KEY = "onboarding_checklist_dismissed";
 
-export function OnboardingChecklist({ data }: OnboardingChecklistProps) {
+/**
+ * Seller onboarding checklist (#316).
+ *
+ * Guides new sellers through the three steps required to submit their first
+ * invoice: connect wallet, complete KYC, and submit the first invoice. Each
+ * step links to its action page, a progress percentage is shown at the top,
+ * and the checklist disappears automatically once every step is complete.
+ */
+export function OnboardingChecklist({
+  walletConnected,
+  kycStatus,
+  invoiceCount,
+}: OnboardingChecklistProps) {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
@@ -30,15 +46,30 @@ export function OnboardingChecklist({ data }: OnboardingChecklistProps) {
     }
   }, []);
 
-  const step1Complete = data.kycStatus === "pending" || data.kycStatus === "approved";
-  const step2Complete =
-    data.displayName !== null &&
-    data.displayName.trim() !== "" &&
-    data.avatarUrl !== null &&
-    data.avatarUrl.trim() !== "";
-  const step3Complete = data.invoiceCount >= 1;
+  const steps = [
+    {
+      key: "connect-wallet",
+      label: "Connect your wallet",
+      href: "/connect-wallet",
+      complete: walletConnected,
+    },
+    {
+      key: "kyc",
+      label: "Complete Identity Verification (KYC)",
+      href: "/kyc/status",
+      complete: kycStatus === "approved",
+    },
+    {
+      key: "first-invoice",
+      label: "Submit your first invoice",
+      href: "/seller/publish",
+      complete: invoiceCount >= 1,
+    },
+  ];
 
-  const allComplete = step1Complete && step2Complete && step3Complete;
+  const completedCount = steps.filter((step) => step.complete).length;
+  const progressPercentage = Math.round((completedCount / steps.length) * 100);
+  const allComplete = completedCount === steps.length;
 
   if (isDismissed || allComplete) {
     return null;
@@ -67,38 +98,50 @@ export function OnboardingChecklist({ data }: OnboardingChecklistProps) {
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center gap-3 text-sm" data-testid="checklist-step-1">
-          {step1Complete ? (
-            <CheckCircle2 className="size-5 text-green-500 shrink-0" data-testid="step-1-complete" />
-          ) : (
-            <Circle className="size-5 text-muted-foreground shrink-0" data-testid="step-1-incomplete" />
-          )}
-          <span className={step1Complete ? "line-through text-muted-foreground" : "font-medium"}>
-            Complete Identity Verification (KYC)
-          </span>
+        <div
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+          data-testid="checklist-progress"
+        >
+          <span>{progressPercentage}% complete</span>
+          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${progressPercentage}%` }}
+              role="progressbar"
+              aria-valuenow={progressPercentage}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Onboarding progress"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 text-sm" data-testid="checklist-step-2">
-          {step2Complete ? (
-            <CheckCircle2 className="size-5 text-green-500 shrink-0" data-testid="step-2-complete" />
-          ) : (
-            <Circle className="size-5 text-muted-foreground shrink-0" data-testid="step-2-incomplete" />
-          )}
-          <span className={step2Complete ? "line-through text-muted-foreground" : "font-medium"}>
-            Complete your seller profile
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3 text-sm" data-testid="checklist-step-3">
-          {step3Complete ? (
-            <CheckCircle2 className="size-5 text-green-500 shrink-0" data-testid="step-3-complete" />
-          ) : (
-            <Circle className="size-5 text-muted-foreground shrink-0" data-testid="step-3-incomplete" />
-          )}
-          <span className={step3Complete ? "line-through text-muted-foreground" : "font-medium"}>
-            Create your first invoice
-          </span>
-        </div>
+        {steps.map((step, index) => (
+          <div key={step.key} className="flex items-center gap-3 text-sm">
+            {step.complete ? (
+              <CheckCircle2
+                className="size-5 text-green-500 shrink-0"
+                data-testid={`step-${index + 1}-complete`}
+              />
+            ) : (
+              <Circle
+                className="size-5 text-muted-foreground shrink-0"
+                data-testid={`step-${index + 1}-incomplete`}
+              />
+            )}
+            {step.complete ? (
+              <span className="line-through text-muted-foreground">{step.label}</span>
+            ) : (
+              <Link
+                href={step.href}
+                className="font-medium underline-offset-4 hover:underline"
+                data-testid={`step-${index + 1}-link`}
+              >
+                {step.label}
+              </Link>
+            )}
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
