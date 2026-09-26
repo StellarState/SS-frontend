@@ -19,3 +19,5 @@ export { RiskRatingBadge } from "./RiskRatingBadge";
 export { RiskRatingBreakdown } from "./RiskRatingBreakdown";
 
 export { InvoiceBackButton } from "./InvoiceBackButton";
+export { InvoiceProtectionInfo } from "./InvoiceProtectionInfo";
+export { FeeTierDisplay } from "./FeeTierDisplay";

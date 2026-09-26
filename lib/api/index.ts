@@ -982,15 +982,6 @@ function conflictError(message: string): ApiConflictError {
   return error;
 }
 
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const payload = await res.json();
-    return payload?.message ?? payload?.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 export async function updateKeySupplyCap(
   keyId: string,
   supplyCap: number,
@@ -1597,4 +1588,292 @@ export async function fetchCreatorProfile(
     throw new Error(await readErrorMessage(res, "Failed to fetch creator profile"));
   }
   return normalizeCreatorProfile(await res.json());
+}
+
+// ─── Leaderboard (top investors) ──────────────────────────────────────────
+// NB: useLeaderboard imports this; provide a tolerant normalizer so snake_case
+// and camelCase backend payloads both work.
+
+export interface LeaderboardInvestor {
+  address: string;
+  total_committed: number;
+  invoice_count: number;
+}
+
+function normalizeLeaderboardInvestor(raw: any): LeaderboardInvestor {
+  return {
+    address:
+      raw.address ?? raw.wallet ?? raw.wallet_address ?? raw.walletAddress ?? "",
+    total_committed:
+      raw.total_committed ?? raw.totalCommitted ?? raw.total ?? 0,
+    invoice_count:
+      raw.invoice_count ?? raw.invoiceCount ?? raw.invoices_count ?? 0,
+  };
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardInvestor[]> {
+  const res = await fetch(`${API_BASE}/leaderboard`);
+  if (!res.ok) throw new Error("Failed to fetch leaderboard");
+  const payload = await res.json();
+  const list = Array.isArray(payload) ? payload : payload.investors ?? [];
+  return list.map(normalizeLeaderboardInvestor);
+}
+
+// ─── Investor reputation (#342) ───────────────────────────────────────────
+
+export type ReputationTier = "Verified" | "Trusted" | "New";
+
+export function getReputationTier(score: number): ReputationTier {
+  if (score >= 800) return "Verified";
+  if (score >= 500) return "Trusted";
+  return "New";
+}
+
+export interface ReputationScoreHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface InvestorReputation {
+  wallet: string;
+  score: number;
+  tier: ReputationTier;
+  investments_completed: number;
+  governance_votes: number;
+  platform_tenure_days: number;
+  history: ReputationScoreHistoryPoint[];
+}
+
+function normalizeReputationHistory(raw: any): ReputationScoreHistoryPoint[] {
+  const list = Array.isArray(raw) ? raw : raw?.history ?? raw?.points ?? [];
+  return (Array.isArray(list) ? list : []).map((p: any) => ({
+    date: String(p.date ?? p.timestamp ?? p.created_at ?? ""),
+    score: Number(p.score ?? p.value ?? 0),
+  }));
+}
+
+function normalizeInvestorReputation(raw: any, wallet: string): InvestorReputation {
+  const score = Number(
+    raw.score ?? raw.reputation_score ?? raw.reputationScore ?? 0
+  );
+  const breakdown = raw.breakdown ?? raw;
+  return {
+    wallet: raw.wallet ?? raw.address ?? wallet,
+    score,
+    tier: (raw.tier as ReputationTier) ?? getReputationTier(score),
+    investments_completed: Number(
+      raw.investments_completed ??
+        breakdown.investments_completed ??
+        breakdown.investmentsCompleted ??
+        raw.investmentsCompleted ??
+        0
+    ),
+    governance_votes: Number(
+      raw.governance_votes ??
+        breakdown.governance_votes ??
+        breakdown.governanceVotes ??
+        raw.governanceVotes ??
+        0
+    ),
+    platform_tenure_days: Number(
+      raw.platform_tenure_days ??
+        breakdown.platform_tenure_days ??
+        breakdown.platformTenureDays ??
+        raw.platformTenureDays ??
+        raw.tenure_days ??
+        0
+    ),
+    history: normalizeReputationHistory(raw.history ?? raw.score_history ?? raw),
+  };
+}
+
+export async function fetchInvestorReputation(
+  wallet: string
+): Promise<InvestorReputation> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/reputation`
+  );
+  if (!res.ok) throw new Error("Failed to fetch investor reputation");
+  return normalizeInvestorReputation(await res.json(), wallet);
+}
+
+// ─── Platform activity feed (#341) ────────────────────────────────────────
+
+export type PlatformActivityEventType =
+  | "new_investment"
+  | "invoice_funded"
+  | "invoice_settled"
+  | "new_listing";
+
+export interface PlatformActivityEvent {
+  id: string;
+  type: PlatformActivityEventType;
+  invoice_id: string;
+  title: string;
+  amount?: number;
+  created_at: string;
+}
+
+const PLATFORM_ACTIVITY_TYPES: PlatformActivityEventType[] = [
+  "new_investment",
+  "invoice_funded",
+  "invoice_settled",
+  "new_listing",
+];
+
+function normalizePlatformActivityType(raw: any): PlatformActivityEventType {
+  const v = String(raw ?? "").toLowerCase();
+  if ((PLATFORM_ACTIVITY_TYPES as string[]).includes(v))
+    return v as PlatformActivityEventType;
+  // Tolerate backend aliases.
+  if (v === "investment" || v === "new investment") return "new_investment";
+  if (v === "funded" || v === "invoice fully funded") return "invoice_funded";
+  if (v === "settled" || v === "settlement") return "invoice_settled";
+  if (v === "listing" || v === "new invoice") return "new_listing";
+  return "new_listing";
+}
+
+function normalizePlatformActivityEvent(raw: any): PlatformActivityEvent {
+  return {
+    id: String(raw.id ?? raw.event_id ?? raw.eventId ?? ""),
+    type: normalizePlatformActivityType(
+      raw.type ?? raw.event_type ?? raw.eventType
+    ),
+    invoice_id: String(
+      raw.invoice_id ?? raw.invoiceId ?? raw.invoice ?? ""
+    ),
+    title: String(raw.title ?? raw.invoice_title ?? raw.description ?? ""),
+    amount:
+      raw.amount !== undefined && raw.amount !== null
+        ? Number(raw.amount)
+        : undefined,
+    created_at: String(
+      raw.created_at ?? raw.createdAt ?? raw.timestamp ?? ""
+    ),
+  };
+}
+
+export async function fetchPlatformActivity(
+  limit = 20
+): Promise<PlatformActivityEvent[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${API_BASE}/activity?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch platform activity");
+  const payload = await res.json();
+  const events = Array.isArray(payload)
+    ? payload
+    : payload.events ?? payload.activity ?? [];
+  return events
+    .map(normalizePlatformActivityEvent)
+    .slice(0, limit);
+}
+
+// ─── Sell tax + buyback pool (#343) ───────────────────────────────────────
+
+export interface InvoiceProtectionInfo {
+  invoice_id: string;
+  sell_tax_percentage: number;
+  buyback_pool_balance: number;
+}
+
+function normalizeProtectionInfo(raw: any, invoiceId: string): InvoiceProtectionInfo {
+  return {
+    invoice_id: raw.invoice_id ?? raw.invoiceId ?? invoiceId,
+    sell_tax_percentage: Number(
+      raw.sell_tax_percentage ?? raw.sellTaxPercentage ?? raw.sell_tax ?? 0
+    ),
+    buyback_pool_balance: Number(
+      raw.buyback_pool_balance ??
+        raw.buybackPoolBalance ??
+        raw.buyback_pool ??
+        0
+    ),
+  };
+}
+
+export async function fetchInvoiceProtection(
+  invoiceId: string
+): Promise<InvoiceProtectionInfo> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/protection`
+  );
+  if (!res.ok) throw new Error("Failed to fetch sell tax info");
+  return normalizeProtectionInfo(await res.json(), invoiceId);
+}
+
+/** Sell tax percentage for an invoice (issue #343). */
+export async function fetchSellTax(invoiceId: string): Promise<number> {
+  const info = await fetchInvoiceProtection(invoiceId);
+  return info.sell_tax_percentage;
+}
+
+/** Buyback pool balance in XLM (issue #343). */
+export async function fetchBuybackPool(invoiceId: string): Promise<number> {
+  const info = await fetchInvoiceProtection(invoiceId);
+  return info.buyback_pool_balance;
+}
+
+// ─── Dynamic fee tier (#345) ──────────────────────────────────────────────
+
+export interface FeeTierEntry {
+  tier: string;
+  min_volume: number;
+  fee_percentage: number;
+}
+
+export interface FeeTierInfo {
+  fee_percentage: number;
+  tier_label: string;
+  volume_24h: number;
+  tiers: FeeTierEntry[];
+  is_lowest_tier: boolean;
+}
+
+export const FEE_TIERS: FeeTierEntry[] = [
+  { tier: "Standard", min_volume: 0, fee_percentage: 2.5 },
+  { tier: "Silver", min_volume: 100_000, fee_percentage: 2.0 },
+  { tier: "Gold", min_volume: 500_000, fee_percentage: 1.5 },
+  { tier: "Platinum", min_volume: 1_000_000, fee_percentage: 1.0 },
+];
+
+function normalizeFeeTierEntry(raw: any): FeeTierEntry {
+  return {
+    tier: String(raw.tier ?? raw.label ?? raw.name ?? ""),
+    min_volume: Number(raw.min_volume ?? raw.minVolume ?? raw.threshold ?? 0),
+    fee_percentage: Number(
+      raw.fee_percentage ?? raw.feePercentage ?? raw.fee ?? 0
+    ),
+  };
+}
+
+function normalizeFeeTierInfo(raw: any): FeeTierInfo {
+  const tiers = Array.isArray(raw.tiers)
+    ? raw.tiers.map(normalizeFeeTierEntry)
+    : FEE_TIERS;
+  const fee_percentage = Number(
+    raw.fee_percentage ?? raw.feePercentage ?? raw.fee ?? 0
+  );
+  const tier_label = String(
+    raw.tier_label ?? raw.tierLabel ?? raw.tier ?? ""
+  );
+  const volume_24h = Number(
+    raw.volume_24h ?? raw.volume24h ?? raw.volume ?? 0
+  );
+  const lowestFee = Math.min(...tiers.map((t) => t.fee_percentage));
+  return {
+    fee_percentage,
+    tier_label,
+    volume_24h,
+    tiers,
+    is_lowest_tier:
+      typeof raw.is_lowest_tier === "boolean"
+        ? raw.is_lowest_tier
+        : fee_percentage <= lowestFee,
+  };
+}
+
+export async function fetchFeeTier(): Promise<FeeTierInfo> {
+  const res = await fetch(`${API_BASE}/protocol/fee-tier`);
+  if (!res.ok) throw new Error("Failed to fetch fee tier");
+  return normalizeFeeTierInfo(await res.json());
 }

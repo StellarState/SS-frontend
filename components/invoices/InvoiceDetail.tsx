@@ -16,9 +16,7 @@ import { InvoiceMetaTags } from "@/components/invoices/InvoiceMetaTags";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
-import { EarlyRepaymentBanner } from "@/components/invoices/EarlyRepaymentBanner";
-import { RiskRatingBadge } from "@/components/invoices/RiskRatingBadge";
-import { RiskRatingBreakdown } from "@/components/invoices/RiskRatingBreakdown";
+import { InvoiceProtectionInfo } from "@/components/invoices/InvoiceProtectionInfo";
 import { recordView } from "@/lib/recentlyViewed";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
 
@@ -164,6 +162,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
           <p className="text-sm text-muted-foreground">
             Seller: {invoice.seller}
           </p>
+          <InvoiceProtectionInfo invoiceId={invoice.id} />
           <CountdownTimer deadline={invoice.due_date} published={published} />
         </CardHeader>
       </Card>
