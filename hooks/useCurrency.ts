@@ -1,106 +1,101 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { fetchXlmUsdRate } from "@/lib/api";
+/**
+ * Multi-currency display (#437)
+ *
+ * Reads the app-wide currency state from <CurrencyProvider> (mounted in
+ * components/providers.tsx). This used to hold its own state per call, so
+ * each component had a separate currency and a hard-coded placeholder rate;
+ * all callers now share one preference and one live Horizon rate.
+ *
+ * The return shape is a superset of the old hook, so existing callers
+ * (SettlementClaimCard, SettlementsTab) keep working unchanged.
+ *
+ * Outside a provider (e.g. a component rendered on its own in a unit test)
+ * it falls back to standalone state: the stored preference plus the live
+ * rate from the backend rate endpoint (#309), with the last known rate kept
+ * when a fetch fails. XLM stays the default, so nothing is converted until
+ * the user picks USD.
+ */
 
-export type Currency = "XLM" | "USD";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { fetchXlmUsdRate as fetchBackendXlmUsdRate } from "@/lib/api";
+import { CurrencyContext, formatXlmDefault, type CurrencyContextValue } from "@/context/CurrencyContext";
+import {
+  formatUsd,
+  readStoredCurrency,
+  readStoredRate,
+  writeStoredCurrency,
+  writeStoredRate,
+  type Currency,
+  type ExchangeRate,
+} from "@/lib/currency";
 
-const STORAGE_KEY = "stellaresettle_currency";
-const RATE_CACHE_KEY = "stellaresettle_xlm_usd_rate";
-const RATE_CACHE_TTL = 60_000; // 60 seconds
-const STALE_THRESHOLD = 5 * 60_000; // 5 minutes
+export type { Currency } from "@/lib/currency";
 
-interface CachedRate {
-  rate: number;
-  fetchedAt: number;
-}
+/** Standalone fallback only: reuse a cached rate younger than this (#309). */
+const STANDALONE_RATE_CACHE_TTL_MS = 60_000;
+/** Standalone fallback only: flag the rate as stale after 5 minutes (#309). */
+const STANDALONE_STALE_AFTER_MS = 5 * 60_000;
 
-function getStoredCurrency(): Currency {
-  if (typeof window === "undefined") return "XLM";
-  return (localStorage.getItem(STORAGE_KEY) as Currency) || "XLM";
-}
-
-function getStoredRate(): CachedRate | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(RATE_CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function setStoredRate(rate: number) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(RATE_CACHE_KEY, JSON.stringify({ rate, fetchedAt: Date.now() }));
-}
-
-export function useCurrency() {
-  const [currency, setCurrencyState] = useState<Currency>(getStoredCurrency);
-  const [rate, setRate] = useState<number | null>(() => getStoredRate()?.rate ?? null);
-  const [rateFetchedAt, setRateFetchedAt] = useState<number>(() => getStoredRate()?.fetchedAt ?? 0);
+/**
+ * Per-component currency state used when no <CurrencyProvider> is mounted.
+ * It is always called (hooks can't be conditional) but stays idle, with no
+ * fetch and no timer, while `enabled` is false.
+ */
+function useStandaloneCurrency(enabled: boolean): CurrencyContextValue {
+  const [currency, setCurrencyState] = useState<Currency>(() => readStoredCurrency() ?? "XLM");
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(() => readStoredRate());
   const [rateLoading, setRateLoading] = useState(false);
+  const [rateError, setRateError] = useState(false);
 
-  const setCurrency = useCallback((c: Currency) => {
-    setCurrencyState(c);
-    localStorage.setItem(STORAGE_KEY, c);
+  const setCurrency = useCallback((next: Currency) => {
+    setCurrencyState(next);
+    writeStoredCurrency(next);
   }, []);
 
   const toggleCurrency = useCallback(() => {
     setCurrency(currency === "XLM" ? "USD" : "XLM");
   }, [currency, setCurrency]);
 
-  // Fetches the live XLM/USD rate from the backend rate endpoint. On
-  // failure, silently keeps whatever rate is already in state (the last
-  // known good rate, if any) — the caller surfaces staleness via `isStale`
-  // rather than blocking on a fresh fetch.
-  const fetchRate = useCallback(async () => {
-    const cached = getStoredRate();
-    if (cached && Date.now() - cached.fetchedAt < RATE_CACHE_TTL) {
-      setRate(cached.rate);
-      setRateFetchedAt(cached.fetchedAt);
+  // On failure the last known rate stays in state; `isStale` reports its age.
+  const refreshRate = useCallback(async () => {
+    const cached = readStoredRate();
+    if (cached && Date.now() - cached.fetchedAt < STANDALONE_RATE_CACHE_TTL_MS) {
+      setExchangeRate(cached);
       return;
     }
-
     setRateLoading(true);
     try {
-      const { rate: usdRate } = await fetchXlmUsdRate();
-      setRate(usdRate);
-      setRateFetchedAt(Date.now());
-      setStoredRate(usdRate);
+      const { rate } = await fetchBackendXlmUsdRate();
+      const next: ExchangeRate = { rate, fetchedAt: Date.now() };
+      setExchangeRate(next);
+      writeStoredRate(next);
+      setRateError(false);
     } catch {
-      // Use last known rate on failure
+      setRateError(true);
     } finally {
       setRateLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchRate();
-    const interval = setInterval(fetchRate, RATE_CACHE_TTL);
-    return () => clearInterval(interval);
-  }, [fetchRate]);
+    if (!enabled) return;
+    void refreshRate();
+    const id = setInterval(() => void refreshRate(), STANDALONE_RATE_CACHE_TTL_MS);
+    return () => clearInterval(id);
+  }, [enabled, refreshRate]);
 
-  const isStale = rateFetchedAt > 0 && Date.now() - rateFetchedAt > STALE_THRESHOLD;
-
+  const rate = exchangeRate?.rate ?? null;
+  const isConverted = currency === "USD" && rate !== null;
   const convert = useCallback(
-    (xlmAmount: number): number => {
-      if (currency === "XLM" || !rate) return xlmAmount;
-      return xlmAmount * rate;
-    },
-    [currency, rate]
+    (xlmAmount: number) => (isConverted ? xlmAmount * rate! : xlmAmount),
+    [isConverted, rate],
   );
-
   const format = useCallback(
-    (xlmAmount: number): string => {
-      const converted = convert(xlmAmount);
-      if (currency === "USD") {
-        return `$${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      return `${converted.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} XLM`;
-    },
-    [convert, currency]
+    (xlmAmount: number, xlmText?: string) =>
+      isConverted ? formatUsd(xlmAmount * rate!) : (xlmText ?? formatXlmDefault(xlmAmount)),
+    [isConverted, rate],
   );
 
   return {
@@ -108,9 +103,19 @@ export function useCurrency() {
     setCurrency,
     toggleCurrency,
     rate,
-    isStale,
+    exchangeRate,
     rateLoading,
+    rateError,
+    isStale: exchangeRate !== null && Date.now() - exchangeRate.fetchedAt > STANDALONE_STALE_AFTER_MS,
+    isConverted,
     convert,
     format,
+    refreshRate,
   };
+}
+
+export function useCurrency(): CurrencyContextValue {
+  const shared = useContext(CurrencyContext);
+  const standalone = useStandaloneCurrency(shared === null);
+  return shared ?? standalone;
 }

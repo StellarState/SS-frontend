@@ -8,6 +8,7 @@ import { notifyApiError } from "@/lib/apiErrors";
 
 import { AuthProvider } from "@/context/AuthContext";
 import { WalletProvider } from "@/context/WalletContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 import { AccreditationProvider } from "@/context/AccreditationContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
 
@@ -33,6 +34,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {/* #379 — one shared wallet session for the whole app */}
         <WalletProvider>
           <AuthProvider>
+            {/* #437 — one shared display currency + live XLM/USD rate for the app */}
+            <CurrencyProvider>{children}</CurrencyProvider>
+            <PlatformOnboardingTour />
+            <Toaster position="top-right" />
             <AccreditationProvider>
               {children}
               <PlatformOnboardingTour />
