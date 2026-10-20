@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { UserProfile } from "@/components/dashboard/UserProfile";
+import { DiversificationSettings } from "@/components/profile/DiversificationSettings";
 import { RiskProfileQuestionnaire } from "@/components/onboarding/RiskProfileQuestionnaire";
 import { Button } from "@/components/ui/button";
 import { ThemeSelector } from "@/components/layout/ThemeSelector";
@@ -54,6 +55,13 @@ export default function ProfilePage() {
             <ThemeSelector />
           </CardContent>
         </Card>
+      </section>
+
+      <section aria-labelledby="diversification-heading" className="mt-8">
+        <h2 id="diversification-heading" className="mb-4 text-lg font-semibold">
+          Diversification
+        </h2>
+        <DiversificationSettings />
       </section>
     </main>
   );

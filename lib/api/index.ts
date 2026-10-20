@@ -2894,6 +2894,54 @@ export async function fetchReferralTier(wallet: string): Promise<ReferralTierSta
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Diversification limit (#514)
+// ---------------------------------------------------------------------------
+
+export interface DiversificationSettings {
+  /**
+   * Maximum share of the portfolio a single invoice may hold, in percent.
+   * `null` when the wallet has never set a custom limit.
+   */
+  limit_pct: number | null;
+}
+
+export interface SetDiversificationLimitResult {
+  success: boolean;
+  transaction_hash?: string;
+}
+
+export async function fetchDiversificationLimit(
+  wallet: string,
+): Promise<DiversificationSettings> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/diversification-limit`,
+  );
+  if (!res.ok) throw new Error("Failed to fetch diversification limit");
+  return res.json();
+}
+
+/** Submits the `set_diversification_limit` contract call through the backend. */
+export async function setDiversificationLimit(
+  wallet: string,
+  limitPct: number,
+): Promise<SetDiversificationLimitResult> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/diversification-limit`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "set_diversification_limit",
+        wallet,
+        limit_pct: limitPct,
+      }),
+    },
+  );
+  if (!res.ok) throw new Error("Failed to set diversification limit");
+  return res.json();
+}
+
 /* ─── Order book depth (#503) ─── */
 
 export interface OrderBookLevel {
