@@ -15,6 +15,7 @@ import { FractionTransferModal } from "@/components/dashboard/FractionTransferMo
 import { SettlementCountdown } from "@/components/marketplace/SettlementCountdown";
 import { Download, ExternalLink } from "lucide-react";
 import { PortfolioRiskIndicator } from "@/components/invoices/InvoiceRiskAlert";
+import { PortfolioYieldBoostBadge } from "@/components/dashboard/PortfolioYieldBoostBadge";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ function HoldingsTab() {
                   <span className="inline-flex items-center gap-2">
                     {pos.invoice_title}
                     <PortfolioRiskIndicator invoiceId={pos.invoice_id} />
+                    <PortfolioYieldBoostBadge invoiceId={pos.invoice_id} />
                   </span>
                 </td>
                 <td className="p-3">

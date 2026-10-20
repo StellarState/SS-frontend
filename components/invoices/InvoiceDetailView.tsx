@@ -34,6 +34,7 @@ import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
 import { SettlementTimeline } from "@/components/invoices/SettlementTimeline";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { WatchlistButton } from "@/components/invoices/WatchlistButton";
+import { YieldBoosterChip } from "@/components/invoices/YieldBoosterChip";
 import { useIsKycApproved } from "@/hooks/useKycStatus";
 import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -159,7 +160,8 @@ function InvestCallToAction({
   if (!isApproved) {
     return (
       <Card data-testid="invest-cta">
-        <CardContent className="pt-6">
+        <CardContent className="space-y-4 pt-6">
+          <YieldBoosterChip invoiceId={invoiceId} />
           <p
             className="flex items-center gap-2 text-sm text-muted-foreground"
             data-testid="invest-hidden-not-approved"
@@ -180,7 +182,8 @@ function InvestCallToAction({
 
   return (
     <Card data-testid="invest-cta">
-      <CardContent className="pt-6">
+      <CardContent className="space-y-4 pt-6">
+        <YieldBoosterChip invoiceId={invoiceId} />
         <InvestmentModal
           invoiceId={invoiceId}
           minInvestment={minInvestment}

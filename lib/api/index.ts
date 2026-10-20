@@ -3339,6 +3339,67 @@ export async function fetchYieldVesting(
   return Array.isArray(json) ? json : (json.schedules ?? []);
 }
 
+// ---------------------------------------------------------------------------
+// Invoice yield boost (#515)
+// ---------------------------------------------------------------------------
+
+export const YIELD_BOOST_TIERS = ["bronze", "silver", "gold", "platinum"] as const;
+
+export type YieldBoostTier = (typeof YIELD_BOOST_TIERS)[number];
+
+export interface InvoiceYieldBoost {
+  /** Whether the wallet qualifies for a boost on this invoice. */
+  eligible: boolean;
+  /** The wallet's tier, which decides the size of the boost. */
+  tier: YieldBoostTier;
+  /** Yield before the tier boost, in percent. */
+  base_yield: number;
+  /** Yield after the tier boost, in percent. */
+  boosted_yield: number;
+}
+
+/**
+ * Normalizes the boost payload, tolerating snake_case and camelCase field
+ * names and a missing eligibility flag (a tiered wallet is eligible unless
+ * the API says otherwise).
+ */
+function normalizeInvoiceYieldBoost(raw: any): InvoiceYieldBoost {
+  const tier = String(raw?.tier ?? raw?.boost_tier ?? "bronze").toLowerCase();
+  const baseYield = Number(raw?.base_yield ?? raw?.baseYield ?? 0);
+  const boostedYield = Number(
+    raw?.boosted_yield ?? raw?.boostedYield ?? raw?.yield_with_boost ?? baseYield
+  );
+
+  return {
+    eligible: Boolean(raw?.eligible ?? raw?.is_eligible ?? raw?.qualifies ?? false),
+    tier: (YIELD_BOOST_TIERS as readonly string[]).includes(tier)
+      ? (tier as YieldBoostTier)
+      : "bronze",
+    base_yield: Number.isFinite(baseYield) ? baseYield : 0,
+    boosted_yield: Number.isFinite(boostedYield) ? boostedYield : 0,
+  };
+}
+
+/**
+ * Fetches the yield boost a wallet is entitled to on an invoice.
+ *
+ * A wallet with no boost record (unregistered, or never invested) gets a 404
+ * from the API — that is not an error, it simply means there is no boost.
+ */
+export async function fetchInvoiceYieldBoost(
+  invoiceId: string,
+  wallet: string,
+): Promise<InvoiceYieldBoost> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/boost/${encodeURIComponent(wallet)}`,
+  );
+  if (res.status === 404) {
+    return { eligible: false, tier: "bronze", base_yield: 0, boosted_yield: 0 };
+  }
+  if (!res.ok) throw new Error("Failed to fetch yield boost");
+  return normalizeInvoiceYieldBoost(await res.json());
+}
+
 export async function flagUser(
   wallet: string,
   reason: string,
