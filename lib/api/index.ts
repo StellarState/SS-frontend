@@ -3523,6 +3523,183 @@ export interface PlaceLimitOrderInput {
   max_price_per_fraction: number;
 }
 
+// ---------------------------------------------------------------------------
+// Secondary market auctions (#516)
+// ---------------------------------------------------------------------------
+
+export type AuctionStatus = "active" | "settled" | "cancelled";
+
+export interface Auction {
+  id: string;
+  invoice_id: string;
+  invoice_title: string;
+  /** The seller offering the fractions. */
+  seller: string;
+  /** Number of fractions on offer. */
+  fraction_amount: number;
+  /** Lowest price per fraction the seller will accept, in XLM. */
+  reserve_price: number;
+  /** Highest bid so far, per fraction, in XLM. 0 when there are no bids. */
+  highest_bid: number;
+  bid_count: number;
+  /** ISO timestamp the auction closes. */
+  ends_at: string;
+  status: AuctionStatus;
+}
+
+export interface AuctionBid {
+  id: string;
+  bidder: string;
+  /** Price per fraction, in XLM. */
+  amount: number;
+  /** Price paid for the whole lot, in XLM. */
+  total: number;
+  created_at: string;
+}
+
+export interface AuctionSettlement {
+  auction_id: string;
+  status: "settled" | "no_bid" | "cancelled";
+  /** Wallet that won the auction, if any. */
+  winner: string | null;
+  /** Price per fraction the auction cleared at, if it did. */
+  clearing_price: number | null;
+  /** Losing bidders and the status of their refund. */
+  refunds: { wallet: string; amount: number; status: "refunded" | "pending" }[];
+}
+
+export interface PlaceBidInput {
+  auction_id: string;
+  /** Bid price per fraction, in XLM. */
+  amount: number;
+  wallet: string;
+}
+
+export interface PlaceBidResult {
+  success: boolean;
+  transaction_hash?: string;
+}
+
+function normalizeAuction(raw: any): Auction {
+  const fractionAmount = Number(
+    raw?.fraction_amount ?? raw?.fractions ?? raw?.quantity ?? 0
+  );
+
+  return {
+    id: String(raw?.id ?? raw?.auction_id ?? ""),
+    invoice_id: String(raw?.invoice_id ?? raw?.invoiceId ?? ""),
+    invoice_title: String(
+      raw?.invoice_title ?? raw?.invoiceTitle ?? raw?.title ?? ""
+    ),
+    seller: String(raw?.seller ?? raw?.seller_address ?? ""),
+    fraction_amount: fractionAmount,
+    reserve_price: Number(raw?.reserve_price ?? raw?.reserve ?? 0),
+    highest_bid: Number(raw?.highest_bid ?? raw?.highestBid ?? raw?.top_bid ?? 0),
+    bid_count: Number(raw?.bid_count ?? raw?.bidCount ?? raw?.bids_count ?? 0),
+    ends_at: String(raw?.ends_at ?? raw?.endsAt ?? raw?.end_time ?? ""),
+    status: (raw?.status ?? "active") as AuctionStatus,
+  };
+}
+
+function normalizeAuctionBid(raw: any): AuctionBid {
+  const amount = Number(raw?.amount ?? raw?.price ?? raw?.price_per_fraction ?? 0);
+  const fractionAmount = Number(raw?.fraction_amount ?? raw?.fractions ?? 0);
+
+  return {
+    id: String(raw?.id ?? raw?.bid_id ?? ""),
+    bidder: String(raw?.bidder ?? raw?.bidder_address ?? raw?.wallet ?? ""),
+    amount,
+    total: Number(raw?.total ?? raw?.total_amount ?? amount * fractionAmount),
+    created_at: String(raw?.created_at ?? raw?.createdAt ?? ""),
+  };
+}
+
+/** Reads a single auction. */
+export async function fetchAuction(
+  auctionId: string,
+  signal?: AbortSignal
+): Promise<Auction> {
+  const res = await fetch(
+    `${API_BASE}/marketplace/auctions/${encodeURIComponent(auctionId)}`,
+    { signal }
+  );
+  if (!res.ok) throw new Error("Failed to fetch auction");
+  return normalizeAuction(await res.json());
+}
+
+/** Reads the bids on an auction, newest first from the API. */
+export async function fetchAuctionBids(
+  auctionId: string,
+  signal?: AbortSignal
+): Promise<AuctionBid[]> {
+  const res = await fetch(
+    `${API_BASE}/marketplace/auctions/${encodeURIComponent(auctionId)}/bids`,
+    { signal }
+  );
+  if (!res.ok) throw new Error("Failed to fetch auction bids");
+  const payload = await res.json();
+  const rawBids: any[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.bids)
+      ? payload.bids
+      : [];
+  return rawBids.map(normalizeAuctionBid);
+}
+
+/** Reads the settlement outcome of a finished auction. */
+export async function fetchAuctionSettlement(
+  auctionId: string,
+  signal?: AbortSignal
+): Promise<AuctionSettlement> {
+  const res = await fetch(
+    `${API_BASE}/marketplace/auctions/${encodeURIComponent(auctionId)}/settlement`,
+    { signal }
+  );
+  if (!res.ok) throw new Error("Failed to fetch auction settlement");
+  const payload = await res.json();
+  const rawRefunds: any[] = Array.isArray(payload?.refunds)
+    ? payload.refunds
+    : [];
+
+  return {
+    auction_id: String(payload?.auction_id ?? auctionId),
+    status: (payload?.status ?? "settled") as AuctionSettlement["status"],
+    winner: payload?.winner ? String(payload.winner) : null,
+    clearing_price:
+      payload?.clearing_price === null || payload?.clearing_price === undefined
+        ? null
+        : Number(payload.clearing_price),
+    refunds: rawRefunds.map((refund) => ({
+      wallet: String(refund?.wallet ?? refund?.bidder ?? ""),
+      amount: Number(refund?.amount ?? 0),
+      status: (refund?.status ?? "pending") as "refunded" | "pending",
+    })),
+  };
+}
+
+/** Submits the `place_bid` contract call for an auction. */
+export async function placeBid(
+  input: PlaceBidInput
+): Promise<PlaceBidResult> {
+  const res = await fetch(
+    `${API_BASE}/marketplace/auctions/${encodeURIComponent(input.auction_id)}/bids`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "place_bid",
+        wallet: input.wallet,
+        amount: input.amount,
+      }),
+    }
+  );
+  if (!res.ok) {
+    const msg = await readErrorMessage(res, "Failed to place bid");
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export interface PlatformActivityEvent {
   id: string;
   type: PlatformActivityEventType;
