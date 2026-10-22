@@ -146,6 +146,20 @@ export interface InvoiceDetail extends Invoice {
   };
 }
 
+export interface DynamicYieldResponse {
+  current_rate: number;
+  base_rate: number;
+  settlement_count: number;
+  adjustment_history: { rate: number; effective_at: string; reason?: string }[];
+}
+
+export async function fetchDynamicYield(wallet: string): Promise<DynamicYieldResponse | null> {
+  const res = await fetch(`${API_BASE}/issuers/${encodeURIComponent(wallet)}/dynamic-yield`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch issuer yield history");
+  return res.json();
+}
+
 export interface InvoicesResponse {
   invoices: Invoice[];
   has_more: boolean;

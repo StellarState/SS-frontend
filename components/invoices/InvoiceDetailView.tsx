@@ -28,7 +28,6 @@ import { InvoiceMaturitySection } from "@/components/invoices/InvoiceMaturitySec
 import { InvoiceMetaTags } from "@/components/invoices/InvoiceMetaTags";
 import { InvestorSocialProof } from "@/components/invoices/InvestorSocialProof";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
-import { ReturnsCalculator } from "@/components/invoices/ReturnsCalculator";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { InvoiceRatingWidget } from "@/components/invoices/InvoiceRatingWidget";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
@@ -120,6 +119,7 @@ export function InvoiceNotFound({ invoiceId }: { invoiceId: string }) {
  */
 function InvestCallToAction({
   invoiceId,
+  issuerWallet,
   minInvestment,
   maxInvestment,
   fundingCap,
@@ -128,6 +128,7 @@ function InvestCallToAction({
   fractionPrice,
 }: {
   invoiceId: string;
+  issuerWallet: string;
   minInvestment: number;
   maxInvestment: number;
   fundingCap: number;
@@ -173,12 +174,10 @@ function InvestCallToAction({
       <>
         <InvestmentModal
           invoiceId={invoiceId}
+          issuerWallet={issuerWallet}
           minInvestment={minInvestment}
           maxInvestment={maxInvestment}
           fundingCap={fundingCap}
-        />
-        <ReturnsCalculator
-          faceValue={fundingCap}
           yieldPercentage={yieldPercentage}
           maturityDate={maturityDate}
           fractionPrice={fractionPrice}
@@ -428,6 +427,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
       {isOpenForInvestment ? (
         <InvestCallToAction
           invoiceId={invoice.id}
+          issuerWallet={invoice.seller}
           minInvestment={minInvestment}
           maxInvestment={remaining}
           fundingCap={invoice.amount}

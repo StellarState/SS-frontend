@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ export interface InvestmentAmountInputProps {
     min: number;
     max: number;
     debounceMs?: number;
+    value?: string;
+    onValueChange?: (value: string) => void;
     onValidAmountChange?: (amount: number | null) => void;
     onErrorChange?: (error: string | null) => void;
 }
@@ -19,10 +21,13 @@ export function InvestmentAmountInput({
     min,
     max,
     debounceMs = 200,
+    value: controlledValue,
+    onValueChange,
     onValidAmountChange,
     onErrorChange,
 }: InvestmentAmountInputProps) {
-    const [value, setValue] = useState("");
+    const [localValue, setLocalValue] = useState("");
+    const value = controlledValue ?? localValue;
     const [error, setError] = useState<string | null>(null);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -37,7 +42,7 @@ export function InvestmentAmountInput({
         };
     }, []);
 
-    function runValidation(rawValue: string) {
+    const runValidation = useCallback((rawValue: string) => {
         if (rawValue.trim() === "") {
             setError(null);
             onErrorChange?.(null);
@@ -49,10 +54,19 @@ export function InvestmentAmountInput({
         setError(validationError);
         onErrorChange?.(validationError);
         onValidAmountChange?.(validationError ? null : Number(rawValue));
-    }
+    }, [min, max, onErrorChange, onValidAmountChange]);
+
+    useEffect(() => {
+        if (controlledValue !== undefined) runValidation(controlledValue);
+    }, [controlledValue, runValidation]);
 
     function handleChange(rawValue: string) {
-        setValue(rawValue);
+        if (controlledValue !== undefined) {
+            onValueChange?.(rawValue);
+            return;
+        }
+        setLocalValue(rawValue);
+        onValueChange?.(rawValue);
 
         if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -69,7 +83,12 @@ export function InvestmentAmountInput({
 
     function handlePreset(amount: number) {
         const str = String(amount);
-        setValue(str);
+        if (controlledValue !== undefined) {
+            onValueChange?.(str);
+            return;
+        }
+        setLocalValue(str);
+        onValueChange?.(str);
         if (timerRef.current) {
             clearTimeout(timerRef.current);
         }

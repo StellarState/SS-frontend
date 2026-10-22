@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInput";
+import { InvestmentProjection } from "@/components/invoices/InvestmentProjection";
 import { InvestCurrencySelector } from "@/components/invoices/InvestCurrencySelector";
 import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { PriceImpactWarning } from "@/components/invoices/PriceImpactWarning";
@@ -35,6 +36,10 @@ interface InvestmentModalProps {
   maxInvestment: number;
   /** Total funding cap used for price-impact calculation (issue #344). */
   fundingCap?: number;
+  issuerWallet?: string;
+  yieldPercentage?: number | null;
+  maturityDate?: string;
+  fractionPrice?: number;
   onSuccess?: () => void;
 }
 
@@ -43,9 +48,14 @@ export function InvestmentModal({
   minInvestment,
   maxInvestment,
   fundingCap,
+  issuerWallet,
+  yieldPercentage,
+  maturityDate,
+  fractionPrice = 1,
   onSuccess,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [amountRaw, setAmountRaw] = useState("");
   const [validAmount, setValidAmount] = useState<number | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<InvestCurrency>(BASE_CURRENCY);
@@ -80,6 +90,7 @@ export function InvestmentModal({
       ...(isBaseCurrency ? {} : { currency }),
     });
     setIsOpen(false);
+    setAmountRaw("");
     setValidAmount(null);
     setAmountError(null);
     // The chain has moved; re-read the balance instead of waiting for the
@@ -95,7 +106,7 @@ export function InvestmentModal({
           Invest
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0">
+      <PopoverContent className="max-h-[80vh] w-[min(26rem,calc(100vw-2rem))] overflow-y-auto p-0">
         {!isAcknowledged ? (
           <AccreditationGateSteps
             onCancel={() => setIsOpen(false)}
@@ -138,9 +149,24 @@ export function InvestmentModal({
             <InvestmentAmountInput
               min={minInvestment}
               max={maxInvestment}
+              debounceMs={0}
+              value={amountRaw}
+              onValueChange={setAmountRaw}
               onValidAmountChange={setValidAmount}
               onErrorChange={setAmountError}
             />
+
+            {issuerWallet && maturityDate && (
+              <InvestmentProjection
+                issuerWallet={issuerWallet}
+                invoiceYieldPercent={yieldPercentage}
+                maturityDate={maturityDate}
+                fractionPrice={fractionPrice}
+                maxInvestment={maxInvestment}
+                amountRaw={amountRaw}
+                onAmountChange={setAmountRaw}
+              />
+            )}
 
             <InvestCurrencySelector
               currency={currency}
