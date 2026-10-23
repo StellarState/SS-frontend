@@ -21,6 +21,8 @@ import type { WatchlistStateChange } from "@/lib/watchlist";
 import { Money } from "@/components/currency";
 import { useSuitabilityTier } from "@/hooks/useSuitabilityTier";
 import { REQUIRED_TIER, TIER_LABELS, canInvestInGrade } from "@/lib/suitability";
+import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStatus";
+import { IssuerCreditTierBadge } from "@/components/issuers/IssuerCreditTierBadge";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   open: "default",
@@ -66,6 +68,7 @@ export function InvoiceCard({
             <CardTitle className="line-clamp-1 text-base">
               {invoice.title}
             </CardTitle>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground"><span>Issuer {invoice.seller.slice(0, 6)}…{invoice.seller.slice(-4)}</span><IssuerCreditTierBadge wallet={invoice.seller} /></div>
             {stateChange && <StateChangeBadge change={stateChange} />}
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -76,6 +79,7 @@ export function InvoiceCard({
           </div>
         </div>
         <InvoiceClassificationBadges invoice={invoice} />
+        <InvoiceGreylistStatus greylist={invoice.greylist} compact />
         <InvoiceTagPills invoice={invoice} />
       </CardHeader>
 
@@ -148,7 +152,7 @@ export function InvoiceCard({
         <div className="flex gap-2 mt-auto">
           <Button
             className="flex-1"
-            disabled={!published || expired || locked}
+            disabled={!published || expired || locked || Boolean(invoice.greylist && (!invoice.greylist.clears_at || new Date(invoice.greylist.clears_at).getTime() > Date.now()))}
             onClick={() => onInvest?.(invoice.id)}
           >
             {expired ? "Expired" : locked ? "Locked" : "Invest"}

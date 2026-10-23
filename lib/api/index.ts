@@ -56,6 +56,14 @@ export interface Invoice {
   late_penalty_accrued?: number | null;
   /** Sector yield benchmark returned alongside the list, for the card chip (#530). */
   sector_benchmark?: SectorBenchmark | null;
+  /** Optional compliance hold returned by the invoice API. */
+  greylist?: { reason?: string | null; clears_at?: string | null } | null;
+  /** Optional tranche state returned for invoices using the tranche contract. */
+  tranche_status?: {
+    senior_pct: number; junior_pct: number; senior_filled: number;
+    junior_filled: number; junior_yield_premium_bps: number; is_settled: boolean;
+  } | null;
+  impact_report?: { type: "environmental" | "social" | "governance" | "combined"; metrics_hash: string; verified: boolean; submitted_at?: string } | null;
 }
 
 /** Sector average yield and how many invoices it was computed from (#530). */
@@ -144,6 +152,19 @@ export interface InvoiceDetail extends Invoice {
       sector: number;
     };
   };
+}
+
+export interface IssuerCreditScore {
+  tier: "C" | "B" | "A" | "AA" | "AAA";
+  score: number;
+  factors: Record<string, number>;
+}
+
+export async function fetchIssuerCreditScore(wallet: string): Promise<IssuerCreditScore | null> {
+  const res = await fetch(`${API_BASE}/issuers/${encodeURIComponent(wallet)}/credit-score`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch issuer credit score");
+  return res.json();
 }
 
 export interface DynamicYieldResponse {
@@ -391,11 +412,12 @@ export async function investInInvoice(
   invoiceId: string,
   amount: number,
   currency?: string,
+  trancheType?: 1 | 2,
 ): Promise<InvestInInvoiceResult> {
   const res = await fetch(`${API_BASE}/invoices/${invoiceId}/invest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(currency ? { amount, currency } : { amount }),
+    body: JSON.stringify({ amount, ...(currency ? { currency } : {}), ...(trancheType ? { tranche_type: trancheType } : {}) }),
   });
   if (!res.ok) {
     if (currency) {
@@ -2701,6 +2723,7 @@ export async function fetchTransferRestriction(
   const raw = await res.json();
   const restriction = (raw.restriction ?? null) as TransferRestrictionType | null;
   return { allowed: raw.allowed !== false && !restriction, restriction };
+}
 /* ─── Auto-invest (#476) ───────────────────────────────────────────────────
  * The rule lives on-chain: writes hit `set_auto_invest_rule`, the kill switch
  * hits `disable_auto_invest`, and the activity list is the `AutoInvestExecuted`

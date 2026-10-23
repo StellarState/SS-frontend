@@ -16,6 +16,7 @@ interface InvestMutationVars {
   amount: number;
   /** Payment currency (issue #497); omitted for the default base-currency flow. */
   currency?: InvestCurrency;
+  trancheType?: 1 | 2;
 }
 
 /** One toast id per invoice so the pending state morphs into the resolved
@@ -32,10 +33,10 @@ export function useInvestMutation() {
   const mutateRef = useRef<(vars: InvestMutationVars) => void>(() => {});
 
   const mutation = useMutation({
-    mutationFn: ({ invoiceId, amount, currency }: InvestMutationVars) =>
+    mutationFn: ({ invoiceId, amount, currency, trancheType }: InvestMutationVars) =>
       currency
-        ? investInInvoice(invoiceId, amount, currency)
-        : investInInvoice(invoiceId, amount),
+        ? investInInvoice(invoiceId, amount, currency, trancheType)
+        : investInInvoice(invoiceId, amount, undefined, trancheType),
 
     onMutate: async ({ invoiceId, amount }) => {
       // Transaction status toast, shown synchronously and immediately on

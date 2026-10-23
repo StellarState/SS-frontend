@@ -10,6 +10,7 @@ import { IssuerScoreCard, TotalFunded } from "./IssuerScoreCard";
 import { InvoiceHistoryTable } from "./InvoiceHistoryTable";
 import { ActiveInvoices } from "./ActiveInvoices";
 import { IssuerReputationHeaderBadge, IssuerReputationPanel } from "./IssuerReputationPanel";
+import { IssuerCreditTierBadge } from "./IssuerCreditTierBadge";
 
 function IssuerProfileSkeleton() {
   return (
@@ -80,6 +81,7 @@ export function IssuerProfile({ issuerId, now }: IssuerProfileProps) {
               {issuer.name}
             </h1>
             <VerifiedBadge issuer={issuer} />
+            <IssuerCreditTierBadge wallet={issuer.id} />
             <KycStatusNotice issuer={issuer} />
             <IssuerReputationHeaderBadge wallet={issuer.id} />
           </div>

@@ -10,6 +10,7 @@
  */
 
 import Link from "next/link";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { FileQuestion, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,8 @@ import { truncateAddress } from "@/lib/stellar";
 import { DEFAULT_MIN_INVESTMENT } from "@/lib/invoiceDefaults";
 import { Money } from "@/components/currency";
 import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
+import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStatus";
+import { ImpactReport } from "@/components/invoices/ImpactReport";
 import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
 
 function InvoiceDetailSkeleton() {
@@ -127,6 +130,7 @@ function InvestCallToAction({
   yieldPercentage,
   maturityDate,
   fractionPrice,
+  trancheStatus,
 }: {
   invoiceId: string;
   minInvestment: number;
@@ -135,7 +139,9 @@ function InvestCallToAction({
   yieldPercentage?: number | null;
   maturityDate: string;
   fractionPrice?: number;
+  trancheStatus?: NonNullable<import("@/lib/api").Invoice["tranche_status"]>;
 }) {
+  const [selectedTranche, setSelectedTranche] = useState<1 | 2>(1);
   const { isConnected } = useWallet();
   const { isApproved, isLoading, status } = useIsKycApproved({
     enabled: isConnected,
@@ -177,6 +183,7 @@ function InvestCallToAction({
           minInvestment={minInvestment}
           maxInvestment={maxInvestment}
           fundingCap={fundingCap}
+          trancheType={trancheStatus ? selectedTranche : undefined}
         />
         <ReturnsCalculator
           faceValue={fundingCap}
@@ -192,6 +199,7 @@ function InvestCallToAction({
     <Card data-testid="invest-cta">
       <CardContent className="pt-6 space-y-4">
         <InvoiceNavPanel invoiceId={invoiceId} fractionPrice={fractionPrice} />
+        {trancheStatus && <div className="grid grid-cols-2 gap-2" role="group" aria-label="Investment tranche" data-testid="tranche-selector">{([1, 2] as const).map((type) => { const senior = type === 1; const fill = senior ? trancheStatus.senior_filled : trancheStatus.junior_filled; const pct = senior ? trancheStatus.senior_pct : trancheStatus.junior_pct; const cap = fundingCap * pct / 100; const rate = (yieldPercentage ?? 0) + (senior ? 0 : trancheStatus.junior_yield_premium_bps / 100); const progress = cap > 0 ? Math.min(100, fill / cap * 100) : 0; return <button key={type} type="button" onClick={() => setSelectedTranche(type)} aria-pressed={selectedTranche === type} className={`rounded-md border p-3 text-left ${selectedTranche === type ? "border-primary bg-primary/5" : ""}`}><span className="font-semibold">{senior ? "Senior" : "Junior"}</span><span className="block text-sm">{rate}% yield · {senior ? "Priority repayment" : "Subordinate"}</span><span className="mt-2 block text-xs">{progress.toFixed(1)}% filled</span><span className="mt-1 block h-1.5 overflow-hidden rounded bg-muted"><span className="block h-full bg-primary" style={{ width: `${progress}%` }} /></span></button>; })}</div>}
         {body}
       </CardContent>
     </Card>
@@ -220,7 +228,8 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
 
   const expired = isExpired(invoice.due_date);
   const remaining = Math.max(0, invoice.amount - invoice.raised);
-  const isOpenForInvestment = invoice.status === "open" && !expired && remaining > 0;
+  const isGreylisted = Boolean(invoice.greylist && (!invoice.greylist.clears_at || new Date(invoice.greylist.clears_at).getTime() > Date.now()));
+  const isOpenForInvestment = invoice.status === "open" && !expired && remaining > 0 && !isGreylisted;
   // Qualifying investor: connected wallet appears in the investor list (#348).
   const isQualifyingInvestor = Boolean(
     address && invoice.investors.some((inv) => inv.address === address)
@@ -309,6 +318,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
 
       <InvoiceRiskAlert invoiceId={invoice.id} />
       <InvoiceUnderReviewBanner invoiceId={invoice.id} />
+      <InvoiceGreylistStatus greylist={invoice.greylist} />
 
       <InvoiceFinancials
         faceValue={invoice.amount}
@@ -316,6 +326,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
         maturityDate={invoice.due_date}
         minInvestment={minInvestment}
       />
+      {invoice.status === "settled" && <ImpactReport report={invoice.impact_report} />}
 
       {/* Repayment ledger (#478): interim instalments and the final settlement,
           shown once the invoice has been funded. */}
@@ -364,6 +375,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
             />
           </div>
           <InvoiceClassificationBadges invoice={invoice} />
+          {invoice.tranche_status && <div className="rounded border p-3" data-testid="tranche-status"><p className="font-medium">Tranche status</p><p className="text-sm">Senior {invoice.tranche_status.senior_filled.toLocaleString()} / {invoice.amount * invoice.tranche_status.senior_pct / 100} XLM · Junior {invoice.tranche_status.junior_filled.toLocaleString()} / {invoice.amount * invoice.tranche_status.junior_pct / 100} XLM</p></div>}
           <InvoiceTagPills invoice={invoice} />
         </CardContent>
       </Card>
@@ -437,6 +449,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
           yieldPercentage={invoice.yield_percentage}
           maturityDate={invoice.maturity_date ?? invoice.due_date}
           fractionPrice={invoice.fraction_price}
+          trancheStatus={invoice.tranche_status ?? undefined}
         />
       ) : (
         <Card data-testid="invest-cta">

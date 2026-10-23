@@ -36,6 +36,7 @@ interface InvestmentModalProps {
   /** Total funding cap used for price-impact calculation (issue #344). */
   fundingCap?: number;
   onSuccess?: () => void;
+  trancheType?: 1 | 2;
 }
 
 export function InvestmentModal({
@@ -44,6 +45,7 @@ export function InvestmentModal({
   maxInvestment,
   fundingCap,
   onSuccess,
+  trancheType,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [validAmount, setValidAmount] = useState<number | null>(null);
@@ -77,6 +79,7 @@ export function InvestmentModal({
     await investMutation.mutateAsync({
       invoiceId,
       amount: validAmount,
+      ...(trancheType ? { trancheType } : {}),
       ...(isBaseCurrency ? {} : { currency }),
     });
     setIsOpen(false);
