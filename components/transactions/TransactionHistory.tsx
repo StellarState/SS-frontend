@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TxHash } from "@/components/ui/tx-hash";
+import { AccountingExportModal } from "@/components/transactions/AccountingExportModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveNetwork } from "@/hooks/useActiveNetwork";
 import { useWalletTransactions } from "@/hooks/useWalletTransactions";
@@ -131,28 +132,31 @@ export function TransactionHistory({ address }: TransactionHistoryProps) {
 
   return (
     <div className="space-y-4" data-testid="tx-history">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by transaction type">
-        <Button
-          size="sm"
-          variant={typeFilter === null ? "default" : "outline"}
-          aria-pressed={typeFilter === null}
-          onClick={() => setTypeFilter(null)}
-          data-testid="tx-filter-all"
-        >
-          All
-        </Button>
-        {PLATFORM_TRANSACTION_TYPES.map((type) => (
+      <div className="flex flex-wrap items-center justify-between gap-2" role="toolbar" aria-label="Transaction history controls">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by transaction type">
           <Button
-            key={type}
             size="sm"
-            variant={typeFilter === type ? "default" : "outline"}
-            aria-pressed={typeFilter === type}
-            onClick={() => setTypeFilter(type)}
-            data-testid={`tx-filter-${type}`}
+            variant={typeFilter === null ? "default" : "outline"}
+            aria-pressed={typeFilter === null}
+            onClick={() => setTypeFilter(null)}
+            data-testid="tx-filter-all"
           >
-            {TRANSACTION_TYPE_STYLES[type].label}
+            All
           </Button>
-        ))}
+          {PLATFORM_TRANSACTION_TYPES.map((type) => (
+            <Button
+              key={type}
+              size="sm"
+              variant={typeFilter === type ? "default" : "outline"}
+              aria-pressed={typeFilter === type}
+              onClick={() => setTypeFilter(type)}
+              data-testid={`tx-filter-${type}`}
+            >
+              {TRANSACTION_TYPE_STYLES[type].label}
+            </Button>
+          ))}
+        </div>
+        <AccountingExportModal transactions={transactions} />
       </div>
 
       {isLoading ? (
