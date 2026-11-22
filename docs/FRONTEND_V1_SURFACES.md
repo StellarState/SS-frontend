@@ -122,6 +122,34 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #671 Admin compliance review queue
+
+`ComplianceReviewQueue` and `useComplianceQueue` provide institutional risk triage, timezone-independent SLA monitoring, and immutable decision audit logging:
+
+```ts
+interface ComplianceCase {
+  id: string;
+  entityId: string;
+  entityName: string;
+  category: ComplianceCategory;
+  riskTier: RiskTier;
+  assignedTo: string | null;
+  createdAt: string;
+  slaDeadline: string;
+  status: ComplianceCaseStatus;
+  flagReason: string;
+  evidenceRecords: ComplianceEvidenceRecord[];
+  history: readonly ComplianceHistoryEntry[];
+}
+```
+
+- Queue access is strictly restricted to authorized compliance officers and admins.
+- SLA status calculations use epoch deltas and remain completely timezone-independent.
+- Decision approvals, restrictions, and evidence requests mandate substantive comments to prevent accidents.
+- Audit history logs remain strictly append-only and immutable.
+- Active, escalated, and resolved counts reconcile immediately after resolution.
+- Route available at `/admin/compliance`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
