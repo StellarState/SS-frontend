@@ -122,6 +122,44 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #684 Issuer covenant breach proposal and cure flow
+
+`CovenantCurePanel` manages breach remediation, investor voting, and outcomes:
+
+```ts
+interface CureProposal {
+  id: string;
+  breach_id: string;
+  invoice_id: string;
+  issuer_address: string;
+  cure_type: "waiver" | "extension" | "restructuring";
+  title: string;
+  description: string;
+  proposed_terms: {
+    extension_days?: number;
+    waiver_fee_xlm?: number;
+    new_yield_rate?: number;
+  };
+  evidence_urls: string[];
+  voting_deadline: string;
+  quorum_percent_required: number;
+  approval_threshold_percent: number;
+  total_eligible_principal: number;
+  voted_principal_for: number;
+  voted_principal_against: number;
+  status: "active" | "passed" | "rejected" | "expired";
+  terminal_reason?: string | null;
+  finalized_at?: string | null;
+}
+```
+
+- Only authorized issuers can initiate proposals for recorded covenant breaches.
+- Votes use committed eligible principal with real-time quorum (50%) and approval (66.67%) progress.
+- Finalised proposals reject further votes and lock outcomes.
+- Expired proposals show terminal reasons (e.g. quorum failure).
+- Approved proposals update covenant status to waived, extended, or restructured; rejected or expired proposals transition to defaulted.
+- Historical audit events are tracked chronologically in the covenant timeline.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
