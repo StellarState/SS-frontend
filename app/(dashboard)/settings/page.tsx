@@ -67,6 +67,13 @@ export default function SettingsPage() {
       >
         Passkeys &amp; Hardware Security →
       </Link>
+      <br />
+      <Link
+        href="/settings/recovery"
+        className="inline-block text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+      >
+        Wallet recovery readiness →
+      </Link>
     </main>
   );
 }

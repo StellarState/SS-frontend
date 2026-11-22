@@ -18,6 +18,7 @@ describe("frontend V1 surface contract", () => {
       "#676 Downloadable reconciliation transaction journal",
       "#675 Account merge and duplicate wallet resolution",
       "#674 Passkey login for account actions",
+      "#673 Wallet recovery readiness checklist",
     ]) {
       expect(contract, section).toContain(section);
     }

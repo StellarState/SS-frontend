@@ -258,6 +258,27 @@ interface PasskeyCredentialMetadata {
 - Displayed passkey metadata is sanitized to never expose private keys or secrets.
 - Route available at `/settings/passkeys`.
 
+## #673 Wallet recovery readiness checklist
+
+`WalletRecoverySettings` and `useRecoveryReadiness` provide wallet recovery posture assessment, instant checklist feedback, and recovery address cooldown timelocks:
+
+```ts
+interface WalletRecoveryReadinessProfile {
+  walletPublicKey: string;
+  readinessScore: number;
+  statusTier: "critical" | "moderate" | "robust";
+  items: RecoveryControlItem[];
+  currentRecoveryAddress: string | null;
+  activeCooldown: RecoveryAddressCooldown | null;
+}
+```
+
+- Zero secret exposure: the interface never requests or displays private keys or seed phrases.
+- Readiness score reflects confirmed multi-sig signers, backup emails, and hardware keys.
+- Recovery address changes enforce a mandatory 48-hour security cooldown timelock.
+- Checklist actions update immediately upon configuration changes.
+- Route available at `/settings/recovery`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
