@@ -6,6 +6,9 @@ import * as api from "@/lib/api";
 
 vi.mock("@/lib/api");
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ jwt: "test-token" }) }));
+vi.mock("@/hooks/useDebtorStatus", () => ({ useDebtorStatus: () => ({ data: undefined }) }));
+vi.mock("@/components/invoices/TemplatesPanel", () => ({ TemplatesPanel: () => null }));
+vi.mock("@/components/debtor/BlockedDebtorNotice", () => ({ BlockedDebtorNotice: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),

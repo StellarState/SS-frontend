@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatorRevenue } from "@/hooks/useCreatorRevenue";
+import { useChartPalette } from "@/hooks/useChartPalette";
 import type { MonthlyRevenue } from "@/lib/api";
 
 interface CreatorRevenueSectionProps {
@@ -65,6 +66,7 @@ function RevenueStatCard({
 export function CreatorRevenueSection({ keyId }: CreatorRevenueSectionProps) {
   const { jwt } = useAuth();
   const revenueQuery = useCreatorRevenue(keyId, jwt);
+  const [seriesCue] = useChartPalette(1);
 
   if (revenueQuery.isLoading) {
     return (
@@ -150,6 +152,8 @@ export function CreatorRevenueSection({ keyId }: CreatorRevenueSectionProps) {
                 dataKey="royaltyEarned"
                 name="Royalties"
                 fill="var(--primary)"
+                stroke={seriesCue.dash ? "var(--foreground)" : undefined}
+                strokeDasharray={seriesCue.dash}
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>

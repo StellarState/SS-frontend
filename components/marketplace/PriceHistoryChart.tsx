@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useInvoicePriceHistory } from "@/hooks/useInvoicePriceHistory";
+import { useChartPalette } from "@/hooks/useChartPalette";
 import type { InvoicePriceHistoryPoint } from "@/lib/api";
 import {
   filterHistoryByRange,
@@ -86,6 +87,7 @@ function PriceHistoryTooltip({
 export function PriceHistoryChart({ invoiceId }: { invoiceId: string }) {
   const [range, setRange] = useState<PriceHistoryRange>("all");
   const { data, isLoading, isError } = useInvoicePriceHistory(invoiceId, range);
+  const [seriesCue] = useChartPalette(1);
 
   const filtered = useMemo(
     () => (data ? filterHistoryByRange(data.history, range) : []),
@@ -149,6 +151,7 @@ export function PriceHistoryChart({ invoiceId }: { invoiceId: string }) {
                   type="monotone"
                   dataKey="price"
                   strokeWidth={2}
+                  strokeDasharray={seriesCue.dash}
                   dot={{ r: 3 }}
                 />
                 {markerPoint && (

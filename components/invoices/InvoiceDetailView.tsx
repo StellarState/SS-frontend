@@ -29,14 +29,20 @@ import { InvoiceMaturitySection } from "@/components/invoices/InvoiceMaturitySec
 import { InvoiceMetaTags } from "@/components/invoices/InvoiceMetaTags";
 import { InvestorSocialProof } from "@/components/invoices/InvestorSocialProof";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { AttestationList } from "@/components/attestations/AttestationList";
+import { DebtorStatusBadge } from "@/components/debtor/DebtorStatusBadge";
+import { WatchWarning } from "@/components/debtor/WatchWarning";
 import { ReturnsCalculator } from "@/components/invoices/ReturnsCalculator";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
+import { OverdueBanner } from "@/components/invoices/OverdueBanner";
 import { InvoiceRatingWidget } from "@/components/invoices/InvoiceRatingWidget";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
 import { SettlementTimeline } from "@/components/invoices/SettlementTimeline";
+import { RepaymentTimeline } from "@/components/invoices/RepaymentTimeline";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { WatchlistButton } from "@/components/invoices/WatchlistButton";
 import { useIsKycApproved } from "@/hooks/useKycStatus";
+import { useLateInterest } from "@/hooks/useLateInterest";
 import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
@@ -62,8 +68,11 @@ import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStat
 import { ImpactReport } from "@/components/invoices/ImpactReport";
 import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
 import { RateAuctionPanel } from "@/components/invoices/RateAuctionPanel";
-import { OverdueBanner } from "@/components/invoices/OverdueBanner";
+import { DebtorAckPanel, useDebtorAckBlocked } from "@/components/invoices/DebtorAckPanel";
+import { VelocityMeter } from "@/components/investor/VelocityMeter";
 import { AssignmentBanner } from "@/components/invoices/AssignmentBanner";
+import { OverdueBanner } from "@/components/invoices/OverdueBanner";
+import { useLateInterest } from "@/hooks/useLateInterest";
 import { RestructureProposalCard } from "@/components/invoices/RestructureProposalCard";
 
 function InvoiceDetailSkeleton() {
@@ -151,6 +160,7 @@ function InvestCallToAction({
   const { isApproved, isLoading, status } = useIsKycApproved({
     enabled: isConnected,
   });
+  const ackBlocked = useDebtorAckBlocked(invoiceId);
 
   let body: ReactNode;
 
@@ -183,13 +193,16 @@ function InvestCallToAction({
   } else {
     body = (
       <>
-        <InvestmentModal
-          invoiceId={invoiceId}
-          minInvestment={minInvestment}
-          maxInvestment={maxInvestment}
-          fundingCap={fundingCap}
-          trancheType={trancheStatus ? selectedTranche : undefined}
-        />
+        <VelocityMeter />
+        {ackBlocked ? null : (
+          <InvestmentModal
+            invoiceId={invoiceId}
+            minInvestment={minInvestment}
+            maxInvestment={maxInvestment}
+            fundingCap={fundingCap}
+            trancheType={trancheStatus ? selectedTranche : undefined}
+          />
+        )}
         <ReturnsCalculator
           faceValue={fundingCap}
           yieldPercentage={yieldPercentage}
@@ -313,6 +326,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
               <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <CurrencyToggle showRate={false} />
                 <InvoiceStatusBadge status={invoice.status} />
+                <DebtorStatusBadge debtorHash={invoice.debtor_hash ?? invoice.debtor_id} />
                 <DaysRemainingBadge dueDate={invoice.due_date} status={invoice.status} />
                 <WatchlistButton invoiceId={invoice.id} />
                 <ShareInvoiceButton invoiceId={invoice.id} title={invoice.title} />
@@ -339,6 +353,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
         isDisputed={invoice.is_disputed}
         isSettling={invoice.is_settling}
       />
+      <WatchWarning debtorHash={invoice.debtor_hash ?? invoice.debtor_id} />
 
       <InvoiceFinancials
         faceValue={invoice.amount}
@@ -357,6 +372,10 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
           isSettled={invoice.status === "settled"}
           lateInterest={lateInterest.accrued}
         />
+      )}
+      {/* Repayment history timeline (#635): payment events with matching status. */}
+      {(invoice.status === "funded" || invoice.status === "settled") && (
+        <RepaymentTimeline invoiceId={invoice.id} />
       )}
 
       <InvoiceBenchmarkCard invoiceId={invoice.id} />
@@ -469,6 +488,8 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
       {/* Descending-rate auction, rendered only when the backend reports one (#594). */}
       <RateAuctionPanel invoiceId={invoice.id} />
 
+      {/* Debtor acknowledgement status (#620). */}
+      <DebtorAckPanel invoiceId={invoice.id} />
       {/* Invest CTA — KYC gated. */}
       {isOpenForInvestment ? (
         <InvestCallToAction
@@ -505,6 +526,8 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
       <SyndicatePanel invoiceId={invoice.id} />
 
       <AnnouncementFeed invoiceId={invoice.id} />
+
+      <AttestationList invoiceId={invoice.id} />
 
       <InvoiceDocumentsTab
         invoiceId={invoice.id}
