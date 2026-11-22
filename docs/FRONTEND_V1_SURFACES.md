@@ -122,6 +122,35 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #683 Collateral health and top-up workflow
+
+`CollateralHealthPanel` provides live collateral monitoring, valuation models, and top-up actions:
+
+```ts
+interface CollateralPosition {
+  id: string;
+  invoice_id: string;
+  borrower_address: string;
+  outstanding_debt_xlm: number;
+  current_collateral_xlm: number;
+  collateral_asset: string;
+  valuation_model: "mark_to_market" | "haircut_adjusted";
+  haircut_percent: number;
+  effective_collateral_value: number;
+  required_collateral_value: number;
+  buffer_amount_xlm: number;
+  current_health_ratio_percent: number;
+  health_status: "healthy" | "warning" | "critical";
+}
+```
+
+- Supports configurable valuation models: mark-to-market (100% spot) and haircut-adjusted (conservative asset haircut).
+- Computes required collateral based on the 120% minimum ratio and calculates real-time buffer amounts.
+- Prominently warns on critical liquidation states (health ratio <= 110%).
+- Real-time action preview reconciles resulting collateral, resulting buffer, and resulting ratio before execution.
+- Strictly blocks withdrawals that cause health ratio to fall below 120% minimum or when position is in critical territory.
+- Audit history logs all top-ups and withdrawals with previous and resulting ratio transitions.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
