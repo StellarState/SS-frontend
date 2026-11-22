@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInvestorReputation } from "@/hooks/useInvestorReputation";
+import { useChartPalette } from "@/hooks/useChartPalette";
 import { getReputationTier } from "@/lib/api";
 import { Award, ShieldCheck, Sparkles } from "lucide-react";
 import {
@@ -23,6 +24,7 @@ function tierIcon(tier: string) {
 
 export function InvestorReputation({ wallet }: { wallet: string }) {
   const { data, isLoading, isError } = useInvestorReputation(wallet);
+  const [seriesCue] = useChartPalette(1);
 
   if (isLoading) {
     return (
@@ -128,6 +130,7 @@ export function InvestorReputation({ wallet }: { wallet: string }) {
                     type="monotone"
                     dataKey="score"
                     strokeWidth={2}
+                    strokeDasharray={seriesCue.dash}
                     dot={{ r: 3 }}
                   />
                 </LineChart>
