@@ -88,7 +88,6 @@ export interface Invoice {
     verified: boolean;
     submitted_at?: string;
   } | null;
-  impact_report?: { type: "environmental" | "social" | "governance" | "combined"; metrics_hash: string; verified: boolean; submitted_at?: string } | null;
   /** Current debtor address obligated on this invoice (#590). */
   debtor?: string | null;
   /** Whether the invoice is currently under dispute (#590). */
@@ -5435,6 +5434,7 @@ export async function commitRateAuction(
   );
   if (!res.ok) throw parseInvestError(await res.json().catch(() => null));
   return res.json();
+}
 /* ─── Debtor assignment consent flow (#590) ────────────────────────────────── */
 
 export type InvoiceAssignmentParty = "issuer" | "old_debtor" | "new_debtor";

@@ -40,6 +40,7 @@ import { useIsKycApproved } from "@/hooks/useKycStatus";
 import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
+import { useLateInterest } from "@/hooks/useLateInterest";
 import { useWallet } from "@/context/WalletContext";
 import { isExpired } from "@/components/marketplace";
 import { OrderBookDepthChart } from "@/components/marketplace/OrderBookDepthChart";
@@ -63,6 +64,7 @@ import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
 import { RateAuctionPanel } from "@/components/invoices/RateAuctionPanel";
 import { AssignmentBanner } from "@/components/invoices/AssignmentBanner";
 import { RestructureProposalCard } from "@/components/invoices/RestructureProposalCard";
+import { OverdueBanner } from "@/components/invoices/OverdueBanner";
 
 function InvoiceDetailSkeleton() {
   return (
