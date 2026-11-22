@@ -279,6 +279,35 @@ interface WalletRecoveryReadinessProfile {
 - Checklist actions update immediately upon configuration changes.
 - Route available at `/settings/recovery`.
 
+## #672 KYC document expiry and re-verification workflow
+
+`KycExpiryBanner` and `useKycExpiry` provide accreditation lifecycle tracking, grace period restrictions, and fast-track field preservation:
+
+```ts
+interface KycExpiryProfile {
+  userId: string;
+  userName: string;
+  documentType: string;
+  documentNumber: string;
+  expiresAt: string;
+  timeZone: string;
+  state: KycExpiryState;
+  daysRemaining: number;
+  hoursRemaining: number;
+  reminderMilestone: 30 | 14 | 7 | null;
+  activeRestrictions: string[];
+  notificationsActive: boolean;
+  preservedFields: KycPreservedFields;
+}
+```
+
+- The expiry banner displays user-specific entity and document accreditation metadata.
+- Expiration countdown timers reflect the user's localized timezone.
+- High-risk protocol actions blocked during the final 7-day grace window display clear expiry reasons.
+- Focused re-verification preserves previously verified entity and tax identifier fields.
+- Reminders and notification pings stop immediately once renewal documents are submitted.
+- Route available at `/kyc/reverify`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

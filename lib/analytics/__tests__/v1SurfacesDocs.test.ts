@@ -19,6 +19,7 @@ describe("frontend V1 surface contract", () => {
       "#675 Account merge and duplicate wallet resolution",
       "#674 Passkey login for account actions",
       "#673 Wallet recovery readiness checklist",
+      "#672 KYC document expiry and re-verification workflow",
     ]) {
       expect(contract, section).toContain(section);
     }
