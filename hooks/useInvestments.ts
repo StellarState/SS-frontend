@@ -33,10 +33,11 @@ export function useInvestMutation() {
   const mutateRef = useRef<(vars: InvestMutationVars) => void>(() => {});
 
   const mutation = useMutation({
-    mutationFn: ({ invoiceId, amount, currency, trancheType }: InvestMutationVars) =>
-      currency
-        ? investInInvoice(invoiceId, amount, currency, trancheType)
-        : investInInvoice(invoiceId, amount, undefined, trancheType),
+    mutationFn: ({ invoiceId, amount, currency, trancheType }: InvestMutationVars) => {
+      if (currency) return investInInvoice(invoiceId, amount, currency, trancheType);
+      if (trancheType) return investInInvoice(invoiceId, amount, undefined, trancheType);
+      return investInInvoice(invoiceId, amount);
+    },
 
     onMutate: async ({ invoiceId, amount }) => {
       // Transaction status toast, shown synchronously and immediately on

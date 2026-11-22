@@ -64,6 +64,17 @@ export function DebtorConfirmation({ token }: { token: string }) {
             : "Thank you. Your rejection and reason have been recorded and the issuer has been notified."}
         </p>
         <p className="mt-4 text-sm text-muted-foreground">You can close this page.</p>
+        {completed === "confirm" && (
+          <p className="mt-3">
+            <a
+              href={`/pay/${token}`}
+              className="text-sm font-medium underline"
+              data-testid="payment-instructions-link"
+            >
+              View payment instructions
+            </a>
+          </p>
+        )}
       </main>
     );
   }

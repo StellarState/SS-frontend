@@ -128,6 +128,10 @@ describe("DebtorConfirmation — actions", () => {
 
     const success = await screen.findByTestId("debtor-success");
     expect(success).toHaveTextContent("Invoice confirmed");
+    expect(screen.getByTestId("payment-instructions-link")).toHaveAttribute(
+      "href",
+      `/pay/${TOKEN}`
+    );
     const [url, init] = fetchMock.mock.calls[1];
     expect(url).toContain(`/debtor-confirmations/${TOKEN}`);
     expect(init.method).toBe("POST");

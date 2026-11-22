@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentUpload } from "@/components/invoices/DocumentUpload";
+import { CancelListingDialog } from "@/components/invoices/CancelListingDialog";
+import { RelistInvoiceForm } from "@/components/invoices/RelistInvoiceForm";
 import { fetchInvoiceDetail, updateInvoice, uploadDocumentToIpfs, type InvoiceDetail } from "@/lib/api";
 
 const editSchema = z.object({
@@ -142,9 +144,13 @@ export function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           <p className="text-sm text-muted-foreground">
             Only invoices in draft status can be modified.
           </p>
-          <Button variant="outline" onClick={() => router.push("/seller")}>
-            Return to Seller Dashboard
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button variant="outline" onClick={() => router.push("/seller")}>
+              Return to Seller Dashboard
+            </Button>
+            <CancelListingDialog invoice={invoice} />
+            <RelistInvoiceForm invoice={invoice} />
+          </div>
         </CardContent>
       </Card>
     );
@@ -290,6 +296,10 @@ export function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
             </Button>
           </div>
         </form>
+        <div className="mt-4 flex flex-wrap gap-3 pt-4 border-t">
+          <CancelListingDialog invoice={invoice} />
+          <RelistInvoiceForm invoice={invoice} />
+        </div>
       </CardContent>
     </Card>
   );

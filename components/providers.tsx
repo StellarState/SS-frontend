@@ -12,6 +12,7 @@ import { WalletProvider } from "@/context/WalletContext";
 import { NetworkMismatchProvider } from "@/context/NetworkMismatchContext";
 import { CurrencyProvider } from "@/context/CurrencyContext";
 import { AccreditationProvider } from "@/context/AccreditationContext";
+import { PreferencesProvider } from "@/context/PreferencesContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
 import i18n from "@/src/i18n";
 
@@ -21,20 +22,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: { staleTime: 60 * 1000 },
-          // #281 — surface every failed mutation as a toast notification
           mutations: { onError: notifyApiError },
         },
       }),
   );
 
-  // Set document.documentElement.lang on mount and when i18n language changes
   useEffect(() => {
-    // Initialize language from localStorage if available
     const storedLanguage = localStorage.getItem("language");
     if (storedLanguage && ["en", "es", "fr"].includes(storedLanguage)) {
       i18n.changeLanguage(storedLanguage);
     } else {
-      // Detect from navigator.language
       const navLang = navigator.language.split("-")[0];
       if (["en", "es", "fr"].includes(navLang)) {
         i18n.changeLanguage(navLang);
@@ -56,17 +53,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <I18nextProvider i18n={i18n}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <QueryClientProvider client={queryClient}>
-          {/* #379 — one shared wallet session for the whole app */}
+          {/* #379: one shared wallet session for the whole app */}
           <WalletProvider>
-            {/* #610 — global wrong-network detection and transaction guard */}
+            {/* #610: global wrong-network detection and transaction guard */}
             <NetworkMismatchProvider>
               <AuthProvider>
-                {/* #437 — one shared display currency + live XLM/USD rate for the app */}
+                {/* #437: one shared display currency + live XLM/USD rate */}
                 <CurrencyProvider>
                   <AccreditationProvider>
-                    {children}
-                    <PlatformOnboardingTour />
-                    <Toaster position="top-right" />
+                    <PreferencesProvider>
+                      {children}
+                      <PlatformOnboardingTour />
+                      <Toaster position="top-right" />
+                    </PreferencesProvider>
                   </AccreditationProvider>
                 </CurrencyProvider>
               </AuthProvider>
