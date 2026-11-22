@@ -228,6 +228,38 @@ interface ExposureEvaluation {
 - Hard blocks trigger above 40%, show breached dimensions, and prevent investment submission.
 - Recommends lower-risk alternative opportunities that respect concentration limits.
 
+## #688 Price and yield limit order management
+
+`LimitOrderPanel` and `LimitOrderForm` provide conditional order management:
+
+```ts
+interface ExtendedLimitOrder {
+  id: string;
+  invoice_id: string;
+  buyer_address: string;
+  fraction_amount: number;
+  max_price_per_fraction: number;
+  target_yield_percent?: number | null;
+  total_escrowed: number;
+  status: "open" | "matched" | "cancelled" | "expired";
+  created_at: string;
+  expires_at: string;
+  matched_at?: string | null;
+  matched_price_per_fraction?: number | null;
+  execution_fee?: number | null;
+  effective_yield?: number | null;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+}
+```
+
+- Protocol limits: minimum price 0.01 XLM, maximum price 100,000 XLM, yield range 1.0% to 50.0%.
+- Match preview displays matched price, estimated protocol fee (50 bps), and effective yield before execution.
+- Multi-view filtering across open, matched, cancelled, and expired states.
+- Confirmation dialog required before cancelling an order to prevent accidental cancellation.
+- Expired orders cannot be executed and remain auditable with expiration notices.
+- Terminal orders preserve historical execution and cancellation audit details.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

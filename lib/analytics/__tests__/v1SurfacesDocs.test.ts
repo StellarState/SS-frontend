@@ -16,6 +16,7 @@ describe("frontend V1 surface contract", () => {
       "#694 Issuer liquidity reserve target planner",
       "#695 Invoice dispute evidence timeline",
       "#689 Leveraged position exposure warnings",
+      "#688 Price and yield limit order management",
     ]) {
       expect(contract, section).toContain(section);
     }
