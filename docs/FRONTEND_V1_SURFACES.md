@@ -122,6 +122,42 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #687 Secondary market offer negotiation
+
+`OfferNegotiationPanel` and `OfferBuilder` provide constrained offer negotiation:
+
+```ts
+interface SecondaryOffer {
+  id: string;
+  invoice_id: string;
+  listing_id: string;
+  buyer_address: string;
+  seller_address: string;
+  quantity: number;
+  price_per_fraction: number;
+  total_offer_amount: number;
+  fair_value_per_fraction: number;
+  discount_premium_percent: number;
+  effective_yield_percent: number;
+  created_at: string;
+  expires_at: string;
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "expired";
+  settlement_status?: "queued" | "settled" | null;
+  signature?: string | null;
+  rejection_reason?: string | null;
+  cancelled_at?: string | null;
+  resolved_at?: string | null;
+}
+```
+
+- Offer builder enforces quantity up to available listing amount and price within protocol boundaries (0.01 to 100,000 XLM).
+- Fair-value reference displays real-time discount or premium percentages and projected effective yield before submission.
+- Binding offers require wallet signature confirmation.
+- Authorised parties enforce actions: only the seller can accept or reject an offer; only the buyer can cancel an active offer.
+- Expired offers cannot execute, accept, or reject, and display expiration warnings.
+- Accepted offers immediately transition status to accepted and enter the settlement queue.
+- Terminal rejected, cancelled, and expired offers retain historical audit records.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
