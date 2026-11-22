@@ -234,6 +234,30 @@ interface MergeAuditReceipt {
 - Immutable audit receipt with hash and JSON export ensures verifiable compliance.
 - Route available at `/security/merge`.
 
+## #674 Passkey login for account actions
+
+`PasskeySettingsPanel` and `usePasskeyManager` provide FIDO2 WebAuthn passkey registration, high-risk change protection, and wallet separation:
+
+```ts
+interface PasskeyCredentialMetadata {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  authenticatorType: "platform" | "cross-platform";
+  aaguid: string;
+  algorithm: "ES256" | "RS256";
+  transports: string[];
+}
+```
+
+- Passkey enrollment enforces a valid, non-expired account challenge.
+- Removal of any registered passkey requires explicit fresh confirmation typing.
+- On-chain Stellar transactions strictly require cryptographic wallet signing, not passkeys.
+- Usable fallback options (recovery codes, wallet signatures) are provided when passkeys are unavailable.
+- Displayed passkey metadata is sanitized to never expose private keys or secrets.
+- Route available at `/settings/passkeys`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
