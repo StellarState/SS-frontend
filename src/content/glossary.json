@@ -1,0 +1,52 @@
+[
+  {
+    "term": "Discount Rate",
+    "definition": "The interest rate used to calculate the present value of future cash flows. A higher discount rate reduces the present value of an invoice's expected returns.",
+    "related": ["Yield", "Tenor"]
+  },
+  {
+    "term": "Tenor",
+    "definition": "The length of time remaining until an invoice or financial instrument matures and the principal is repaid.",
+    "related": ["Discount Rate", "Yield"]
+  },
+  {
+    "term": "Recourse",
+    "definition": "The right of an investor to claim repayment from the original seller if the debtor defaults. Full-recourse invoices reduce credit risk for investors.",
+    "related": ["Collateral", "Credit Score"]
+  },
+  {
+    "term": "Waterfall",
+    "definition": "The order in which proceeds from an asset are distributed to investors. Senior tranches are paid first, junior tranches absorb losses first.",
+    "related": ["Tranche", "Collateral"]
+  },
+  {
+    "term": "Yield",
+    "definition": "The annualised return an investor earns on an invoice, expressed as a percentage of the amount invested.",
+    "related": ["Discount Rate", "Tenor"]
+  },
+  {
+    "term": "Tranche",
+    "definition": "A slice of an investment structured to carry different risk and return profiles. Senior tranches have priority repayment; junior tranches offer higher yields.",
+    "related": ["Waterfall", "Yield"]
+  },
+  {
+    "term": "Collateral",
+    "definition": "An asset pledged by a borrower to secure a loan or investment. If the borrower defaults, the lender may seize the collateral to recover funds.",
+    "related": ["Recourse", "Waterfall"]
+  },
+  {
+    "term": "KYC",
+    "definition": "Know Your Customer — the process of verifying the identity of investors and issuers to comply with financial regulations and prevent fraud.",
+    "related": ["AML", "Credit Score"]
+  },
+  {
+    "term": "AML",
+    "definition": "Anti-Money Laundering — a set of laws, regulations, and procedures that detect and prevent the disguising of illegally obtained funds as legitimate income.",
+    "related": ["KYC"]
+  },
+  {
+    "term": "Credit Score",
+    "definition": "A numerical rating that represents the creditworthiness of an issuer based on their repayment history, outstanding obligations, and financial health.",
+    "related": ["KYC", "Recourse"]
+  }
+]

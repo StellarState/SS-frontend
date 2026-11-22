@@ -13,6 +13,7 @@ import { useComparison } from "./InvoiceComparisonContext";
 import { ShareInvoiceButton } from "@/components/invoices/ShareInvoiceButton";
 import { StateChangeBadge } from "./StateChangeBadge";
 import { WatchlistButton } from "./WatchlistButton";
+import { GlossaryTerm } from "@/components/common/GlossaryTerm";
 import { BenchmarkChip } from "./BenchmarkChip";
 import { NavChip } from "./NavChip";
 import { Lock } from "lucide-react";
@@ -25,6 +26,8 @@ import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStat
 import { IssuerCreditTierBadge } from "@/components/issuers/IssuerCreditTierBadge";
 import { OverdueChip } from "@/components/invoices/OverdueChip";
 import { IssuerTierBadge } from "@/components/issuers/IssuerTierBadge";
+import { useSandboxMode } from "@/hooks/useSandboxMode";
+import { DebtorStatusBadge } from "@/components/debtor/DebtorStatusBadge";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   open: "default",
@@ -52,6 +55,7 @@ export function InvoiceCard({
   const { tier } = useSuitabilityTier();
   const grade = invoice.risk_rating?.tier;
   const locked = !canInvestInGrade(tier, grade);
+  const { isSandbox } = useSandboxMode();
 
   // Compute hours remaining so the threshold warning badge knows whether to show.
   const hoursUntilClose =
@@ -77,7 +81,13 @@ export function InvoiceCard({
             <Badge variant={statusVariant[invoice.status]}>
               {invoice.status}
             </Badge>
+            {isSandbox && (
+              <Badge variant="outline" className="border-yellow-400 text-yellow-700 bg-yellow-50">
+                PRACTICE
+              </Badge>
+            )}
             <OverdueChip status={invoice.status} dueDate={invoice.due_date} />
+            <DebtorStatusBadge debtorHash={invoice.debtor_hash ?? invoice.debtor_id} />
             {showWatchToggle && <WatchlistButton invoiceId={invoice.id} />}
           </div>
         </div>
@@ -97,7 +107,7 @@ export function InvoiceCard({
         {invoice.yield_percentage !== undefined && (
           <div className="flex flex-col items-start gap-1" data-testid="invoice-card-yield">
             <span className="text-sm text-muted-foreground">
-              Yield{" "}
+              <GlossaryTerm term="Yield">Yield</GlossaryTerm>{" "}
               <span className="font-medium text-foreground">{invoice.yield_percentage}%</span>
             </span>
             <BenchmarkChip invoice={invoice} />
@@ -155,10 +165,11 @@ export function InvoiceCard({
         <div className="flex gap-2 mt-auto">
           <Button
             className="flex-1"
-            disabled={!published || expired || locked || Boolean(invoice.greylist && (!invoice.greylist.clears_at || new Date(invoice.greylist.clears_at).getTime() > Date.now()))}
+            disabled={!published || expired || locked || isSandbox || Boolean(invoice.greylist && (!invoice.greylist.clears_at || new Date(invoice.greylist.clears_at).getTime() > Date.now()))}
             onClick={() => onInvest?.(invoice.id)}
+            title={isSandbox ? "Investing is disabled in Practice Mode" : undefined}
           >
-            {expired ? "Expired" : locked ? "Locked" : "Invest"}
+            {expired ? "Expired" : locked ? "Locked" : isSandbox ? "Practice Mode" : "Invest"}
           </Button>
           <ShareInvoiceButton invoiceId={invoice.id} title={invoice.title} />
           <CompareToggleButton invoice={invoice} />

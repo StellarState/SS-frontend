@@ -73,6 +73,11 @@ export interface Invoice {
   sector_benchmark?: SectorBenchmark | null;
   /** Optional compliance hold returned by the invoice API. */
   greylist?: { reason?: string | null; clears_at?: string | null } | null;
+  /** Optional attestation counts used by the marketplace verification filter (#605). */
+  attestation_summary?: { verified?: number; total?: number; invalidated?: number } | null;
+  /** Debtor identity used by the status badge and issuer-side gate (#606). */
+  debtor_hash?: string | null;
+  debtor_id?: string | null;
   /** Optional tranche state returned for invoices using the tranche contract. */
   tranche_status?: {
     senior_pct: number;
@@ -165,6 +170,7 @@ export function resolveInvoiceCategory(
 
 export interface InvoiceDetail extends Invoice {
   description: string;
+  terms?: string;
   investors: { address: string; amount: number; timestamp: string }[];
   document_url: string;
   /** Any supporting documents beyond the primary one. */
@@ -704,6 +710,9 @@ export interface PublishInvoiceInput {
   faceValue: number;
   fundingDeadline: string;
   documentCid: string;
+  /** Optional recurring-client fields saved in invoice templates (#609). */
+  debtor?: string;
+  terms?: string;
 }
 
 export interface PublishInvoiceResult {
