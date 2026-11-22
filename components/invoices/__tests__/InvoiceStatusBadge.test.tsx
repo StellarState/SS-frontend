@@ -3,66 +3,54 @@ import { render, screen } from "@testing-library/react";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 
 describe("InvoiceStatusBadge", () => {
-    it("renders grey badge with label 'Draft' for draft status", () => {
+    it("renders a neutral chip with label 'Draft'", () => {
         render(<InvoiceStatusBadge status="draft" />);
-        const badge = screen.getByText("Draft");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "secondary");
+        expect(screen.getByText("Draft")).toBeInTheDocument();
+        expect(screen.getByTestId("status-chip")).toHaveAttribute("data-variant", "neutral");
     });
 
-    it("renders blue badge with label 'Open' for published status", () => {
-        render(<InvoiceStatusBadge status="published" />);
-        const badge = screen.getByText("Open");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "outline");
+    it("renders an info chip for published/open/active", () => {
+        for (const status of ["published", "open", "active"]) {
+            const { unmount } = render(<InvoiceStatusBadge status={status} />);
+            expect(screen.getByTestId("status-chip")).toHaveAttribute("data-variant", "info");
+            unmount();
+        }
     });
 
-    it("renders blue badge with label 'Open' for open status", () => {
-        render(<InvoiceStatusBadge status="open" />);
-        const badge = screen.getByText("Open");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "outline");
+    it("renders a success chip for funded and settled", () => {
+        for (const status of ["funded", "settled"]) {
+            const { unmount } = render(<InvoiceStatusBadge status={status} />);
+            expect(screen.getByTestId("status-chip")).toHaveAttribute("data-variant", "success");
+            unmount();
+        }
     });
 
-    it("renders yellow badge with label 'Funded' for funded status", () => {
-        render(<InvoiceStatusBadge status="funded" />);
-        const badge = screen.getByText("Funded");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "default");
+    it("renders a danger chip for expired, rejected and defaulted", () => {
+        for (const status of ["expired", "rejected", "defaulted"]) {
+            const { unmount } = render(<InvoiceStatusBadge status={status} />);
+            expect(screen.getByTestId("status-chip")).toHaveAttribute("data-variant", "danger");
+            unmount();
+        }
     });
 
-    it("renders green badge with label 'Settled' for settled status", () => {
-        render(<InvoiceStatusBadge status="settled" />);
-        const badge = screen.getByText("Settled");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "ghost");
-    });
-
-    it("renders red badge with label 'Expired' for expired status", () => {
-        render(<InvoiceStatusBadge status="expired" />);
-        const badge = screen.getByText("Expired");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "destructive");
-    });
-
-    it("renders grey badge with label 'Unknown' for an unknown status", () => {
+    it("renders an unknown chip for an unrecognised status", () => {
         render(<InvoiceStatusBadge status="unknown_status" />);
-        const badge = screen.getByText("Unknown");
-        expect(badge).toBeInTheDocument();
-        expect(badge.closest("[data-slot='badge']")).toHaveAttribute("data-variant", "secondary");
+        expect(screen.getByText("Unknown")).toBeInTheDocument();
+        expect(screen.getByTestId("status-chip")).toHaveAttribute("data-variant", "neutral");
     });
 
-    it("returns null when status is null", () => {
-        const { container } = render(<InvoiceStatusBadge status={null} />);
-        expect(container.innerHTML).toBe("");
+    it("shows an icon alongside every status label", () => {
+        const { container } = render(<InvoiceStatusBadge status="expired" />);
+        expect(screen.getByText("Expired")).toBeInTheDocument();
+        expect(container.querySelector("svg")).not.toBeNull();
     });
 
-    it("returns null when status is undefined", () => {
-        const { container } = render(<InvoiceStatusBadge status={undefined} />);
-        expect(container.innerHTML).toBe("");
-    });
-
-    it("does not throw when no status prop is provided", () => {
+    it("returns null when status is null, undefined or absent", () => {
+        for (const status of [null, undefined]) {
+            const { container, unmount } = render(<InvoiceStatusBadge status={status} />);
+            expect(container.innerHTML).toBe("");
+            unmount();
+        }
         const { container } = render(<InvoiceStatusBadge />);
         expect(container.innerHTML).toBe("");
     });

@@ -10,6 +10,7 @@ import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { PriceImpactWarning } from "@/components/invoices/PriceImpactWarning";
 import { ExposureWarningBanner } from "@/components/invoices/ExposureWarningBanner";
 import { usePositionExposure } from "@/hooks/usePositionExposure";
+import { FeeBreakdown } from "@/components/fees/FeeBreakdown";
 import { TopUpCta } from "@/components/wallet/TopUpCta";
 import { OnboardingBonusChip } from "@/components/invoices/OnboardingBonusChip";
 import { AccreditationGateSteps } from "@/components/invoices/AccreditationGateModal";
@@ -27,10 +28,11 @@ import {
   type InvestCurrency,
 } from "@/lib/investCurrency";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface InvestmentModalProps {
   invoiceId: string;
@@ -60,6 +62,9 @@ export function InvestmentModal({
   const [validAmount, setValidAmount] = useState<number | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<InvestCurrency>(BASE_CURRENCY);
+  // #654: confirmation stays disabled while the balance cannot cover the
+  // network fee, platform fee and base reserve.
+  const [feeBlocked, setFeeBlocked] = useState(false);
   const investMutation = useInvestMutation();
   const fxRate = useFxRate(currency);
   const { address, network } = useWallet();
@@ -98,6 +103,7 @@ export function InvestmentModal({
       amountError !== null ||
       insufficientBalance ||
       fxBlocked ||
+      feeBlocked ||
       isHardBlocked
     ) {
       return;
@@ -112,6 +118,7 @@ export function InvestmentModal({
     setIsOpen(false);
     setValidAmount(null);
     setAmountError(null);
+    setFeeBlocked(false);
     // The chain has moved; re-read the balance instead of waiting for the
     // 60s poll.
     refresh();
@@ -119,13 +126,14 @@ export function InvestmentModal({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
         <Button data-testid="invest-button" data-tour="invest-button">
           Invest
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0">
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-md">
+        <DialogTitle className="sr-only">Investment dialog</DialogTitle>
         {!isAcknowledged ? (
           <AccreditationGateSteps
             onCancel={() => setIsOpen(false)}
@@ -218,6 +226,13 @@ export function InvestmentModal({
               fundingCap={fundingCap ?? maxInvestment}
             />
 
+            {validAmount !== null && (
+              <FeeBreakdown
+                amount={validAmount}
+                onInsufficientBalance={setFeeBlocked}
+              />
+            )}
+
             {validAmount !== null && validAmount > 0 && (
               <ExposureWarningBanner
                 evaluation={evaluation}
@@ -229,7 +244,10 @@ export function InvestmentModal({
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setFeeBlocked(false);
+                  setIsOpen(false);
+                }}
                 className="flex-1"
               >
                 Cancel
@@ -242,6 +260,7 @@ export function InvestmentModal({
                   investMutation.isPending ||
                   insufficientBalance ||
                   fxBlocked ||
+                  feeBlocked ||
                   isHardBlocked
                 }
                 data-testid="investment-submit"
@@ -252,7 +271,7 @@ export function InvestmentModal({
             </div>
           </div>
         )}
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

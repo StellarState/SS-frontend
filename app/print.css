@@ -1,0 +1,71 @@
+/* Print styles (issue #623)
+ *
+ * Hides navigation and interactive controls, forces black-on-white output,
+ * and prevents awkward page breaks inside cards and table rows.
+ */
+@media print {
+  /* Hide navigation and interactive UI */
+  nav,
+  header,
+  aside,
+  footer,
+  .no-print,
+  button,
+  [role="navigation"],
+  [role="banner"],
+  [data-testid="navbar"],
+  [data-testid="mobile-nav"],
+  [data-testid="network-banner"] {
+    display: none !important;
+  }
+
+  /* Force light colours for readability */
+  *,
+  *::before,
+  *::after {
+    color: black !important;
+    background: white !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Avoid breaking inside cards and table rows */
+  .card,
+  [data-testid$="-card"],
+  tr,
+  li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Expand details elements so hidden content prints */
+  details {
+    display: block !important;
+  }
+  details > summary {
+    display: list-item;
+  }
+
+  /* Show full URLs after links */
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #555 !important;
+  }
+
+  /* Skip URL display for anchor links and javascript: links */
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after {
+    content: "";
+  }
+
+  /* Reasonable page margins */
+  @page {
+    margin: 1.5cm;
+  }
+}

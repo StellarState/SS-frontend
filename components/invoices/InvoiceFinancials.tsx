@@ -11,6 +11,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Money, ExchangeRateDisclaimer } from "@/components/currency";
+import { GlossaryTerm } from "@/components/common/GlossaryTerm";
 
 interface InvoiceFinancialsProps {
   /** Face value of the whole invoice. */
@@ -50,7 +51,7 @@ export function InvoiceFinancials({
     },
     {
       key: "yield",
-      label: "Yield",
+      label: <GlossaryTerm term="Yield">Yield</GlossaryTerm>,
       value:
         yieldPercentage === undefined || yieldPercentage === null
           ? NOT_PROVIDED
