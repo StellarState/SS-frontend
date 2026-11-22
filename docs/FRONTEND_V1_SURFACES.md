@@ -195,6 +195,39 @@ interface InvoiceDispute {
 - Timeline preserves chronological event order and actor role attribution.
 - Public observers view approved high-level status.
 
+## #689 Leveraged position exposure warnings
+
+`usePositionExposure()` evaluates concentration across issuer, debtor, and jurisdiction dimensions:
+
+```ts
+interface ExposureEvaluation {
+  totalCurrentPortfolio: number;
+  totalResultingPortfolio: number;
+  proposedAmount: number;
+  dimensions: Array<{
+    dimension: "issuer" | "debtor" | "jurisdiction";
+    dimensionKey: string;
+    currentSharePercent: number;
+    resultingSharePercent: number;
+    status: "safe" | "soft_warning" | "hard_block";
+  }>;
+  isHardBlocked: boolean;
+  hasSoftWarning: boolean;
+  alternativeRecommendations: Array<{
+    id: string;
+    title: string;
+    jurisdiction: string;
+    yield_rate: number;
+  }>;
+}
+```
+
+- Calculates concentration across issuer, debtor, and jurisdiction.
+- Current and resulting portfolio utilization update dynamically with quote changes.
+- Soft warnings trigger above 25% and are dismissible.
+- Hard blocks trigger above 40%, show breached dimensions, and prevent investment submission.
+- Recommends lower-risk alternative opportunities that respect concentration limits.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

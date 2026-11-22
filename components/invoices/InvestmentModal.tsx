@@ -8,6 +8,8 @@ import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInp
 import { InvestCurrencySelector } from "@/components/invoices/InvestCurrencySelector";
 import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { PriceImpactWarning } from "@/components/invoices/PriceImpactWarning";
+import { ExposureWarningBanner } from "@/components/invoices/ExposureWarningBanner";
+import { usePositionExposure } from "@/hooks/usePositionExposure";
 import { TopUpCta } from "@/components/wallet/TopUpCta";
 import { OnboardingBonusChip } from "@/components/invoices/OnboardingBonusChip";
 import { AccreditationGateSteps } from "@/components/invoices/AccreditationGateModal";
@@ -38,6 +40,9 @@ interface InvestmentModalProps {
   fundingCap?: number;
   onSuccess?: () => void;
   trancheType?: 1 | 2;
+  issuerAddress?: string;
+  debtorName?: string | null;
+  jurisdiction?: string | null;
 }
 
 export function InvestmentModal({
@@ -47,6 +52,9 @@ export function InvestmentModal({
   fundingCap,
   onSuccess,
   trancheType,
+  issuerAddress,
+  debtorName,
+  jurisdiction,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [validAmount, setValidAmount] = useState<number | null>(null);
@@ -72,10 +80,28 @@ export function InvestmentModal({
   // must complete the disclosure steps before the investment form appears.
   const { isAcknowledged } = useAccreditation();
 
+  const { evaluation, isHardBlocked, shouldShowSoftWarning, dismissSoftWarning } = usePositionExposure({
+    invoice: {
+      id: invoiceId,
+      issuer: issuerAddress ?? "Unspecified",
+      debtor: debtorName ?? null,
+      jurisdiction: jurisdiction ?? null,
+    },
+    proposedAmount: validAmount ?? 0,
+  });
+
   const currencyErrorMessage = investErrorMessage(investMutation.error, currency);
 
   const handleInvest = async () => {
-    if (validAmount === null || amountError !== null || insufficientBalance || fxBlocked) return;
+    if (
+      validAmount === null ||
+      amountError !== null ||
+      insufficientBalance ||
+      fxBlocked ||
+      isHardBlocked
+    ) {
+      return;
+    }
 
     await investMutation.mutateAsync({
       invoiceId,
@@ -192,6 +218,14 @@ export function InvestmentModal({
               fundingCap={fundingCap ?? maxInvestment}
             />
 
+            {validAmount !== null && validAmount > 0 && (
+              <ExposureWarningBanner
+                evaluation={evaluation}
+                isDismissed={!shouldShowSoftWarning}
+                onDismiss={dismissSoftWarning}
+              />
+            )}
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -207,7 +241,8 @@ export function InvestmentModal({
                   amountError !== null ||
                   investMutation.isPending ||
                   insufficientBalance ||
-                  fxBlocked
+                  fxBlocked ||
+                  isHardBlocked
                 }
                 data-testid="investment-submit"
                 className="flex-1"

@@ -15,6 +15,7 @@ describe("frontend V1 surface contract", () => {
       "#594 Descending-rate auction",
       "#694 Issuer liquidity reserve target planner",
       "#695 Invoice dispute evidence timeline",
+      "#689 Leveraged position exposure warnings",
     ]) {
       expect(contract, section).toContain(section);
     }

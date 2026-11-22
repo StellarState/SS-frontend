@@ -34,3 +34,4 @@ export { PriceImpactWarning } from "./PriceImpactWarning";
 export { InvoiceRatingWidget } from "./InvoiceRatingWidget";
 export { SubscriptionGate } from "./SubscriptionGate";
 export { DisputeEvidenceTimeline } from "./DisputeEvidenceTimeline";
+export { ExposureWarningBanner } from "./ExposureWarningBanner";
