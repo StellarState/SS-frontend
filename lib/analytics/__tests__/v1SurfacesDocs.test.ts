@@ -8,7 +8,7 @@ const readme = readFileSync(resolve(root, "README.md"), "utf8");
 
 describe("frontend V1 surface contract", () => {
   it("documents each issue section", () => {
-    for (const section of ["#597 Portfolio concentration", "#596 Vault reconciliation", "#595 Issuer netting", "#594 Descending-rate auction"]) {
+    for (const section of ["#597 Portfolio concentration", "#596 Vault reconciliation", "#595 Issuer netting", "#594 Descending-rate auction", "#676 Downloadable reconciliation transaction journal"]) {
       expect(contract, section).toContain(section);
     }
   });
