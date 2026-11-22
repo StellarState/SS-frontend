@@ -20,6 +20,7 @@ describe("frontend V1 surface contract", () => {
       "#674 Passkey login for account actions",
       "#673 Wallet recovery readiness checklist",
       "#672 KYC document expiry and re-verification workflow",
+      "#671 Admin compliance review queue",
     ]) {
       expect(contract, section).toContain(section);
     }
