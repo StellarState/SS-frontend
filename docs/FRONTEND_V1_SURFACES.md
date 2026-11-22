@@ -151,6 +151,33 @@ interface MonitoredCovenant {
 - Authorised investor groups see active breaches, cure plan remediation, and confidential evidence.
 - Route available at `/issuer/covenants`.
 
+## #677 Proof of reserves dashboard
+
+`ProofOfReservesDashboard` and `useProofOfReserves` provide real-time public reserve reconciliation, numerical gap tracking, and snapshot freshness verification:
+
+```ts
+interface ReservesSummary {
+  snapshot_id: string;
+  snapshot_timestamp: string;
+  snapshot_age_text: string;
+  is_stale: boolean;
+  total_assets: number;
+  total_obligations: number;
+  reserve_gap: number;
+  reserve_ratio: number;
+  status: ReservesStatus;
+  accounts: ReserveAccount[];
+  obligations: ObligationCategory[];
+}
+```
+
+- Total protocol obligations reconcile to backing assets.
+- Reserve gap is shown numerically as surplus buffer or deficit.
+- Snapshot age indicator warns when data is older than 24 hours.
+- Reserve accounts provide verifiable links to block explorers and auditor attestations.
+- Missing attestations are safely indicated without breaking dashboard presentation.
+- Public route accessible without authentication at `/reserves`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
