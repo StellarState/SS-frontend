@@ -122,6 +122,33 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #680 Debtor payment landing page with QR and references
+
+`DebtorPaymentLanding` and `useDebtorPayment` provide a dedicated public portal for invoice debtors:
+
+```ts
+interface DebtorPaymentInvoice {
+  invoice_id: string;
+  invoice_title: string;
+  debtor_name: string;
+  debtor_address: string;
+  currency: "XLM" | "USDC";
+  total_due_amount: number;
+  amount_paid: number;
+  remaining_amount: number;
+  payment_reference: string;
+  destination_address: string;
+  due_date: string;
+  status: "due" | "partial" | "settled";
+}
+```
+
+- Amount, currency, and payment reference memo are directly copyable with visual feedback.
+- QR encodes the configured destination and payment reference safely via SEP-0007 URI.
+- Confirmation workflow strictly hides internal private investor position data and individual balances.
+- Remaining amount is prominently visible across due, partial, and settled states.
+- Public route accessible at `/pay/:invoiceId`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

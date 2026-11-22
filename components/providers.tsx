@@ -53,35 +53,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-    >
-      <QueryClientProvider client={queryClient}>
-        {/* #379 — one shared wallet session for the whole app */}
-        <WalletProvider>
-          {/* #610 — global wrong-network detection and transaction guard */}
-          <NetworkMismatchProvider>
     <I18nextProvider i18n={i18n}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <QueryClientProvider client={queryClient}>
           {/* #379 — one shared wallet session for the whole app */}
           <WalletProvider>
-            <AuthProvider>
-              {/* #437 — one shared display currency + live XLM/USD rate for the app */}
-              <CurrencyProvider>
-                <AccreditationProvider>
-                  {children}
-                  <PlatformOnboardingTour />
-                  <Toaster position="top-right" />
-                </AccreditationProvider>
-              </CurrencyProvider>
-            </AuthProvider>
-          </NetworkMismatchProvider>
-        </WalletProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+            {/* #610 — global wrong-network detection and transaction guard */}
+            <NetworkMismatchProvider>
+              <AuthProvider>
+                {/* #437 — one shared display currency + live XLM/USD rate for the app */}
+                <CurrencyProvider>
+                  <AccreditationProvider>
+                    {children}
+                    <PlatformOnboardingTour />
+                    <Toaster position="top-right" />
+                  </AccreditationProvider>
+                </CurrencyProvider>
+              </AuthProvider>
+            </NetworkMismatchProvider>
           </WalletProvider>
         </QueryClientProvider>
       </ThemeProvider>
