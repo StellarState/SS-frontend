@@ -18,6 +18,10 @@ vi.mock("@/hooks/useStellarWallet", () => ({
   }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 // SellerDashboard renders SellerInvoiceTabs, which calls these mutation
 // hooks unconditionally; without a mock they reach the real useAuth(),
 // which throws outside an AuthProvider.

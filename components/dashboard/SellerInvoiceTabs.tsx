@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { DuplicateInvoiceButton } from "@/components/invoices/DuplicateInvoiceButton";
 import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { DeleteDraftDialog } from "@/components/dashboard/DeleteDraftDialog";
 import {
@@ -125,40 +126,44 @@ function InvoiceRow({
           <PayoutSummary invoice={invoice} />
         )}
 
-        {(isEditable(invoice) || isDeletable(invoice)) && (
-          <div className="flex flex-wrap gap-2">
-            {isEditable(invoice) && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/seller/invoices/${invoice.id}/edit`}>
-                  {invoice.status === "rejected" ? "Edit and resubmit" : "Edit"}
-                </Link>
-              </Button>
-            )}
+        <div className="flex flex-wrap gap-2">
+          <DuplicateInvoiceButton invoiceId={invoice.id} />
 
-            {isEditable(invoice) && (
-              <Button
-                size="sm"
-                onClick={() => onSubmit(invoice)}
-                disabled={isSubmitting}
-                data-testid={`submit-invoice-${invoice.id}`}
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit for review
-              </Button>
-            )}
+          {(isEditable(invoice) || isDeletable(invoice)) && (
+            <>
+              {isEditable(invoice) && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/seller/invoices/${invoice.id}/edit`}>
+                    {invoice.status === "rejected" ? "Edit and resubmit" : "Edit"}
+                  </Link>
+                </Button>
+              )}
 
-            {isDeletable(invoice) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRequestDelete(invoice)}
-                data-testid={`delete-invoice-${invoice.id}`}
-              >
-                Delete
-              </Button>
-            )}
-          </div>
-        )}
+              {isEditable(invoice) && (
+                <Button
+                  size="sm"
+                  onClick={() => onSubmit(invoice)}
+                  disabled={isSubmitting}
+                  data-testid={`submit-invoice-${invoice.id}`}
+                >
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Submit for review
+                </Button>
+              )}
+
+              {isDeletable(invoice) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRequestDelete(invoice)}
+                  data-testid={`delete-invoice-${invoice.id}`}
+                >
+                  Delete
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

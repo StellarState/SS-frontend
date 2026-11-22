@@ -18,6 +18,7 @@ import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInp
 import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
 import { PriceImpactWarning } from "@/components/invoices/PriceImpactWarning";
 import { useInvestMutation } from "@/hooks/useInvestments";
+import { EligibilityNotice, useIsIneligible } from "@/components/invoices/EligibilityNotice";
 import { Loader2 } from "lucide-react";
 
 interface InvestDialogProps {
@@ -36,6 +37,7 @@ export function InvestDialog({
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number | null>(null);
   const investMutation = useInvestMutation();
+  const isIneligible = useIsIneligible(invoiceId);
 
   const handleInvest = async () => {
     if (amount === null) return;
@@ -64,6 +66,7 @@ export function InvestDialog({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <EligibilityNotice invoiceId={invoiceId} />
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
@@ -98,7 +101,7 @@ export function InvestDialog({
               </Button>
               <Button
                 onClick={handleInvest}
-                disabled={amount === null || investMutation.isPending}
+                disabled={amount === null || investMutation.isPending || isIneligible}
                 className="flex-1"
               >
                 {investMutation.isPending && (
