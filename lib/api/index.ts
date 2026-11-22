@@ -88,7 +88,6 @@ export interface Invoice {
     verified: boolean;
     submitted_at?: string;
   } | null;
-  impact_report?: { type: "environmental" | "social" | "governance" | "combined"; metrics_hash: string; verified: boolean; submitted_at?: string } | null;
   /** Current debtor address obligated on this invoice (#590). */
   debtor?: string | null;
   /** Whether the invoice is currently under dispute (#590). */
@@ -5323,6 +5322,22 @@ export async function fetchNettingInvoices(jwt?: string): Promise<NettingInvoice
   return res.json();
 }
 
+/* ─── Issuer liquidity reserve target planner (#694) ───────────────────────── */
+
+export interface IssuerReserveData {
+  current_balance: number;
+  obligations: import("@/lib/analytics/reservePlanner").Obligation[];
+  scheduled_contributions: import("@/lib/analytics/reservePlanner").ScheduledContribution[];
+}
+
+export async function fetchIssuerReserveData(jwt?: string): Promise<IssuerReserveData> {
+  const res = await fetch(`${API_BASE}/issuer/reserves`, {
+    headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
+  });
+  if (!res.ok) throw new Error("Failed to fetch issuer reserve data");
+  return res.json();
+}
+
 export interface ProposeNettingInput {
   debtor: string;
   creditor: string;
@@ -5435,6 +5450,7 @@ export async function commitRateAuction(
   );
   if (!res.ok) throw parseInvestError(await res.json().catch(() => null));
   return res.json();
+}
 /* ─── Debtor assignment consent flow (#590) ────────────────────────────────── */
 
 export type InvoiceAssignmentParty = "issuer" | "old_debtor" | "new_debtor";

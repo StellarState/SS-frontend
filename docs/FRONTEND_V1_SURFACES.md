@@ -122,6 +122,35 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #694 Issuer liquidity reserve target planner
+
+`GET /issuer/reserves` returns:
+
+```ts
+interface IssuerReserveData {
+  current_balance: number;
+  obligations: Array<{
+    id: string;
+    title: string;
+    amount: number;
+    due_date: string;
+    status: "upcoming" | "settled" | "overdue";
+  }>;
+  scheduled_contributions: Array<{
+    id: string;
+    amount: number;
+    scheduled_date: string;
+    label: string;
+  }>;
+}
+```
+
+- Target equals upcoming obligations due on or before the selected date.
+- Shortfall calculates as target minus projected balance (current balance plus scheduled contributions).
+- Warning thresholds trigger at 30, 14, and 7 days before due date, with overdue alerts for past due items.
+- Shortfall notifications stop after target is met.
+- CSV export reproduces exact dashboard values.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

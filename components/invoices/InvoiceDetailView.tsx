@@ -40,6 +40,7 @@ import { useIsKycApproved } from "@/hooks/useKycStatus";
 import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
+import { useLateInterest } from "@/hooks/useLateInterest";
 import { useWallet } from "@/context/WalletContext";
 import { isExpired } from "@/components/marketplace";
 import { OrderBookDepthChart } from "@/components/marketplace/OrderBookDepthChart";
@@ -61,6 +62,7 @@ import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStat
 import { ImpactReport } from "@/components/invoices/ImpactReport";
 import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
 import { RateAuctionPanel } from "@/components/invoices/RateAuctionPanel";
+import { OverdueBanner } from "@/components/invoices/OverdueBanner";
 import { AssignmentBanner } from "@/components/invoices/AssignmentBanner";
 import { RestructureProposalCard } from "@/components/invoices/RestructureProposalCard";
 
