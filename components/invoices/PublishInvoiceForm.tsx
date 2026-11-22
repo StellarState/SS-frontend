@@ -418,8 +418,7 @@ export function PublishInvoiceForm() {
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button onClick={handlePublish} disabled={isPublishing || feeBlocked || issuerAtCap || exposure.blocked}>
-              <Button onClick={handlePublish} disabled={isPublishing || debtorBlocked || feeBlocked}>
+              <Button onClick={handlePublish} disabled={isPublishing || feeBlocked || issuerAtCap || exposure.blocked || debtorBlocked}>
                 {isPublishing ? "Publishing..." : "Publish"}
               </Button>
             </div>
