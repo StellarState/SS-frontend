@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { FeeBreakdown } from "@/components/fees/FeeBreakdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TxHash } from "@/components/ui/tx-hash";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,8 @@ interface ClaimableCardProps {
 
 export function ClaimableSettlementCard({ settlement, onClaim, isClaiming }: ClaimableCardProps) {
   const { format } = useCurrency();
+  // #654: do not offer to claim when fees and reserve exceed the XLM balance.
+  const [feeBlocked, setFeeBlocked] = useState(false);
 
   return (
     <Card data-testid={`claimable-${settlement.invoice_id}`}>
@@ -42,11 +46,17 @@ export function ClaimableSettlementCard({ settlement, onClaim, isClaiming }: Cla
         <p className="text-xs text-muted-foreground mt-2">
           Settled {new Date(settlement.settled_at).toLocaleDateString()}
         </p>
+        <div className="mt-3">
+          <FeeBreakdown
+            amount={settlement.return_amount}
+            onInsufficientBalance={setFeeBlocked}
+          />
+        </div>
         <Button
           size="sm"
           className="mt-3"
           onClick={() => onClaim(settlement.invoice_id)}
-          disabled={isClaiming}
+          disabled={isClaiming || feeBlocked}
           data-testid="claim-btn"
         >
           {isClaiming ? "Claiming..." : "Claim Funds"}

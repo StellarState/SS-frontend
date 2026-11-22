@@ -95,7 +95,7 @@ export function HelpCentre() {
           data-testid="help-search"
           className="max-w-md"
         />
-        <p>
+        <div className="flex flex-wrap items-center gap-4">
           <a
             href="mailto:support@stellarsettle.com"
             data-testid="help-support-link"
@@ -103,7 +103,21 @@ export function HelpCentre() {
           >
             Contact support
           </a>
-        </p>
+          <a
+            href="/help/support"
+            data-testid="help-contact-form-link"
+            className="text-sm text-primary hover:underline"
+          >
+            Submit a ticket
+          </a>
+          <a
+            href="/help/tickets"
+            data-testid="help-my-tickets-link"
+            className="text-sm text-primary hover:underline"
+          >
+            My tickets
+          </a>
+        </div>
         <div>
           <Button
             type="button"

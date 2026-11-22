@@ -13,6 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TxHash } from "@/components/ui/tx-hash";
+import { FeeBreakdown } from "@/components/fees/FeeBreakdown";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PAYOUT_BADGE: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   paid: "secondary",
@@ -41,6 +50,9 @@ export function IssuerEarningsDashboard() {
   const { jwt } = useAuth();
   const queryClient = useQueryClient();
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  // #654: a confirmation step shows the network fee before a withdrawal is signed.
+  const [withdrawTarget, setWithdrawTarget] = useState<IssuerInvoiceEarning | null>(null);
+  const [feeBlocked, setFeeBlocked] = useState(false);
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
@@ -137,7 +149,10 @@ export function IssuerEarningsDashboard() {
                         {inv.payout_status === "pending" && (
                           <Button size="sm" variant="outline"
                             disabled={withdrawMutation.isPending && withdrawingId === inv.invoice_id}
-                            onClick={() => withdrawMutation.mutate(inv.invoice_id)}
+                            onClick={() => {
+                              setFeeBlocked(false);
+                              setWithdrawTarget(inv);
+                            }}
                             data-testid={`withdraw-btn-${inv.invoice_id}`}>
                             {withdrawMutation.isPending && withdrawingId === inv.invoice_id
                               ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Withdrawing…</>
@@ -160,6 +175,48 @@ export function IssuerEarningsDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={withdrawTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setWithdrawTarget(null);
+            setFeeBlocked(false);
+          }
+        }}
+      >
+        <DialogContent data-testid="withdraw-confirm-dialog">
+          <DialogHeader>
+            <DialogTitle>Confirm withdrawal</DialogTitle>
+            <DialogDescription>
+              Review the network fee before signing the withdrawal for {withdrawTarget?.invoice_title}.
+            </DialogDescription>
+          </DialogHeader>
+          {withdrawTarget !== null && (
+            <FeeBreakdown
+              amount={withdrawTarget.net_payout}
+              onInsufficientBalance={setFeeBlocked}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWithdrawTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={feeBlocked || withdrawMutation.isPending}
+              data-testid="withdraw-confirm"
+              onClick={() => {
+                if (!withdrawTarget) return;
+                const id = withdrawTarget.invoice_id;
+                setWithdrawTarget(null);
+                withdrawMutation.mutate(id);
+              }}
+            >
+              {withdrawMutation.isPending ? "Withdrawing…" : "Confirm withdrawal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
