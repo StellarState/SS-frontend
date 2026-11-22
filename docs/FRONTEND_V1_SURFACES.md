@@ -178,6 +178,36 @@ interface ReservesSummary {
 - Missing attestations are safely indicated without breaking dashboard presentation.
 - Public route accessible without authentication at `/reserves`.
 
+## #676 Downloadable reconciliation transaction journal
+
+`TransactionJournalExport` and `useTransactionJournal` provide institutional accounting exports with multi-format generation and formula defense:
+
+```ts
+interface JournalEntry {
+  id: string;
+  timestamp: string;
+  source_account: string;
+  destination_account: string;
+  amount: number;
+  currency: string;
+  precision: number;
+  fee: number;
+  fee_currency: string;
+  fee_precision: number;
+  memo: string;
+  status: TransactionStatus;
+  type: TransactionType;
+  reconciliation_batch_id: string | null;
+}
+```
+
+- CSV and XLSX outputs contain identical filtered transaction records.
+- All monetary values include explicit ISO currency and required decimal precision.
+- Spreadsheet fields safely escape formula injection characters (=, +, -, @).
+- Settlement rows include associated reconciliation batch IDs.
+- High-volume exports stream asynchronously with progress feedback.
+- Route available at `/admin/journal`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

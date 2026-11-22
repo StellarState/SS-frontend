@@ -15,6 +15,7 @@ describe("frontend V1 surface contract", () => {
       "#594 Descending-rate auction",
       "#678 Issuer covenant monitoring dashboard",
       "#677 Proof of reserves dashboard",
+      "#676 Downloadable reconciliation transaction journal",
     ]) {
       expect(contract, section).toContain(section);
     }
