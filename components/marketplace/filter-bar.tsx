@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SavedViewsMenu } from "./SavedViewsMenu";
 
 type InvoiceStatus = "open" | "funded" | "settled";
 
@@ -29,6 +30,15 @@ export function MarketplaceFilterBar({
   onClear,
 }: MarketplaceFilterBarProps) {
   const hasFilters = status !== "all" || search.length > 0;
+
+  const currentFilters: Record<string, string> = {};
+  if (status !== "all") currentFilters.status = status;
+  if (search) currentFilters.search = search;
+
+  function handleApplyView(filters: Record<string, string>) {
+    onStatusChange((filters.status as InvoiceStatus | "all") ?? "all");
+    onSearchChange(filters.search ?? "");
+  }
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -65,6 +75,12 @@ export function MarketplaceFilterBar({
           Clear filters
         </Button>
       )}
+
+      {/* #632 — saved marketplace filter presets */}
+      <SavedViewsMenu
+        currentFilters={currentFilters}
+        onApply={handleApplyView}
+      />
     </div>
   );
 }

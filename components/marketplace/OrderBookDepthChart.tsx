@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInvoiceOrderBook } from "@/hooks/useInvoiceOrderBook";
+import { useChartPalette } from "@/hooks/useChartPalette";
 import { buildDepthData, midPrice, type DepthPoint } from "@/lib/orderBook";
 
 const BID_COLOR = "#16a34a";
@@ -56,6 +57,7 @@ function DepthTooltip({
 
 export function OrderBookDepthChart({ invoiceId }: { invoiceId: string }) {
   const { data, isLoading, isError } = useInvoiceOrderBook(invoiceId);
+  const [bidCue, askCue] = useChartPalette(2);
 
   const depth = useMemo(() => (data ? buildDepthData(data) : []), [data]);
   const mid = useMemo(() => (data ? midPrice(data) : null), [data]);
@@ -111,6 +113,7 @@ export function OrderBookDepthChart({ invoiceId }: { invoiceId: string }) {
                   type="stepAfter"
                   dataKey="bidDepth"
                   stroke={BID_COLOR}
+                  strokeDasharray={bidCue.dash}
                   fill={BID_COLOR}
                   fillOpacity={0.25}
                   isAnimationActive={false}
@@ -120,6 +123,7 @@ export function OrderBookDepthChart({ invoiceId }: { invoiceId: string }) {
                   type="stepBefore"
                   dataKey="askDepth"
                   stroke={ASK_COLOR}
+                  strokeDasharray={askCue.dash}
                   fill={ASK_COLOR}
                   fillOpacity={0.25}
                   isAnimationActive={false}
