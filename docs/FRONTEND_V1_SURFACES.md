@@ -186,6 +186,33 @@ interface KeyHolderDistributionStatement {
 - Export values in CSV and PDF identically match the verified UI accounting ledger.
 - Route available at `/keys/:keyId/distributions` and tab inside `/keys/:keyId`.
 
+## #692 Creator-key governance delegations
+
+`GovernanceDelegationList`, `DelegationModal`, and `useGovernanceDelegations` provide non-custodial voting power delegation for creator key holders:
+
+```ts
+interface GovernanceDelegation {
+  id: string;
+  keyId: string;
+  delegatorAddress: string;
+  delegateAddress: string;
+  votingPower: number;
+  scope: "all_proposals" | "specific_proposal";
+  targetProposalId?: string | null;
+  createdAt: string;
+  expiresAt: string;
+  status: "active" | "expired" | "revoked";
+  whitelistVerified: boolean;
+}
+```
+
+- Creator keys remain 100% in delegator custody with zero token transfer.
+- Effective voting power dynamically subtracts active outgoing delegations and adds incoming delegations.
+- Whitelist restrictions on creator keys are strictly enforced against target delegate addresses.
+- Expired and revoked delegations are automatically excluded from proposal voting power.
+- Instant revocation restores complete direct voting power to the delegator wallet.
+- Embedded inside `GovernanceTab` on `/keys/:keyId`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

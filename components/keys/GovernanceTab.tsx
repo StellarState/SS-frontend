@@ -10,6 +10,7 @@ import { useKeyProposals } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { VoteModal } from "@/components/keys/VoteModal";
 import { CreateProposalModal } from "@/components/keys/CreateProposalModal";
+import { GovernanceDelegationList } from "@/components/keys/GovernanceDelegationList";
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now());
@@ -187,6 +188,12 @@ export function GovernanceTab({ keyId, isHolder, isCreator }: GovernanceTabProps
               now={now}
             />
           ))}
+        </div>
+      )}
+
+      {isHolder && (
+        <div className="pt-2">
+          <GovernanceDelegationList keyId={keyId} />
         </div>
       )}
 

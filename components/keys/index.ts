@@ -8,3 +8,5 @@ export { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
 export { WhitelistManager } from "@/components/keys/WhitelistManager";
 export { PerformanceBondPanel } from "@/components/keys/PerformanceBondPanel";
 export { DistributionStatementsPanel } from "@/components/keys/DistributionStatementsPanel";
+export { DelegationModal } from "@/components/keys/DelegationModal";
+export { GovernanceDelegationList } from "@/components/keys/GovernanceDelegationList";
