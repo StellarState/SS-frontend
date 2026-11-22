@@ -122,6 +122,35 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #681 Partial settlement allocation editor
+
+`PartialSettlementEditor` and `usePartialSettlement` implement allocation of received partial payments across principal, fees, and reserve:
+
+```ts
+interface AllocationBreakdown {
+  principal: number;
+  fees: number;
+  reserve: number;
+}
+
+interface SettlementReceipt {
+  receipt_id: string;
+  invoice_id: string;
+  total_payment_received: number;
+  allocation: AllocationBreakdown;
+  approved_by: string;
+  approved_at: string;
+  tx_hash: string;
+  status: "finalized";
+}
+```
+
+- Allocation values must be non-negative and strictly sum to the payment amount (cannot over- or under-total).
+- Fees are allocated separately from principal.
+- Preview reconciles per-position distributions pro-rata to investors.
+- Approval state is visible (draft, pending approval, approved, rejected) and requires authorized review.
+- Settlement receipts match the approved allocation amounts and distribution summary upon completion.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
