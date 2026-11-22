@@ -15,6 +15,9 @@ vi.mock("@/lib/api", () => ({
   publishInvoice: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ jwt: null }) }));
+vi.mock("@/hooks/useDebtorStatus", () => ({ useDebtorStatus: () => ({ data: undefined }) }));
+vi.mock("@/components/invoices/TemplatesPanel", () => ({ TemplatesPanel: () => null }));
+vi.mock("@/components/debtor/BlockedDebtorNotice", () => ({ BlockedDebtorNotice: () => null }));
 
 describe("PublishInvoiceForm - Deadline Validation", () => {
   beforeEach(() => {

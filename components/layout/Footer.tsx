@@ -25,7 +25,7 @@ export function Footer() {
             </p>
           </div>
 
-          <nav aria-label="Footer">
+          <nav aria-label="Footer navigation">
             <ul className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm sm:grid-cols-3">
               <li>
                 <Link
@@ -60,6 +60,51 @@ export function Footer() {
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Secondary Market
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/about"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="footer-about-link"
+                >
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/trust"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="footer-trust-link"
+                >
+                  Trust
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="footer-terms-link"
+                >
+                  Terms
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="footer-privacy-link"
+                >
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/status"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="footer-status-link"
+                >
+                  Status
                 </Link>
               </li>
             </ul>

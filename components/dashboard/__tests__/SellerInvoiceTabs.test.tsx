@@ -10,6 +10,10 @@ const deleteReset = vi.fn();
 
 let deleteState = { isPending: false, isError: false };
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock("@/hooks/useSellerInvoiceActions", () => ({
   useSubmitDraftInvoice: () => ({
     mutate: submitMutate,

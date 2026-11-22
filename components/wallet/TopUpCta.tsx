@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatUsdc } from "@/lib/format";
@@ -41,6 +42,13 @@ export function TopUpCta({ address, balance, requiredAmount, className }: TopUpC
                 <span className="font-semibold">{formatUsdc(shortfall)}</span> more to invest{" "}
                 {formatUsdc(requiredAmount)}.
             </p>
+            <Link
+                href="/fund"
+                data-testid="fund-guide-link"
+                className="text-sm font-medium text-primary underline"
+            >
+                View funding guide
+            </Link>
             <TopUpDialog
                 address={address}
                 balance={balance}

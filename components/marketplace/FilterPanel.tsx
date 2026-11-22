@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { VerifiedAttestationFilter } from "@/components/attestations/VerifiedAttestationFilter";
 
 export type FundingStatus = "open" | "funded" | "settled" | "expired";
 
@@ -16,6 +17,8 @@ export interface MarketplaceFilterState {
   toDate: string;
   minAmount: number;
   maxAmount: number;
+  /** Only invoices with a verified, active auditor attestation (#605). */
+  verifiedAttestation: boolean;
 }
 
 interface FilterPanelProps {
@@ -48,7 +51,8 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
     (filters.fromDate ? 1 : 0) +
     (filters.toDate ? 1 : 0) +
     (filters.minAmount > 0 ? 1 : 0) +
-    (filters.maxAmount > 0 ? 1 : 0);
+    (filters.maxAmount > 0 ? 1 : 0) +
+    (filters.verifiedAttestation ? 1 : 0);
 
   return (
     <div className="w-full md:w-64 shrink-0 space-y-4">
@@ -111,6 +115,13 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
               })}
             </div>
           </div>
+
+          <VerifiedAttestationFilter
+            checked={filters.verifiedAttestation}
+            onChange={(verifiedAttestation) =>
+              onFilterChange({ ...filters, verifiedAttestation })
+            }
+          />
 
           {/* Minimum Yield Slider */}
           <div className="space-y-3">
@@ -237,6 +248,18 @@ export function FilterPanel({ filters, onFilterChange, onClear }: FilterPanelPro
                     </button>
                   </Badge>
                 ))}
+                {filters.verifiedAttestation && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    Verified attestation
+                    <button
+                      onClick={() => onFilterChange({ ...filters, verifiedAttestation: false })}
+                      className="ml-0.5 hover:text-foreground"
+                      aria-label="Remove verified attestation filter"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
                 {filters.minYield > 0 && (
                   <Badge variant="secondary" className="text-xs gap-1">
                     Yield ≥ {filters.minYield}%
