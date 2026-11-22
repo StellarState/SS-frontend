@@ -208,6 +208,32 @@ interface JournalEntry {
 - High-volume exports stream asynchronously with progress feedback.
 - Route available at `/admin/journal`.
 
+## #675 Account merge and duplicate wallet resolution
+
+`AccountMergeWizard` and `useAccountMergeWizard` provide safe multi-wallet consolidation with dual signature proofs and conflict blocking:
+
+```ts
+interface MergeAuditReceipt {
+  mergeId: string;
+  timestamp: string;
+  primaryWallet: string;
+  mergedWallet: string;
+  primarySignature: WalletSignatureProof;
+  secondarySignature: WalletSignatureProof;
+  consolidatedHoldings: WalletAccountHoldings;
+  transferredNotificationCount: number;
+  revokedSessionIds: string[];
+  auditHash: string;
+}
+```
+
+- Both primary and secondary wallets must prove cryptographic private key ownership.
+- The wizard previews all affected data across balances, invoices, and KYC tier.
+- Contradictory KYC identities block merge execution automatically.
+- Stale web and mobile sessions on the merged account are revoked immediately upon merge.
+- Immutable audit receipt with hash and JSON export ensures verifiable compliance.
+- Route available at `/security/merge`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
