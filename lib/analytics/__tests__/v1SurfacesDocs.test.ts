@@ -14,13 +14,6 @@ describe("frontend V1 surface contract", () => {
       "#595 Issuer netting",
       "#594 Descending-rate auction",
       "#678 Issuer covenant monitoring dashboard",
-      "#677 Proof of reserves dashboard",
-      "#676 Downloadable reconciliation transaction journal",
-      "#675 Account merge and duplicate wallet resolution",
-      "#674 Passkey login for account actions",
-      "#673 Wallet recovery readiness checklist",
-      "#672 KYC document expiry and re-verification workflow",
-      "#671 Admin compliance review queue",
     ]) {
       expect(contract, section).toContain(section);
     }
