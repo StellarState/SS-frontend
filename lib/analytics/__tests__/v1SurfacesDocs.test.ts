@@ -14,6 +14,7 @@ describe("frontend V1 surface contract", () => {
       "#595 Issuer netting",
       "#594 Descending-rate auction",
       "#694 Issuer liquidity reserve target planner",
+      "#695 Invoice dispute evidence timeline",
     ]) {
       expect(contract, section).toContain(section);
     }
@@ -26,6 +27,7 @@ describe("frontend V1 surface contract", () => {
       "/issuer/netting/agreements",
       "/rate-auction",
       "/issuer/reserves",
+      "/invoices/:id/dispute",
     ]) {
       expect(contract, route).toContain(route);
     }

@@ -5338,6 +5338,63 @@ export async function fetchIssuerReserveData(jwt?: string): Promise<IssuerReserv
   return res.json();
 }
 
+/* ─── Invoice dispute evidence timeline (#695) ─────────────────────────────── */
+
+export interface SubmitDisputeEvidenceInput {
+  authorRole: import("@/lib/analytics/disputeTimeline").DisputeParticipantRole;
+  authorAddress: string;
+  evidenceType: import("@/lib/analytics/disputeTimeline").DisputeEvidenceType;
+  title: string;
+  content: string;
+  visibility: import("@/lib/analytics/disputeTimeline").DisputeEvidenceVisibility;
+  fileMetadata?: import("@/lib/analytics/disputeTimeline").FileMetadata;
+  attestationMetadata?: import("@/lib/analytics/disputeTimeline").AttestationMetadata;
+}
+
+export async function fetchInvoiceDispute(
+  invoiceId: string,
+  jwt?: string,
+): Promise<import("@/lib/analytics/disputeTimeline").InvoiceDispute | null> {
+  const res = await fetch(`${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/dispute`, {
+    headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch invoice dispute");
+  return res.json();
+}
+
+export async function submitDisputeEvidence(
+  invoiceId: string,
+  input: SubmitDisputeEvidenceInput,
+  jwt?: string,
+): Promise<import("@/lib/analytics/disputeTimeline").DisputeEvidenceItem> {
+  const res = await fetch(`${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/dispute/evidence`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+    },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("Failed to submit dispute evidence");
+  return res.json();
+}
+
+export async function startDisputeAdjudication(
+  invoiceId: string,
+  jwt?: string,
+): Promise<import("@/lib/analytics/disputeTimeline").InvoiceDispute> {
+  const res = await fetch(`${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/dispute/adjudicate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to start dispute adjudication");
+  return res.json();
+}
+
 export interface ProposeNettingInput {
   debtor: string;
   creditor: string;

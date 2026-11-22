@@ -175,6 +175,7 @@ A parallel tokenized system, per creator:
 - **Issuer netting**: `NettingPage` at `/issuer/netting`, `NewNettingWizard`, `NetPreview` → netting API and `lib/analytics/netting.ts` (#595).
 - **Rate auctions**: `RateAuctionPanel`, `RateStepChart`, `useRateAuction` → `fetchRateAuction()` and `lib/analytics/rateAuction.ts` (#594).
 - **Reserve target planner**: `ReservePlannerView` at `/issuer/reserves`, `useReservePlanner` → `fetchIssuerReserveData()` and `lib/analytics/reservePlanner.ts` (#694).
+- **Dispute evidence timeline**: `DisputeEvidenceTimeline` at `/invoices/:id/dispute`, `useDisputeTimeline` → `fetchInvoiceDispute()` and `lib/analytics/disputeTimeline.ts` (#695).
 
 Expected backend response shapes and the documented failure behavior are in [docs/FRONTEND_V1_SURFACES.md](./docs/FRONTEND_V1_SURFACES.md).
 

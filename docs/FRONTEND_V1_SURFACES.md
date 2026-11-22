@@ -151,6 +151,50 @@ interface IssuerReserveData {
 - Shortfall notifications stop after target is met.
 - CSV export reproduces exact dashboard values.
 
+## #695 Invoice dispute evidence timeline
+
+`GET /invoices/:id/dispute` returns `null` on 404, otherwise:
+
+```ts
+interface InvoiceDispute {
+  id: string;
+  invoiceId: string;
+  invoiceTitle: string;
+  disputedAmount: number;
+  issuerAddress: string;
+  debtorAddress: string;
+  arbitratorAddress?: string;
+  status: "open" | "under_adjudication" | "resolved" | "dismissed";
+  createdAt: string;
+  adjudicationStartedAt?: string | null;
+  resolvedAt?: string | null;
+  ruling?: "upheld_seller" | "upheld_debtor" | "split_settlement" | "dismissed" | null;
+  evidence: Array<{
+    id: string;
+    authorRole: "issuer" | "debtor" | "arbitrator" | "public";
+    evidenceType: "text" | "upload" | "attestation";
+    title: string;
+    content: string;
+    visibility: "public" | "confidential" | "adjudicator_only";
+    submittedAt: string;
+  }>;
+  events: Array<{
+    id: string;
+    eventType: string;
+    actorRole: string;
+    title: string;
+    timestamp: string;
+    visibility: string;
+  }>;
+}
+```
+
+- Participants see authorized evidence only: public is open, confidential is restricted to parties, adjudicator-only is restricted to arbitrator.
+- Evidence cannot change once adjudication commences. Submissions are permanently locked.
+- Required actions show countdowns and deadlines based on phase SLAs.
+- Timeline preserves chronological event order and actor role attribution.
+- Public observers view approved high-level status.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
