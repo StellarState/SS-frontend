@@ -151,6 +151,41 @@ interface MonitoredCovenant {
 - Authorised investor groups see active breaches, cure plan remediation, and confidential evidence.
 - Route available at `/issuer/covenants`.
 
+## #693 Key-holder distribution statements
+
+`DistributionStatementsPanel` and `useDistributionStatements` provide tax, withholding, and accounting statement reporting for creator key distributions:
+
+```ts
+interface KeyHolderDistributionStatement {
+  id: string;
+  keyId: string;
+  keyTitle: string;
+  recipientAddress: string;
+  periodLabel: string;
+  periodType: "final_period" | "partial_period";
+  status: "final" | "estimated";
+  snapshotTimestamp: string;
+  snapshotKeyQuantity: number;
+  circulatingKeySupply: number;
+  snapshotSharePercentage: number;
+  totalDistributionPool: number;
+  grossAmount: number;
+  protocolFeeRate: number;
+  protocolFeeAmount: number;
+  withholdingTaxRate: number;
+  withholdingTaxAmount: number;
+  netAmount: number;
+  currency: "XLM" | "USDC";
+}
+```
+
+- Gross distribution reconciles strictly to distribution pool by snapshot key share.
+- Net distribution reconciles with protocol fee and 10% withholding tax deductions.
+- Estimated interim statements remain explicitly labelled with warning badges.
+- RFC 4180 CSV and PDF export downloads require authenticated wallet session.
+- Export values in CSV and PDF identically match the verified UI accounting ledger.
+- Route available at `/keys/:keyId/distributions` and tab inside `/keys/:keyId`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

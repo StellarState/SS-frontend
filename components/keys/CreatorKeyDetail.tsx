@@ -15,6 +15,7 @@ import { SupplyCapSettings } from "@/components/keys/SupplyCapSettings";
 import { WhitelistManager } from "@/components/keys/WhitelistManager";
 import { CurveMigrationTimeline } from "@/components/keys/CurveMigrationTimeline";
 import { PerformanceBondPanel } from "@/components/keys/PerformanceBondPanel";
+import { DistributionStatementsPanel } from "@/components/keys/DistributionStatementsPanel";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -42,7 +43,7 @@ function CreatorKeyDetailSkeleton() {
 
 export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "governance" | "settings" | "whitelist"
+    "overview" | "governance" | "distributions" | "settings" | "whitelist"
   >("overview");
   const { jwt } = useAuth();
   const { data: creatorKey, isLoading } = useCreatorKey(keyId, jwt);
@@ -111,6 +112,18 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               data-testid="governance-tab"
             >
               Governance
+            </button>
+            <button
+              type="button"
+              className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === "distributions"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setActiveTab("distributions")}
+              data-testid="distributions-tab"
+            >
+              Distributions
             </button>
             {creatorKey.is_creator && (
               <>
@@ -195,6 +208,10 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               isHolder={isHolder}
               isCreator={creatorKey.is_creator}
             />
+          )}
+
+          {activeTab === "distributions" && (
+            <DistributionStatementsPanel keyId={creatorKey.id} />
           )}
 
           {activeTab === "whitelist" && creatorKey.is_creator && (
