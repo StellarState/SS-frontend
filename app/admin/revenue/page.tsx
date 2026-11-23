@@ -81,7 +81,7 @@ function RevenueDashboard() {
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-red-600">Failed to load revenue data</div>
