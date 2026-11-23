@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChevronDown, Play } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -110,13 +111,13 @@ export function HelpCentre() {
           >
             Submit a ticket
           </a>
-          <a
+          <Link
             href="/help/tickets"
             data-testid="help-my-tickets-link"
             className="text-sm text-primary hover:underline"
           >
             My tickets
-          </a>
+          </Link>
         </div>
         <div>
           <Button

@@ -25,33 +25,51 @@ interface MoneyProps {
   xlm: number | string | null | undefined;
   /** Exact text to show when displaying XLM; defaults to `formatXLM`. */
   xlmText?: string;
+  /** Whether to show the original XLM amount alongside converted value. */
+  showOriginal?: boolean;
   className?: string;
 }
 
-export function Money({ xlm, xlmText, className }: MoneyProps) {
+export function Money({ xlm, xlmText, className, showOriginal = true }: MoneyProps) {
   const { currency, isConverted, convert, exchangeRate, isStale } = useCurrency();
   const amount = Number(xlm ?? 0);
+  const originalText = xlmText ?? formatXLM(amount);
 
   if (!isConverted || !exchangeRate || !isFiatCurrency(currency) || !Number.isFinite(amount)) {
-    return <>{xlmText ?? formatXLM(amount)}</>;
+    return className ? <span className={className}>{originalText}</span> : <>{originalText}</>;
   }
 
   const disclaimer = describeExchangeRate(exchangeRate, Date.now(), currency);
 
   return (
     <span
-      className={cn("whitespace-nowrap", className)}
+      className={cn("whitespace-nowrap inline-flex items-baseline gap-1", className)}
       title={disclaimer}
       data-testid="money-converted"
       data-xlm={amount}
       data-currency={currency}
       data-stale={isStale || undefined}
     >
-      {formatFiat(convert(amount), currency)}
-      <sup aria-hidden="true" className="ml-0.5 text-[0.6em] font-normal text-muted-foreground">
-        *
-      </sup>
-      <span className="sr-only"> (estimated from XLM)</span>
+      <span>
+        {formatFiat(convert(amount), currency)}
+        <sup aria-hidden="true" className="ml-0.5 text-[0.6em] font-normal text-muted-foreground">
+          *
+        </sup>
+        <span className="sr-only"> (estimated from XLM)</span>
+        <span aria-hidden="true" className="text-[0.75em] text-muted-foreground ml-0.5" data-testid="money-estimate-label">
+          (est.)
+        </span>
+      </span>
+      {isStale && (
+        <span className="text-[0.65em] font-medium text-amber-500 uppercase tracking-wider" data-testid="money-stale-tag">
+          [stale]
+        </span>
+      )}
+      {showOriginal && (
+        <span className="text-xs text-muted-foreground font-normal" data-testid="money-original">
+          (orig. {originalText})
+        </span>
+      )}
     </span>
   );
 }

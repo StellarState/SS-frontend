@@ -26,6 +26,11 @@ import { BlockedDebtorNotice } from "@/components/debtor/BlockedDebtorNotice";
 import { useDebtorStatus } from "@/hooks/useDebtorStatus";
 import { isBlocked } from "@/lib/debtorStatus";
 import { DUPLICATE_STORAGE_KEY } from "@/components/invoices/DuplicateInvoiceButton";
+import { ExposureMeter } from "@/components/invoices/ExposureMeter";
+import { ExposureWarning } from "@/components/invoices/ExposureWarning";
+import { PromoFeeBreakdown } from "@/components/promotions/PromoFeeBreakdown";
+import { useExposureLimit } from "@/hooks/useExposureLimit";
+import { isAtCap, isNearCap } from "@/lib/exposure";
 
 const detailsSchema = z.object({
   title: z.string().min(1, "Invoice title is required"),
@@ -98,6 +103,11 @@ export function PublishInvoiceForm() {
   const debtorHash = watch("debtor");
   const { data: debtorStatus } = useDebtorStatus(debtorHash);
   const debtorBlocked = debtorStatus ? isBlocked(debtorStatus.status) : false;
+
+  const proposedAmount = Number(watch("faceValue")) || null;
+  const exposure = useExposureLimit(debtorHash, proposedAmount, proposedAmount ?? 0);
+  const issuerAtCap = exposure.headroom ? isAtCap(exposure.headroom) : false;
+  const issuerNearCap = exposure.headroom ? isNearCap(exposure.headroom) : false;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -183,10 +193,8 @@ export function PublishInvoiceForm() {
   );
 
   const handlePublish = useCallback(async () => {
-    if (!documentCid || debtorBlocked) return;
+    if (!documentCid || debtorBlocked || issuerAtCap || exposure.blocked) return;
     if (feeBlocked) return;
-    if (!documentCid) return;
-
     setIsPublishing(true);
     try {
       const values = getValues();
@@ -205,8 +213,7 @@ export function PublishInvoiceForm() {
     } finally {
       setIsPublishing(false);
     }
-  }, [debtorBlocked, documentCid, getValues, jwt, router]);
-  }, [documentCid, getValues, jwt, router, feeBlocked]);
+  }, [debtorBlocked, documentCid, exposure.blocked, feeBlocked, getValues, issuerAtCap, jwt, router]);
 
   if (publishedInvoiceId) {
     return (
@@ -278,8 +285,12 @@ export function PublishInvoiceForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="invoice-debtor">Debtor</Label>
-              <Input id="invoice-debtor" {...register("debtor")} />
+              <Label htmlFor="invoice-debtor">Debtor Account (optional)</Label>
+              <Input
+                id="invoice-debtor"
+                placeholder="Debtor account used for exposure and debtor checks"
+                {...register("debtor")}
+              />
             </div>
 
             <div className="space-y-2">
@@ -288,6 +299,19 @@ export function PublishInvoiceForm() {
             </div>
 
             <BlockedDebtorNotice debtorHash={debtorHash} />
+
+            <ExposureMeter debtorId={debtorHash} context="form" />
+            {issuerAtCap && (
+              <p className="text-sm text-destructive" role="alert" data-testid="issuer-at-cap">
+                This debtor is at the platform cap. Publishing new funding is blocked.
+              </p>
+            )}
+            {issuerNearCap && !issuerAtCap && (
+              <p className="text-sm text-amber-600" data-testid="issuer-near-cap">
+                This debtor is close to the platform cap. Use a smaller face value.
+              </p>
+            )}
+            <ExposureWarning blocked={exposure.blocked} maximum={exposure.maximum} />
 
             <TemplatesPanel
               values={{
@@ -388,13 +412,13 @@ export function PublishInvoiceForm() {
               amount={Number(values.faceValue)}
               onInsufficientBalance={setFeeBlocked}
             />
+            <PromoFeeBreakdown amount={Number(values.faceValue)} />
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button onClick={handlePublish} disabled={isPublishing || debtorBlocked}>
-              <Button onClick={handlePublish} disabled={isPublishing || feeBlocked}>
+              <Button onClick={handlePublish} disabled={isPublishing || debtorBlocked || feeBlocked || issuerAtCap || exposure.blocked}>
                 {isPublishing ? "Publishing..." : "Publish"}
               </Button>
             </div>

@@ -23,6 +23,7 @@ export { InvoiceTimeline } from "./InvoiceTimeline";
 export { SettlementTimeline } from "./SettlementTimeline";
 export { EarlyRepaymentBanner } from "./EarlyRepaymentBanner";
 export { RiskRatingBadge } from "./RiskRatingBadge";
+export { DisputeEvidenceTimeline } from "./DisputeEvidenceTimeline";
 export { RiskRatingBreakdown } from "./RiskRatingBreakdown";
 
 export { InvoiceBackButton } from "./InvoiceBackButton";

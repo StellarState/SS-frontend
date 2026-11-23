@@ -118,9 +118,11 @@ describe("persistence", () => {
   });
 
   it("ignores unknown stored currencies", () => {
-    localStorage.setItem(CURRENCY_STORAGE_KEY, "GBP");
+    localStorage.setItem(CURRENCY_STORAGE_KEY, "JPY");
     expect(readStoredCurrency()).toBeNull();
-    expect(isCurrency("GBP")).toBe(false);
+    expect(isCurrency("JPY")).toBe(false);
+    expect(isCurrency("GBP")).toBe(true);
+    expect(isCurrency("KES")).toBe(true);
     expect(isCurrency("XLM")).toBe(true);
   });
 

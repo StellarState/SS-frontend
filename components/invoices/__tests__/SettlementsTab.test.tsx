@@ -5,6 +5,7 @@ import { SettlementsTab } from "../SettlementsTab";
 vi.mock("@/hooks/useCurrency", () => ({
   useCurrency: () => ({ format: (n: number) => `${n.toFixed(2)} XLM` }),
 }));
+vi.mock("@/components/invoices/PayoutWaterfall", () => ({ PayoutWaterfall: () => null }));
 
 const mockUseSettlements = vi.fn();
 const mockClaimMutate = vi.fn();

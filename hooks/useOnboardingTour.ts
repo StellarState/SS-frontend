@@ -42,7 +42,7 @@ export function requestOnboardingTourReplay(): void {
  * been completed or skipped. Completing or skipping stores a flag in
  * localStorage so it never starts again until "Restart tour" clears it.
  */
-export function useOnboardingTour(isWalletConnected: boolean) {
+export function useOnboardingTour(isEligible: boolean) {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -59,12 +59,12 @@ export function useOnboardingTour(isWalletConnected: boolean) {
   const skip = complete;
 
   useEffect(() => {
-    if (!isWalletConnected || typeof window === "undefined") return;
+    if (!isEligible || typeof window === "undefined") return;
     if (isOnboardingTourCompleted()) return;
     // Defer one tick so the page mounts before the overlay appears.
     const t = window.setTimeout(() => setIsActive(true), 300);
     return () => window.clearTimeout(t);
-  }, [isWalletConnected]);
+  }, [isEligible]);
 
   useEffect(() => {
     const onReplay = () => start();

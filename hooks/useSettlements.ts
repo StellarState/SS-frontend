@@ -15,6 +15,12 @@ export interface ClaimableSettlement {
   net_profit: number;
   settled_at: string;
   tx_hash?: string;
+  fractions_held?: number;
+  principal_returned?: number;
+  yield_earned?: number;
+  fees_deducted?: number;
+  net_return?: number;
+  invoice_type?: string;
 }
 
 export interface ClaimedHistory {
@@ -24,6 +30,13 @@ export interface ClaimedHistory {
   claimed_amount: number;
   claimed_at: string;
   tx_hash: string;
+  settled_at?: string;
+  fractions_held?: number;
+  principal_returned?: number;
+  yield_earned?: number;
+  fees_deducted?: number;
+  net_return?: number;
+  invoice_type?: string;
 }
 
 export interface SettlementResponse {

@@ -6,6 +6,7 @@ import type { ClaimableSettlement, ClaimedHistory } from "@/hooks/useSettlements
 vi.mock("@/hooks/useCurrency", () => ({
   useCurrency: () => ({ format: (n: number) => `${n.toFixed(2)} XLM` }),
 }));
+vi.mock("@/components/invoices/PayoutWaterfall", () => ({ PayoutWaterfall: () => null }));
 
 function makeClaimable(overrides: Partial<ClaimableSettlement> = {}): ClaimableSettlement {
   return {

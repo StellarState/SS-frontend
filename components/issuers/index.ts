@@ -12,3 +12,4 @@ export {
 export { IssuerTierBadge } from "./IssuerTierBadge";
 export { TierProgressCard } from "./TierProgressCard";
 export { PartialSettlementEditor } from "./PartialSettlementEditor";
+export { ReserveTargetPlanner } from "./ReserveTargetPlanner";

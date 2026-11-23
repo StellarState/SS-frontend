@@ -9,7 +9,7 @@ vi.mock("@/lib/api", () => ({ fetchFxRates: vi.fn(), fetchXlmUsdRate: vi.fn() })
 
 function renderApp(updatedAt = Date.now()) {
   const fetchRates = vi.fn().mockResolvedValue({
-    rates: { USD: 0.25, EUR: 0.2, NGN: 400 },
+    rates: { USD: 0.25, EUR: 0.2, GBP: 0.18, KES: 32.5, NGN: 400 },
     updatedAt,
   });
   return render(
@@ -37,10 +37,20 @@ describe("multi-currency display (#504)", () => {
 
     act(() => screen.getByRole("button", { name: "Show values in USDC" }).click());
     expect(screen.getByTestId("money-converted")).toHaveTextContent("$250.00");
+    expect(screen.getByTestId("money-original")).toHaveTextContent("1,000.00 XLM");
+    expect(screen.getByTestId("money-estimate-label")).toHaveTextContent("(est.)");
 
     act(() => screen.getByRole("button", { name: "Show values in EURC" }).click());
     expect(screen.getByTestId("money-converted")).toHaveTextContent("€200.00");
     expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe("EUR");
+
+    act(() => screen.getByRole("button", { name: "Show values in GBPC" }).click());
+    expect(screen.getByTestId("money-converted")).toHaveTextContent("£180.00");
+    expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe("GBP");
+
+    act(() => screen.getByRole("button", { name: "Show values in KESC" }).click());
+    expect(screen.getByTestId("money-converted")).toHaveTextContent(/32,500\.00/);
+    expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe("KES");
 
     act(() => screen.getByRole("button", { name: "Show values in NGNC" }).click());
     expect(screen.getByTestId("money-converted")).toHaveTextContent(/400,000\.00/);

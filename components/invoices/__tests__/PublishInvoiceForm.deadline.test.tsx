@@ -18,6 +18,12 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ jwt: null }) }));
 vi.mock("@/hooks/useDebtorStatus", () => ({ useDebtorStatus: () => ({ data: undefined }) }));
 vi.mock("@/components/invoices/TemplatesPanel", () => ({ TemplatesPanel: () => null }));
 vi.mock("@/components/debtor/BlockedDebtorNotice", () => ({ BlockedDebtorNotice: () => null }));
+vi.mock("@/hooks/useExposureLimit", () => ({
+  useExposureLimit: () => ({ headroom: null, blocked: false, maximum: 0 }),
+}));
+vi.mock("@/components/invoices/ExposureMeter", () => ({ ExposureMeter: () => null }));
+vi.mock("@/components/invoices/ExposureWarning", () => ({ ExposureWarning: () => null }));
+vi.mock("@/components/promotions/PromoFeeBreakdown", () => ({ PromoFeeBreakdown: () => null }));
 
 describe("PublishInvoiceForm - Deadline Validation", () => {
   beforeEach(() => {

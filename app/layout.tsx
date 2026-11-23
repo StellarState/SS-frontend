@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NetworkBanner } from "@/components/network/NetworkBanner";
+import { EscapeBanner } from "@/components/escape/EscapeBanner";
 import { buildPreferencesScript } from "@/lib/preferences-script";
 import "./globals.css";
 
@@ -34,6 +35,8 @@ export default function RootLayout({
             <RouteFocus />
             {/* #443 — shown on every page while the testnet is selected */}
             <NetworkBanner />
+            {/* #592 — protocol pause / escape hatch countdown */}
+            <EscapeBanner />
             <Navbar />
             {children}
             <Footer />

@@ -6,6 +6,7 @@ import { InvestmentModal } from "../InvestmentModal";
 import * as stellarUsdc from "@/lib/stellar/usdc";
 import type { Network } from "@/lib/stellar";
 import { AccreditationProvider } from "@/context/AccreditationContext";
+import * as api from "@/lib/api";
 
 // WalletContext itself is not exported, so the hook is mocked instead.
 // Defaults to a disconnected wallet so suites that don't care about wallet
@@ -31,6 +32,12 @@ vi.mock("@/lib/api", () => ({
     tier_label: "Standard",
     tiers: [],
     volume_24h: 0,
+  }),
+  fetchAccreditationStatus: vi.fn().mockResolvedValue({
+    wallet: "GD5X6MPY7HXHYHZWRXKJQKQ7T2WQ2Y3H4ZQ2",
+    tier: "accredited",
+    high_value_threshold: 100_000,
+    expires_at: "2020-01-01T00:00:00.000Z",
   }),
 }));
 
@@ -101,6 +108,44 @@ function openModal() {
 }
 
 describe("InvestmentModal USDC balance guard (#402)", () => {
+  it("replaces the investment form with a renewal prompt for expired accreditation on restricted invoices", async () => {
+    renderModal(
+      <InvestmentModal invoiceId="inv-expired" minInvestment={10} maxInvestment={10_000} invoiceFaceValue={150_000} />,
+      ADDRESS,
+    );
+    fireEvent.click(screen.getByTestId("invest-button"));
+
+    expect(await screen.findByTestId("accreditation-expired-card")).toBeInTheDocument();
+    expect(screen.getByTestId("accreditation-expired-card")).toHaveTextContent(/2020/);
+    expect(screen.getByTestId("accreditation-renew-cta")).toHaveAttribute("href", "/kyc/renew");
+    expect(screen.queryByLabelText(/Investment amount/i)).not.toBeInTheDocument();
+  });
+
+  it("rechecks accreditation at submit and blocks expiry that happened while the modal was open", async () => {
+    vi.spyOn(stellarUsdc, "fetchUsdcBalance").mockResolvedValue(5_000);
+    vi.mocked(api.fetchAccreditationStatus)
+      .mockResolvedValueOnce({
+        wallet: ADDRESS, tier: "accredited", high_value_threshold: 100_000,
+        expires_at: "2099-01-01T00:00:00.000Z",
+      })
+      .mockResolvedValueOnce({
+        wallet: ADDRESS, tier: "accredited", high_value_threshold: 100_000,
+        expires_at: "2020-01-01T00:00:00.000Z",
+      });
+    renderModal(
+      <InvestmentModal invoiceId="inv-expiring" minInvestment={10} maxInvestment={10_000} invoiceFaceValue={150_000} />,
+      ADDRESS,
+    );
+    fireEvent.click(screen.getByTestId("invest-button"));
+    acknowledgeAccreditationGate();
+    await screen.findByLabelText(/Investment amount/i);
+    fireEvent.change(screen.getByLabelText(/Investment amount/i), { target: { value: "100" } });
+    await waitFor(() => expect(screen.getByTestId("investment-submit")).toBeEnabled());
+    fireEvent.click(screen.getByTestId("investment-submit"));
+
+    expect(await screen.findByTestId("accreditation-expired-card")).toBeInTheDocument();
+  });
+
   it("shows the wallet USDC balance", async () => {
     vi.spyOn(stellarUsdc, "fetchUsdcBalance").mockResolvedValue(2_500);
 

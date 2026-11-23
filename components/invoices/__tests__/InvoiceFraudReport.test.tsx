@@ -26,14 +26,14 @@ describe("InvoiceFraudReport", () => {
     renderReport();
     fireEvent.click(await screen.findByTestId("report-invoice"));
     const select = screen.getByTestId("report-reason");
-    expect(select).toHaveTextContent("Misrepresentation");
-    expect(select).toHaveTextContent("False Documents");
-    expect(select).toHaveTextContent("Non-Delivery");
+    expect(select).toHaveTextContent("Issuer Misrepresentation");
+    expect(select).toHaveTextContent("Forged Invoice");
+    expect(select).toHaveTextContent("Duplicate Listing");
     expect(select).toHaveTextContent("Other");
-    fireEvent.change(select, { target: { value: "false_documents" } });
-    fireEvent.change(screen.getByTestId("report-evidence"), { target: { value: "proof" } });
-    fireEvent.click(screen.getByRole("button", { name: "Submit report" }));
-    await waitFor(() => expect(submit).toHaveBeenCalledWith("inv-1", expect.objectContaining({ reason: "false_documents", evidence_hash: expect.stringMatching(/^[a-f0-9]{64}$/), wallet: "GINVESTOR" })));
+    fireEvent.change(select, { target: { value: "forged_invoice" } });
+    fireEvent.change(screen.getByTestId("report-description"), { target: { value: "proof" } });
+    fireEvent.click(screen.getByTestId("submit-report"));
+    await waitFor(() => expect(submit).toHaveBeenCalledWith("inv-1", expect.objectContaining({ reason: "forged_invoice", evidence_hash: expect.stringMatching(/^[a-f0-9]{64}$/), wallet: "GINVESTOR" })));
   });
 
   it("shows the submitted state for a wallet that already reported", async () => {
