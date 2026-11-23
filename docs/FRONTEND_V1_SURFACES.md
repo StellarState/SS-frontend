@@ -122,6 +122,35 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #682 Settlement claim queue with delegated claims
+
+`SettlementClaimQueue` and `useSettlementQueue` provide automated settlement claiming and delegated operator claim management:
+
+```ts
+interface SettlementClaimItem {
+  invoice_id: string;
+  invoice_title: string;
+  investor_address: string;
+  gross_return_amount: number;
+  protocol_fee_amount: number;
+  estimated_network_fee: number;
+  net_payout_amount: number;
+  invoice_status: "settled" | "funded" | "disputed" | "defaulted";
+  is_eligible: boolean;
+  settled_at: string;
+  claim_status: "unclaimed" | "processing" | "claimed" | "failed";
+  last_error?: string | null;
+  retry_count?: number;
+}
+```
+
+- Only eligible claims appear (invoices in settled status with gross return > 0).
+- Calculates protocol fees (0.25%) and estimated network fees, displaying net payout estimates.
+- Bulk totals reconcile strictly against individual claim sums before execution.
+- Operators require explicit scope ("claims:execute"), valid unexpired delegation, and stay within maximum limits.
+- Failed claims remain independently retryable without affecting other queued items.
+- Successful executions update portfolio records and record comprehensive payout audit history.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
