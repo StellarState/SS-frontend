@@ -81,6 +81,13 @@ export default function SettingsPage() {
       >
         Privacy settings →
       </Link>
+      <br />
+      <Link
+        href="/settings/passkeys"
+        className="inline-block text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+      >
+        Passkeys &amp; Hardware Security →
+      </Link>
     </main>
   );
 }
