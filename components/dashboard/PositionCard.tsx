@@ -13,6 +13,7 @@ import { Money } from "@/components/currency";
 import { OverdueChip } from "@/components/invoices/OverdueChip";
 import { InvestorLateInterest } from "@/components/invoices/InvestorLateInterest";
 import { AccrualMeter } from "@/components/investor/AccrualMeter";
+import { LockupIndicator } from "@/components/dashboard/LockupIndicator";
 
 function formatCommittedXlm(amount: number): string {
   return amount.toLocaleString(undefined, {
@@ -69,6 +70,7 @@ export function PositionCard({ position }: PositionCardProps) {
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <OverdueChip status={position.status} dueDate={position.due_date} />
+            <LockupIndicator expiresAt={position.lockup_expires_at} />
             {position.status === "active" && typeof position.share_percent === "number" && (
               <InvestorLateInterest
                 invoiceId={position.invoice_id}
