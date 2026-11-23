@@ -58,7 +58,7 @@ export async function fetchWithRateLimit(
     });
 
     // Report analytics
-    if (typeof window !== "undefined" && window.fetch) {
+    if (typeof window !== "undefined" && typeof window.fetch === "function") {
       navigator?.sendBeacon?.(`/api/analytics/rate-limit`, JSON.stringify({ endpoint }));
     }
   }
