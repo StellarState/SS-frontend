@@ -21,6 +21,7 @@ import { FundingProgressBar } from "@/components/invoices/FundingProgressBar";
 import { FundingThresholdWarningBadge } from "@/components/invoices/FundingThresholdWarningBadge";
 import { FundingFailedCard } from "@/components/invoices/FundingFailedCard";
 import { SecondaryMarketTabsPanel } from "@/components/invoices/SecondaryMarketTabsPanel";
+import { CollateralHealthPanel } from "@/components/invoices/CollateralHealthPanel";
 import { DefaultResolutionView } from "@/components/invoices/DefaultResolutionView";
 import { InvoiceBackButton } from "@/components/invoices/InvoiceBackButton";
 import { InvoiceDocumentsTab } from "@/components/invoices/InvoiceDocumentsTab";
@@ -614,6 +615,9 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
       {invoice.status === "funded" && (
         <SecondaryMarketTabsPanel invoiceId={invoice.id} walletAddress={address} />
       )}
+
+      {/* Collateral Health & Top-Up Workflow (#683) */}
+      <CollateralHealthPanel invoiceId={invoice.id} walletAddress={address} />
     </div>
   );
 }
