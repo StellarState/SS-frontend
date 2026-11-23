@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +11,15 @@ import { useKeyProposals } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { VoteModal } from "@/components/keys/VoteModal";
 import { CreateProposalModal } from "@/components/keys/CreateProposalModal";
+import { GovernanceDelegationModal } from "@/components/keys/GovernanceDelegationModal";
+import { GovernanceDelegationList } from "@/components/keys/GovernanceDelegationList";
+import {
+  calculateEffectiveVotingPower,
+  loadStoredDelegations,
+  revokeDelegation,
+  saveStoredDelegations,
+  type GovernanceDelegation,
+} from "@/lib/governanceDelegation";
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now());
@@ -52,11 +62,18 @@ function winningOption(proposal: GovernanceProposal): string {
 interface ProposalCardProps {
   proposal: GovernanceProposal;
   isHolder: boolean;
+  effectiveVotingPower?: number;
   onVote: (proposal: GovernanceProposal) => void;
   now: number;
 }
 
-function ProposalCard({ proposal, isHolder, onVote, now }: ProposalCardProps) {
+function ProposalCard({
+  proposal,
+  isHolder,
+  effectiveVotingPower,
+  onVote,
+  now,
+}: ProposalCardProps) {
   const totalWeight = useMemo(
     () => proposal.options.reduce((sum, option) => sum + option.vote_weight, 0),
     [proposal.options]
@@ -81,16 +98,23 @@ function ProposalCard({ proposal, isHolder, onVote, now }: ProposalCardProps) {
               </p>
             )}
           </div>
-          {active && isHolder && (
-            <Button
-              type="button"
-              onClick={() => onVote(proposal)}
-              disabled={proposal.user_has_voted}
-              data-testid={`cast-vote-${proposal.id}`}
-            >
-              {proposal.user_has_voted ? "Voted" : "Cast Vote"}
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {active && isHolder && effectiveVotingPower !== undefined && (
+              <Badge variant="secondary" className="text-xs" data-testid={`effective-power-badge-${proposal.id}`}>
+                {effectiveVotingPower} effective votes
+              </Badge>
+            )}
+            {active && isHolder && (
+              <Button
+                type="button"
+                onClick={() => onVote(proposal)}
+                disabled={proposal.user_has_voted}
+                data-testid={`cast-vote-${proposal.id}`}
+              >
+                {proposal.user_has_voted ? "Voted" : "Cast Vote"}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -132,20 +156,121 @@ interface GovernanceTabProps {
   keyId: string;
   isHolder: boolean;
   isCreator?: boolean;
+  holderBalance?: number;
+  whitelistEnabled?: boolean;
 }
 
-export function GovernanceTab({ keyId, isHolder, isCreator }: GovernanceTabProps) {
+export function GovernanceTab({
+  keyId,
+  isHolder,
+  isCreator,
+  holderBalance = 0,
+  whitelistEnabled = false,
+}: GovernanceTabProps) {
   const [status, setStatus] = useState<"active" | "closed">("active");
   const [selectedProposal, setSelectedProposal] =
     useState<GovernanceProposal | null>(null);
+  const [delegationModalOpen, setDelegationModalOpen] = useState(false);
   const { address, jwt } = useAuth();
   const now = useNow();
   const { data, isLoading } = useKeyProposals(keyId, status, jwt);
   const proposals = data?.proposals ?? [];
 
+  // Local delegations state
+  const [delegations, setDelegations] = useState<GovernanceDelegation[]>(() =>
+    loadStoredDelegations(keyId)
+  );
+
+  useEffect(() => {
+    saveStoredDelegations(keyId, delegations);
+  }, [keyId, delegations]);
+
+  const userAddr = address ?? "";
+
+  const outgoing = useMemo(
+    () => delegations.filter((d) => d.delegatorAddress === userAddr),
+    [delegations, userAddr]
+  );
+
+  const incoming = useMemo(
+    () => delegations.filter((d) => d.delegateAddress === userAddr),
+    [delegations, userAddr]
+  );
+
+  const votingSummary = useMemo(
+    () =>
+      calculateEffectiveVotingPower(
+        holderBalance,
+        outgoing,
+        incoming,
+        now
+      ),
+    [holderBalance, outgoing, incoming, now]
+  );
+
+  const handleDelegationCreated = (newDel: GovernanceDelegation) => {
+    setDelegations((prev) => [...prev, newDel]);
+  };
+
+  const handleRevoke = (id: string) => {
+    setDelegations((prev) => revokeDelegation(id, prev, Date.now()));
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+    <div className="space-y-6" data-testid="governance-tab-content">
+      {/* Voting Power & Delegation Summary Card */}
+      {isHolder && userAddr && (
+        <Card data-testid="voting-power-card">
+          <CardContent className="pt-6">
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                  Held Keys (100% Custody)
+                </p>
+                <p className="text-xl font-bold" data-testid="base-held-keys">
+                  {votingSummary.baseWeight.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Delegated Away</p>
+                <p className="text-xl font-bold text-amber-600" data-testid="delegated-out-power">
+                  -{votingSummary.delegatedOutWeight.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Delegated Received</p>
+                <p className="text-xl font-bold text-emerald-600" data-testid="delegated-in-power">
+                  +{votingSummary.delegatedInWeight.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  Effective Voting Power
+                </p>
+                <p className="text-xl font-bold text-primary" data-testid="effective-voting-power">
+                  {votingSummary.effectiveWeight.toLocaleString()} votes
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delegation Manager Section */}
+      {isHolder && userAddr && (
+        <GovernanceDelegationList
+          keyId={keyId}
+          userAddress={userAddr}
+          delegations={delegations}
+          onRevoke={handleRevoke}
+          onOpenNewDelegation={() => setDelegationModalOpen(true)}
+        />
+      )}
+
+      {/* Proposals Header */}
+      <div className="flex items-center justify-between gap-2 pt-2">
         <div className="flex gap-2">
           <Button
             type="button"
@@ -183,6 +308,7 @@ export function GovernanceTab({ keyId, isHolder, isCreator }: GovernanceTabProps
               key={proposal.id}
               proposal={proposal}
               isHolder={Boolean(address && jwt && isHolder)}
+              effectiveVotingPower={votingSummary.effectiveWeight}
               onVote={setSelectedProposal}
               now={now}
             />
@@ -197,7 +323,20 @@ export function GovernanceTab({ keyId, isHolder, isCreator }: GovernanceTabProps
         onOpenChange={(open) => {
           if (!open) setSelectedProposal(null);
         }}
+        effectiveWeightOverride={votingSummary.effectiveWeight}
       />
+
+      {isHolder && userAddr && (
+        <GovernanceDelegationModal
+          keyId={keyId}
+          userAddress={userAddr}
+          availableKeys={holderBalance}
+          whitelistEnabled={whitelistEnabled}
+          open={delegationModalOpen}
+          onOpenChange={setDelegationModalOpen}
+          onDelegationCreated={handleDelegationCreated}
+        />
+      )}
     </div>
   );
 }

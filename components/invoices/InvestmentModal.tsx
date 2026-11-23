@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GuardedButton } from "@/components/network/GuardedButton";
@@ -13,6 +13,12 @@ import { FeeBreakdown } from "@/components/fees/FeeBreakdown";
 import { TopUpCta } from "@/components/wallet/TopUpCta";
 import { OnboardingBonusChip } from "@/components/invoices/OnboardingBonusChip";
 import { AccreditationGateSteps } from "@/components/invoices/AccreditationGateModal";
+import { LeveragedExposureWarning } from "@/components/investor/LeveragedExposureWarning";
+import {
+  DEFAULT_EXPOSURE_LIMITS,
+  evaluateLeveragedExposure,
+  type LeveragedPositionItem,
+} from "@/lib/analytics/exposureLimits";
 import { useInvestMutation } from "@/hooks/useInvestments";
 import { useInvestorLoyalty } from "@/hooks/useInvestorLoyalty";
 import { useFxRate } from "@/hooks/useFxRate";
@@ -46,6 +52,7 @@ interface InvestmentModalProps {
   invoiceFaceValue?: number;
   onSuccess?: () => void;
   trancheType?: 1 | 2;
+  currentPositions?: LeveragedPositionItem[];
   /** Debtor identity for the exposure gate (#602). */
   debtorId?: string | null;
 }
@@ -58,6 +65,7 @@ export function InvestmentModal({
   invoiceFaceValue,
   onSuccess,
   trancheType,
+  currentPositions = [],
   debtorId,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,6 +82,48 @@ export function InvestmentModal({
   const [expiryBlocked, setExpiryBlocked] = useState(false);
   const { balance, refresh } = useUsdcBalance(address, network);
   const loyalty = useInvestorLoyalty(address);
+  const [softWarningDismissed, setSoftWarningDismissed] = useState(false);
+
+  const exposureEvaluation = useMemo(() => {
+    if (validAmount === null || validAmount <= 0) return null;
+    return evaluateLeveragedExposure(
+      currentPositions,
+      {
+        invoice_id: invoiceId,
+        title: `Invoice #${invoiceId}`,
+        issuer: "Acme Issuer",
+        debtor: "Nordic Debtor",
+        jurisdiction: "EU",
+        amount: validAmount,
+      },
+      DEFAULT_EXPOSURE_LIMITS,
+      [
+        {
+          id: "alt-1",
+          title: "Solar Grid receivable #204",
+          issuer: "Helios Energy",
+          debtor: "City of Valencia",
+          jurisdiction: "Spain",
+          yieldPercent: 8.5,
+          riskTier: "A",
+        },
+        {
+          id: "alt-2",
+          title: "Nordic Shipping #109",
+          issuer: "Baltic Line",
+          debtor: "Fjord Corp",
+          jurisdiction: "Norway",
+          yieldPercent: 7.2,
+          riskTier: "B",
+        },
+      ]
+    );
+  }, [validAmount, currentPositions, invoiceId]);
+
+  const isExposureBlocked =
+    Boolean(exposureEvaluation?.isHardBlocked) ||
+    Boolean(exposureEvaluation?.requiresWarning && !softWarningDismissed);
+
   const exposure = useExposureLimit(debtorId, validAmount, maxInvestment);
 
   // A null balance means the balance is still unknown, which is not the same as
@@ -203,7 +253,10 @@ export function InvestmentModal({
             <InvestmentAmountInput
               min={minInvestment}
               max={maxInvestment}
-              onValidAmountChange={setValidAmount}
+              onValidAmountChange={(amt) => {
+                setValidAmount(amt);
+                setSoftWarningDismissed(false);
+              }}
               onErrorChange={setAmountError}
             />
 
@@ -262,6 +315,15 @@ export function InvestmentModal({
               />
             )}
 
+            {exposureEvaluation &&
+              (exposureEvaluation.isHardBlocked || exposureEvaluation.requiresWarning) && (
+                <LeveragedExposureWarning
+                  evaluation={exposureEvaluation}
+                  onDismissSoftWarning={() => setSoftWarningDismissed(true)}
+                  isDismissed={softWarningDismissed}
+                />
+              )}
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -282,6 +344,7 @@ export function InvestmentModal({
                   insufficientBalance ||
                   fxBlocked ||
                   feeBlocked ||
+                  isExposureBlocked ||
                   exposure.blocked
                 }
                 data-testid="investment-submit"
