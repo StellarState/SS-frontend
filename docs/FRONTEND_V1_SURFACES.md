@@ -122,6 +122,38 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #686 Invoice insurance coverage and claims
+
+`InsuranceCoveragePanel` manages underwritten protection and claim workflows:
+
+```ts
+interface InsurancePolicy {
+  id: string;
+  invoice_id: string;
+  invoice_face_value: number;
+  provider_name: string;
+  policy_number: string;
+  initial_coverage_limit: number;
+  remaining_coverage_limit: number;
+  coverage_ratio_percent: number;
+  deductible_amount: number;
+  premium_bps: number;
+  premium_amount: number;
+  status: "active" | "claimed" | "expired" | "exhausted";
+  effective_date: string;
+  expiry_date: string;
+  protection_level: "full" | "partial" | "none";
+  underwriter_address: string;
+}
+```
+
+- Coverage limit reconciles against invoice face value, displaying coverage percentage, deductible, and premium amounts.
+- Claims require validated incident dates (no future dates), minimum description length, and signed evidence documentation.
+- Evidence uses secure document viewing endpoints and verified document hashes.
+- Status and actions are role-authorised: only designated underwriters can approve or deny claims.
+- Claim resolution immediately updates remaining policy protection limits and protection tier.
+- Denied claims record official denial rationale in historical audit trails.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit
