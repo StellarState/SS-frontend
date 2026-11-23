@@ -48,7 +48,6 @@ import { useLateInterest } from "@/hooks/useLateInterest";
 import { useInvoiceStatusPolling } from "@/hooks/useInvoiceStatusPolling";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useProtocolStatus } from "@/hooks/useProtocolStatus";
-import { useLateInterest } from "@/hooks/useLateInterest";
 import { useWallet } from "@/context/WalletContext";
 import { isExpired } from "@/components/marketplace";
 import { OrderBookDepthChart } from "@/components/marketplace/OrderBookDepthChart";
@@ -77,7 +76,6 @@ import { DebtorAckPanel, useDebtorAckBlocked } from "@/components/invoices/Debto
 import { VelocityMeter } from "@/components/investor/VelocityMeter";
 import { AssignmentBanner } from "@/components/invoices/AssignmentBanner";
 import { RestructureProposalCard } from "@/components/invoices/RestructureProposalCard";
-import { OverdueBanner } from "@/components/invoices/OverdueBanner";
 
 function InvoiceDetailSkeleton() {
   return (
