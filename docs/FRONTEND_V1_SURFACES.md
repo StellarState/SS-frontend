@@ -122,6 +122,36 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #679 Invoice legal terms and acceptance workflow
+
+`LegalTermsPanel` and `useLegalTerms` implement versioned governing legal terms review and acceptance:
+
+```ts
+interface GoverningTermsVersion {
+  version_id: string;
+  effective_date: string;
+  jurisdiction: string;
+  governing_law: string;
+  clauses: LegalTermClause[];
+  content_sha256: string;
+}
+
+interface TermsAcceptanceRecord {
+  investor_address: string;
+  invoice_id: string;
+  accepted_version_id: string;
+  accepted_sha256: string;
+  accepted_at: string;
+  tx_hash?: string | null;
+}
+```
+
+- Displays governing terms with plain-language summaries linked to full governing legal text.
+- Requires explicit acceptance before investment submission is enabled.
+- Acceptance is strictly tied to displayed terms version and content hash.
+- Version changes invalidate prior acceptance, showing an alert and blocking submission until re-accepted.
+- Acceptance audit history records the accepted version, timestamp, and transaction hash.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

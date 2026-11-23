@@ -34,3 +34,4 @@ export { FractionInvestmentModal } from "./FractionInvestmentModal";
 export { PriceImpactWarning } from "./PriceImpactWarning";
 export { InvoiceRatingWidget } from "./InvoiceRatingWidget";
 export { SubscriptionGate } from "./SubscriptionGate";
+export { LegalTermsPanel } from "./LegalTermsPanel";
