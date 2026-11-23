@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { fetchInvestorPayouts, type PayoutRecord } from "@/lib/api";
+import { fetchInvestorPayouts } from "@/lib/api";
 import { Money, ExchangeRateDisclaimer } from "@/components/currency";
+import { PayoutHistoryTable } from "@/components/dashboard/PayoutHistoryTable";
 import { availableFractions } from "@/lib/portfolio";
 import { FractionTransferModal } from "@/components/dashboard/FractionTransferModal";
 import { SettlementCountdown } from "@/components/marketplace/SettlementCountdown";
-import { Download, ExternalLink } from "lucide-react";
 import { PortfolioRiskIndicator } from "@/components/invoices/InvoiceRiskAlert";
 import { ListPositionButton } from "@/components/dashboard/ListPositionButton";
+import { UnderwritingPositionsTab } from "@/components/underwriting/UnderwritingPositionsTab";
 import { ConcentrationPanel } from "@/components/investor/ConcentrationPanel";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-type Tab = "holdings" | "returns" | "payouts";
+type Tab = "holdings" | "returns" | "payouts" | "underwriting";
 
 // ─── Tab button ────────────────────────────────────────────────────────────
 
@@ -250,170 +251,12 @@ function ReturnsTab() {
   );
 }
 
-// ─── CSV export helper ─────────────────────────────────────────────────────
-
-function exportPayoutsCsv(payouts: PayoutRecord[]) {
-  const header = [
-    "Invoice ID",
-    "Seller Name",
-    "Amount Invested (XLM)",
-    "Amount Received (XLM)",
-    "Yield (%)",
-    "Settled At",
-  ].join(",");
-
-  const rows = payouts.map((p) =>
-    [
-      p.invoiceId,
-      `"${p.sellerName.replace(/"/g, '""')}"`,
-      p.amountInvested,
-      p.amountReceived,
-      p.yield,
-      p.settledAt,
-    ].join(",")
-  );
-
-  const csv = [header, ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `payout-history-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ─── Payout History tab ────────────────────────────────────────────────────
 
 function PayoutHistoryTab() {
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-  } = useInfiniteQuery({
-    queryKey: ["investor-payouts"],
-    queryFn: ({ pageParam }) =>
-      fetchInvestorPayouts(pageParam as string | undefined),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) =>
-      last.has_more ? (last.next_cursor ?? undefined) : undefined,
-  });
-
-  const allPayouts = data?.pages.flatMap((p) => p.payouts) ?? [];
-
-  const handleExport = useCallback(() => {
-    exportPayoutsCsv(allPayouts);
-  }, [allPayouts]);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3" data-testid="payouts-loading">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <p className="py-8 text-center text-destructive">
-        Failed to load payout history.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {/* CSV Export */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={allPayouts.length === 0}
-          data-testid="export-csv-button"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
-      </div>
-
-      {allPayouts.length === 0 ? (
-        <div
-          className="py-12 text-center text-muted-foreground"
-          data-testid="payouts-empty"
-        >
-          No payouts yet
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-md border bg-card">
-          <table
-            className="w-full text-left text-sm"
-            data-testid="payout-history-table"
-          >
-            <thead className="border-b bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="p-3 font-medium">Invoice</th>
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Amount Received</th>
-                <th className="p-3 font-medium">Yield</th>
-                <th className="p-3 font-medium">Tx Hash</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {allPayouts.map((row, idx) => (
-                <tr
-                  key={`${row.invoiceId}-${idx}`}
-                  className="hover:bg-muted/30"
-                  data-testid={`payout-row-${row.invoiceId}`}
-                >
-                  <td className="p-3 font-medium">{row.invoiceId}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(row.settledAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-3 font-semibold">
-                    {row.amountReceived.toLocaleString()} XLM
-                  </td>
-                  <td className="p-3">{row.yield}%</td>
-                  <td className="p-3">
-                    {/* PayoutRecord doesn't carry txHash from the API shape —
-                        render invoiceId as receipt reference until backend
-                        exposes it, with an explorer link stub. */}
-                    <a
-                      href={`https://stellar.expert/explorer/testnet/tx/${row.invoiceId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-mono text-xs text-primary hover:underline"
-                      aria-label={`View settlement for ${row.invoiceId} on explorer`}
-                    >
-                      {row.invoiceId.slice(0, 12)}…
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {hasNextPage && (
-        <div className="text-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            data-testid="payouts-load-next"
-          >
-            {isFetchingNextPage ? "Loading…" : "Load More"}
-          </Button>
-        </div>
-      )}
+    <div className="space-y-4" data-testid="payouts-tab">
+      <PayoutHistoryTable />
     </div>
   );
 }
@@ -479,6 +322,12 @@ export function InvestorPortfolioPage() {
           onClick={() => setActiveTab("payouts")}
           testId="tab-payout-history"
         />
+        <TabButton
+          label="Underwriting"
+          active={activeTab === "underwriting"}
+          onClick={() => setActiveTab("underwriting")}
+          testId="tab-underwriting"
+        />
       </div>
 
       {/* Tab content — mounts all tabs to keep React Query cache warm */}
@@ -491,6 +340,8 @@ export function InvestorPortfolioPage() {
       <div className={activeTab === "payouts" ? "" : "hidden"}>
         <PayoutHistoryTab />
       </div>
+      {/* Underwriting positions (#587) load only when the tab is opened. */}
+      {activeTab === "underwriting" && <UnderwritingPositionsTab />}
     </div>
   );
 }

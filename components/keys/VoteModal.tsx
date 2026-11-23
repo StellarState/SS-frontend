@@ -13,6 +13,7 @@ interface VoteModalProps {
   proposal: GovernanceProposal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  effectiveWeightOverride?: number;
 }
 
 export function VoteModal({
@@ -20,6 +21,7 @@ export function VoteModal({
   proposal,
   open,
   onOpenChange,
+  effectiveWeightOverride,
 }: VoteModalProps) {
   const { address, jwt } = useAuth();
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -35,12 +37,16 @@ export function VoteModal({
 
   if (!open || !proposal) return null;
 
-  const votingWeight = proposal.user_voting_weight ?? 0;
+  const votingWeight =
+    effectiveWeightOverride !== undefined
+      ? effectiveWeightOverride
+      : proposal.user_voting_weight ?? 0;
   const canSubmit =
     selectedOption !== null &&
     Boolean(address) &&
     !voteMutation.isPending &&
-    !recorded;
+    !recorded &&
+    votingWeight > 0;
 
   const handleSubmit = async () => {
     if (!address || selectedOption === null) return;

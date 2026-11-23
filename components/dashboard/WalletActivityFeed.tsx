@@ -49,6 +49,11 @@ const ACTIVITY_TYPE_STYLES: Record<WalletActivityType, ActivityTypeStyle> = {
     label: "Dividend from",
     className: "bg-yellow-100 text-yellow-700",
   },
+  reinvestment: {
+    icon: Coins,
+    label: "Reinvested dividend from",
+    className: "bg-purple-100 text-purple-700",
+  },
 };
 
 function formatAmount(amount: number): string {
@@ -61,6 +66,10 @@ export function describeActivity(event: WalletActivityEvent): string {
 
   if (event.type === "dividend") {
     return `Dividend of ${amount} XLM from ${event.keyName}`;
+  }
+
+  if (event.type === "reinvestment") {
+    return `Reinvested ${amount} XLM from ${event.keyName}`;
   }
 
   const unit = event.amount === 1 ? "key" : "keys";

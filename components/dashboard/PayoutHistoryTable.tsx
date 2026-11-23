@@ -1,30 +1,26 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { fetchInvestorPayouts, PayoutRecord } from "@/lib/api";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useInvestorPayouts } from "@/hooks/useInvestorPayouts";
+import { useWithholding } from "@/hooks/useWithholding";
+import type { PayoutRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TxHash } from "@/components/ui/tx-hash";
 import { Money, ExchangeRateDisclaimer } from "@/components/currency";
+import { PayoutDetailsDrawer } from "@/components/dashboard/PayoutDetailsDrawer";
+import { downloadPayoutsCsv } from "@/lib/payoutExport";
+import { withholdingForPayout, formatStellarAmount } from "@/lib/withholding";
 
+/** Shared payout history table, used on the dashboard and in the portfolio tab. */
 export function PayoutHistoryTable() {
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-  } = useInfiniteQuery({
-    queryKey: ["investor-payouts"],
-    queryFn: ({ pageParam }) => fetchInvestorPayouts(pageParam as string | undefined),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+    useInvestorPayouts();
+  const { data: settings } = useWithholding();
+  const [selected, setSelected] = useState<PayoutRecord | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const allPayouts = data?.pages.flatMap((p) => p.payouts) ?? [];
+  const allPayouts = data?.pages.flatMap((page) => page.payouts) ?? [];
 
   if (isLoading) {
     return (
@@ -54,6 +50,16 @@ export function PayoutHistoryTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          data-testid="export-csv-button"
+          onClick={() => downloadPayoutsCsv(allPayouts, settings)}
+        >
+          Export CSV
+        </Button>
+      </div>
       <div className="overflow-x-auto rounded-md border bg-card">
         <ExchangeRateDisclaimer className="px-3 pt-3" />
         <table className="w-full text-left text-sm" data-testid="payout-history-table">
@@ -64,6 +70,7 @@ export function PayoutHistoryTable() {
               <th className="p-3 font-medium">Amount Invested</th>
               <th className="p-3 font-medium">Amount Received</th>
               <th className="p-3 font-medium">Yield</th>
+              <th className="p-3 font-medium">Withheld</th>
               <th className="p-3 font-medium">Settled At</th>
               <th className="p-3 font-medium">Transaction</th>
             </tr>
@@ -71,6 +78,7 @@ export function PayoutHistoryTable() {
           <tbody className="divide-y">
             {allPayouts.map((row, idx) => {
               const isShortfall = row.amountReceived < row.amountInvested;
+              const breakdown = withholdingForPayout(row, settings);
               return (
                 <tr
                   key={`${row.invoiceId}-${idx}`}
@@ -80,12 +88,19 @@ export function PayoutHistoryTable() {
                       : "hover:bg-muted/30"
                   }
                   data-testid={`payout-row-${row.invoiceId}`}
+                  onClick={() => {
+                    setSelected(row);
+                    setDrawerOpen(true);
+                  }}
                 >
                   <td className="p-3">{row.invoiceId}</td>
                   <td className="p-3">{row.sellerName}</td>
                   <td className="p-3"><Money xlm={row.amountInvested} xlmText={`${row.amountInvested.toLocaleString()} XLM`} /></td>
                   <td className="p-3 font-semibold"><Money xlm={row.amountReceived} xlmText={`${row.amountReceived.toLocaleString()} XLM`} /></td>
                   <td className="p-3">{row.yield}%</td>
+                  <td className="p-3 tabular-nums" data-testid={`payout-withheld-${row.invoiceId}`}>
+                    {breakdown ? formatStellarAmount(breakdown.withheld) : "0.0000000"}
+                  </td>
                   <td className="p-3 text-muted-foreground">
                     {new Date(row.settledAt).toLocaleDateString()}
                   </td>
@@ -120,6 +135,8 @@ export function PayoutHistoryTable() {
           </Button>
         </div>
       )}
+
+      <PayoutDetailsDrawer payout={selected} open={drawerOpen} onOpenChange={setDrawerOpen} />
     </div>
   );
 }

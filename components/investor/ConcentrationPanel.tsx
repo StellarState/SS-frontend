@@ -24,6 +24,7 @@ import { ExposureTreemap } from "./ExposureTreemap";
 
 const TABS: Array<{ value: ConcentrationTab; label: string }> = [
   { value: "debtor", label: "Debtor" },
+  { value: "issuer", label: "Issuer" },
   { value: "jurisdiction", label: "Jurisdiction" },
   { value: "maturity", label: "Maturity bucket" },
 ];

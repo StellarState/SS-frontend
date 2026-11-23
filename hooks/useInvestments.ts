@@ -10,6 +10,7 @@ import { investErrorMessage, type InvestCurrency } from "@/lib/investCurrency";
 import { INVOICES_QUERY_KEY } from "./useInvoices";
 import { PORTFOLIO_QUERY_KEY } from "./usePortfolio";
 import { ONBOARDING_BONUS_QUERY_KEY } from "./useOnboardingBonus";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface InvestMutationVars {
   invoiceId: string;
@@ -117,6 +118,7 @@ export function useInvestMutation() {
       queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ONBOARDING_BONUS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debtorHeadroom("") });
     },
   });
 

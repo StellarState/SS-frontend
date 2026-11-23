@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import {
@@ -131,6 +131,7 @@ describe("InvoiceDocumentsTab + verification", () => {
       <InvoiceDocumentsTab invoiceId="test-invoice" documentUrl={`ipfs://${CID}/invoice.pdf`} />,
     );
 
+    fireEvent.click(await screen.findByTestId("document-view-button"));
     expect(await screen.findByTestId("document-inline-pdf")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByTestId("document-verification-verifying")).toBeInTheDocument(),

@@ -1,24 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GuardedButton } from "@/components/network/GuardedButton";
 import { InvestmentAmountInput } from "@/components/invoices/InvestmentAmountInput";
 import { InvestCurrencySelector } from "@/components/invoices/InvestCurrencySelector";
-import { FeeTierDisplay } from "@/components/invoices/FeeTierDisplay";
+import { PromoFeeBreakdown } from "@/components/promotions/PromoFeeBreakdown";
+import { ExposureWarning } from "@/components/invoices/ExposureWarning";
 import { PriceImpactWarning } from "@/components/invoices/PriceImpactWarning";
 import { FeeBreakdown } from "@/components/fees/FeeBreakdown";
 import { TopUpCta } from "@/components/wallet/TopUpCta";
 import { OnboardingBonusChip } from "@/components/invoices/OnboardingBonusChip";
 import { AccreditationGateSteps } from "@/components/invoices/AccreditationGateModal";
+import { LeveragedExposureWarning } from "@/components/investor/LeveragedExposureWarning";
+import {
+  DEFAULT_EXPOSURE_LIMITS,
+  evaluateLeveragedExposure,
+  type LeveragedPositionItem,
+} from "@/lib/analytics/exposureLimits";
 import { useInvestMutation } from "@/hooks/useInvestments";
 import { useInvestorLoyalty } from "@/hooks/useInvestorLoyalty";
 import { useFxRate } from "@/hooks/useFxRate";
 import { useUsdcBalance } from "@/hooks/useUsdcBalance";
 import { useWallet } from "@/context/WalletContext";
+import { useAccreditationStatus } from "@/hooks/useAccreditationStatus";
+import { isAccreditationExpired } from "@/lib/accreditation";
 import { useAccreditation } from "@/context/AccreditationContext";
 import { formatUsdc, formatXLM } from "@/lib/format";
+import { useExposureLimit } from "@/hooks/useExposureLimit";
 import {
   BASE_CURRENCY,
   investErrorMessage,
@@ -38,8 +48,13 @@ interface InvestmentModalProps {
   maxInvestment: number;
   /** Total funding cap used for price-impact calculation (issue #344). */
   fundingCap?: number;
+  /** Face value determines whether an invoice requires active accreditation. */
+  invoiceFaceValue?: number;
   onSuccess?: () => void;
   trancheType?: 1 | 2;
+  currentPositions?: LeveragedPositionItem[];
+  /** Debtor identity for the exposure gate (#602). */
+  debtorId?: string | null;
 }
 
 export function InvestmentModal({
@@ -47,8 +62,11 @@ export function InvestmentModal({
   minInvestment,
   maxInvestment,
   fundingCap,
+  invoiceFaceValue,
   onSuccess,
   trancheType,
+  currentPositions = [],
+  debtorId,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [validAmount, setValidAmount] = useState<number | null>(null);
@@ -60,8 +78,53 @@ export function InvestmentModal({
   const investMutation = useInvestMutation();
   const fxRate = useFxRate(currency);
   const { address, network } = useWallet();
+  const accreditation = useAccreditationStatus({ enabled: Boolean(address) });
+  const [expiryBlocked, setExpiryBlocked] = useState(false);
   const { balance, refresh } = useUsdcBalance(address, network);
   const loyalty = useInvestorLoyalty(address);
+  const [softWarningDismissed, setSoftWarningDismissed] = useState(false);
+
+  const exposureEvaluation = useMemo(() => {
+    if (validAmount === null || validAmount <= 0) return null;
+    return evaluateLeveragedExposure(
+      currentPositions,
+      {
+        invoice_id: invoiceId,
+        title: `Invoice #${invoiceId}`,
+        issuer: "Acme Issuer",
+        debtor: "Nordic Debtor",
+        jurisdiction: "EU",
+        amount: validAmount,
+      },
+      DEFAULT_EXPOSURE_LIMITS,
+      [
+        {
+          id: "alt-1",
+          title: "Solar Grid receivable #204",
+          issuer: "Helios Energy",
+          debtor: "City of Valencia",
+          jurisdiction: "Spain",
+          yieldPercent: 8.5,
+          riskTier: "A",
+        },
+        {
+          id: "alt-2",
+          title: "Nordic Shipping #109",
+          issuer: "Baltic Line",
+          debtor: "Fjord Corp",
+          jurisdiction: "Norway",
+          yieldPercent: 7.2,
+          riskTier: "B",
+        },
+      ]
+    );
+  }, [validAmount, currentPositions, invoiceId]);
+
+  const isExposureBlocked =
+    Boolean(exposureEvaluation?.isHardBlocked) ||
+    Boolean(exposureEvaluation?.requiresWarning && !softWarningDismissed);
+
+  const exposure = useExposureLimit(debtorId, validAmount, maxInvestment);
 
   // A null balance means the balance is still unknown, which is not the same as
   // being underfunded, so it must not block the investment.
@@ -76,11 +139,39 @@ export function InvestmentModal({
   // Accreditation acknowledgement gate (issue #312): first-time investors
   // must complete the disclosure steps before the investment form appears.
   const { isAcknowledged } = useAccreditation();
+  const accreditationData = accreditation.data;
+  const accreditationRequired =
+    invoiceFaceValue !== undefined &&
+    invoiceFaceValue >= (accreditationData?.high_value_threshold ?? 100_000);
+  const isExpired =
+    accreditationRequired &&
+    isAccreditationExpired(accreditationData?.expires_at);
 
   const currencyErrorMessage = investErrorMessage(investMutation.error, currency);
 
   const handleInvest = async () => {
-    if (validAmount === null || amountError !== null || insufficientBalance || fxBlocked || feeBlocked) return;
+    if (
+      validAmount === null ||
+      amountError !== null ||
+      insufficientBalance ||
+      fxBlocked ||
+      feeBlocked ||
+      exposure.blocked
+    ) return;
+
+    // Revalidate at submit time: a tab may have remained open past its
+    // accreditation expiry while the form was already visible.
+    if (accreditationRequired) {
+      const latest = await accreditation.refetch();
+      const current = latest.data;
+      if (
+        current &&
+        isAccreditationExpired(current.expires_at)
+      ) {
+        setExpiryBlocked(true);
+        return;
+      }
+    }
 
     await investMutation.mutateAsync({
       invoiceId,
@@ -107,7 +198,20 @@ export function InvestmentModal({
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-md">
         <DialogTitle className="sr-only">Investment dialog</DialogTitle>
-        {!isAcknowledged ? (
+        {isExpired || expiryBlocked ? (
+          <div className="space-y-3 p-5" role="alertdialog" aria-labelledby="accreditation-expired-title" data-testid="accreditation-expired-card">
+            <h3 id="accreditation-expired-title" className="text-lg font-semibold">Accreditation expired</h3>
+            <p className="text-sm text-muted-foreground">
+              Your accreditation expired on{" "}
+              <strong>{accreditationData?.expires_at ? new Date(accreditationData.expires_at).toLocaleDateString() : "the date shown in your account"}</strong>.
+              Renew your verification before investing in this invoice.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
+              <Button asChild><Link href="/kyc/renew" data-testid="accreditation-renew-cta">Renew accreditation</Link></Button>
+            </div>
+          </div>
+        ) : !isAcknowledged ? (
           <AccreditationGateSteps
             onCancel={() => setIsOpen(false)}
             onAcknowledged={() => {
@@ -149,7 +253,10 @@ export function InvestmentModal({
             <InvestmentAmountInput
               min={minInvestment}
               max={maxInvestment}
-              onValidAmountChange={setValidAmount}
+              onValidAmountChange={(amt) => {
+                setValidAmount(amt);
+                setSoftWarningDismissed(false);
+              }}
               onErrorChange={setAmountError}
             />
 
@@ -177,7 +284,9 @@ export function InvestmentModal({
               />
             )}
 
-            <FeeTierDisplay amount={validAmount} loyalty={loyalty.data} />
+            <ExposureWarning blocked={exposure.blocked} maximum={exposure.maximum} />
+
+            <PromoFeeBreakdown amount={validAmount} loyalty={loyalty.data} />
 
             {/* #450 — link to the full public fee schedule so the tier shown
                 above can be read in context (what it applies to, and the other
@@ -206,6 +315,15 @@ export function InvestmentModal({
               />
             )}
 
+            {exposureEvaluation &&
+              (exposureEvaluation.isHardBlocked || exposureEvaluation.requiresWarning) && (
+                <LeveragedExposureWarning
+                  evaluation={exposureEvaluation}
+                  onDismissSoftWarning={() => setSoftWarningDismissed(true)}
+                  isDismissed={softWarningDismissed}
+                />
+              )}
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -225,7 +343,9 @@ export function InvestmentModal({
                   investMutation.isPending ||
                   insufficientBalance ||
                   fxBlocked ||
-                  feeBlocked
+                  feeBlocked ||
+                  isExposureBlocked ||
+                  exposure.blocked
                 }
                 data-testid="investment-submit"
                 className="flex-1"

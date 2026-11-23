@@ -8,10 +8,11 @@
 
 import type { InvestmentPosition } from "@/lib/portfolio";
 
-export type ConcentrationTab = "debtor" | "jurisdiction" | "maturity";
+export type ConcentrationTab = "debtor" | "jurisdiction" | "maturity" | "issuer";
 
 /** Backend positions may carry these optional concentration dimensions. */
 export interface ConcentrationPosition extends InvestmentPosition {
+  issuer?: string | null;
   debtor?: string | null;
   jurisdiction?: string | null;
   maturity_bucket?: string | null;
@@ -62,6 +63,8 @@ export function resolveMaturityBucket(
 
 function bucketKey(position: ConcentrationPosition, tab: ConcentrationTab, nowMs: number): string {
   switch (tab) {
+    case "issuer":
+      return label(position.issuer);
     case "debtor":
       return label(position.debtor);
     case "jurisdiction":

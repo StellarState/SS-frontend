@@ -8,6 +8,7 @@ import { TxHash } from "@/components/ui/tx-hash";
 import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/hooks/useCurrency";
 import type { ClaimableSettlement, ClaimedHistory } from "@/hooks/useSettlements";
+import { PayoutWaterfall } from "@/components/invoices/PayoutWaterfall";
 
 interface ClaimableCardProps {
   settlement: ClaimableSettlement;
@@ -51,6 +52,10 @@ export function ClaimableSettlementCard({ settlement, onClaim, isClaiming }: Cla
             amount={settlement.return_amount}
             onInsufficientBalance={setFeeBlocked}
           />
+        </div>
+        <div className="mt-4 border-t pt-4">
+          <h4 className="mb-2 text-sm font-medium">Payout allocation</h4>
+          <PayoutWaterfall invoiceId={settlement.invoice_id} />
         </div>
         <Button
           size="sm"

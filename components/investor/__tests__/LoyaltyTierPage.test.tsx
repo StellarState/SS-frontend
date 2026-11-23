@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { LoyaltyTierPage } from "../LoyaltyTierPage";
 import type { InvestorLoyalty } from "@/lib/api";
 
@@ -75,5 +75,28 @@ describe("LoyaltyTierPage", () => {
     render(<LoyaltyTierPage />);
     expect(screen.getByTestId("max-tier-reached")).toHaveTextContent("Max Tier Reached");
     expect(screen.queryByTestId("tier-progress-bar")).toBeNull();
+  });
+
+  it("shows dated threshold and verified server snapshot evaluation badge", () => {
+    loyalty();
+    render(<LoyaltyTierPage />);
+    expect(screen.getByTestId("dated-threshold")).toBeInTheDocument();
+    expect(screen.getByTestId("server-snapshot-badge")).toHaveTextContent(/Server Snapshot:/i);
+  });
+
+  it("renders rewards ledger with reconciled balance and allows redemption", () => {
+    loyalty();
+    render(<LoyaltyTierPage />);
+    expect(screen.getByTestId("rewards-ledger-card")).toBeInTheDocument();
+    expect(screen.getByTestId("ledger-balance")).toHaveTextContent("100 XLM"); // 150 + 50 - 100
+
+    const input = screen.getByTestId("redeem-amount-input");
+    const submitBtn = screen.getByTestId("redeem-submit-btn");
+
+    fireEvent.change(input, { target: { value: "50" } });
+    fireEvent.click(submitBtn);
+
+    expect(screen.getByTestId("redemption-success")).toHaveTextContent("Successfully redeemed 50 XLM");
+    expect(screen.getByTestId("ledger-balance")).toHaveTextContent("50 XLM");
   });
 });

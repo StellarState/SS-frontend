@@ -7,3 +7,6 @@ export { CreateProposalModal } from "@/components/keys/CreateProposalModal";
 export { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
 export { WhitelistManager } from "@/components/keys/WhitelistManager";
 export { PerformanceBondPanel } from "@/components/keys/PerformanceBondPanel";
+export { GovernanceDelegationModal } from "@/components/keys/GovernanceDelegationModal";
+export { GovernanceDelegationList } from "@/components/keys/GovernanceDelegationList";
+export { DistributionStatementsTab } from "@/components/keys/DistributionStatementsTab";

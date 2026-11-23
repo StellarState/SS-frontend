@@ -35,7 +35,9 @@ import { WatchWarning } from "@/components/debtor/WatchWarning";
 import { ReturnsCalculator } from "@/components/invoices/ReturnsCalculator";
 import { InvestmentModal } from "@/components/invoices/InvestmentModal";
 import { OverdueBanner } from "@/components/invoices/OverdueBanner";
+import { ExposureMeter } from "@/components/invoices/ExposureMeter";
 import { InvoiceRatingWidget } from "@/components/invoices/InvoiceRatingWidget";
+import { InvoiceDiscussionThread } from "@/components/invoices/InvoiceDiscussionThread";
 import { ReturnsBreakdown } from "@/components/invoices/ReturnsBreakdown";
 import { SettlementTimeline } from "@/components/invoices/SettlementTimeline";
 import { RepaymentTimeline } from "@/components/invoices/RepaymentTimeline";
@@ -55,6 +57,7 @@ import { InvoiceClassificationBadges } from "@/components/marketplace/InvoiceCla
 import { InvoiceTagPills } from "@/components/marketplace/InvoiceTagPills";
 import { SettlementCountdown } from "@/components/marketplace/SettlementCountdown";
 import { AnnouncementFeed } from "@/components/invoices/AnnouncementFeed";
+import { FundingDepth } from "@/components/marketplace/FundingDepth";
 import { SyndicatePanel } from "@/components/invoices/SyndicatePanel";
 import { InvoiceFraudReport, InvoiceUnderReviewBanner } from "@/components/invoices/InvoiceFraudReport";
 import { InvoiceRiskAlert } from "@/components/invoices/InvoiceRiskAlert";
@@ -67,12 +70,12 @@ import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
 import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStatus";
 import { ImpactReport } from "@/components/invoices/ImpactReport";
 import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
+import { UnderwritePanel } from "@/components/underwriting/UnderwritePanel";
+import { WithdrawCommitmentModal } from "@/components/invoices/WithdrawCommitmentModal";
 import { RateAuctionPanel } from "@/components/invoices/RateAuctionPanel";
 import { DebtorAckPanel, useDebtorAckBlocked } from "@/components/invoices/DebtorAckPanel";
 import { VelocityMeter } from "@/components/investor/VelocityMeter";
 import { AssignmentBanner } from "@/components/invoices/AssignmentBanner";
-import { OverdueBanner } from "@/components/invoices/OverdueBanner";
-import { useLateInterest } from "@/hooks/useLateInterest";
 import { RestructureProposalCard } from "@/components/invoices/RestructureProposalCard";
 import { OverdueBanner } from "@/components/invoices/OverdueBanner";
 
@@ -146,6 +149,7 @@ function InvestCallToAction({
   maturityDate,
   fractionPrice,
   trancheStatus,
+  debtorId,
 }: {
   invoiceId: string;
   minInvestment: number;
@@ -155,6 +159,7 @@ function InvestCallToAction({
   maturityDate: string;
   fractionPrice?: number;
   trancheStatus?: NonNullable<import("@/lib/api").Invoice["tranche_status"]>;
+  debtorId?: string | null;
 }) {
   const [selectedTranche, setSelectedTranche] = useState<1 | 2>(1);
   const { isConnected } = useWallet();
@@ -201,7 +206,9 @@ function InvestCallToAction({
             minInvestment={minInvestment}
             maxInvestment={maxInvestment}
             fundingCap={fundingCap}
+            invoiceFaceValue={fundingCap}
             trancheType={trancheStatus ? selectedTranche : undefined}
+            debtorId={debtorId}
           />
         )}
         <ReturnsCalculator
@@ -483,6 +490,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
       )}
 
       <OrderBookDepthChart invoiceId={invoice.id} />
+      {invoice.status === "open" && <FundingDepth invoiceId={invoice.id} />}
 
       <DynamicYieldCard wallet={invoice.seller} invoiceRate={invoice.yield_percentage} />
 
@@ -491,6 +499,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
 
       {/* Debtor acknowledgement status (#620). */}
       <DebtorAckPanel invoiceId={invoice.id} />
+      <ExposureMeter debtorId={invoice.debtor_id ?? invoice.debtor_hash} />
       {/* Invest CTA — KYC gated. */}
       {isOpenForInvestment ? (
         <InvestCallToAction
@@ -502,6 +511,7 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
           maturityDate={invoice.maturity_date ?? invoice.due_date}
           fractionPrice={invoice.fraction_price}
           trancheStatus={invoice.tranche_status ?? undefined}
+          debtorId={invoice.debtor_id ?? invoice.debtor_hash}
         />
       ) : (
         <Card data-testid="invest-cta">
@@ -524,16 +534,40 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
         </Card>
       )}
 
+      {/* Early exit (#593): investors in an invoice that is still raising can
+          pull their commitment, with the fee previewed before confirming. */}
+      {invoice.status === "open" && isQualifyingInvestor && (
+        <Card data-testid="withdraw-commitment-card">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+            <p className="text-sm text-muted-foreground">
+              Changed your mind? You can withdraw your commitment while the invoice is still raising.
+            </p>
+            <WithdrawCommitmentModal invoiceId={invoice.id} invoiceTitle={invoice.title} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Underwriter cover (#587). Hidden for invoices with no cover pool. */}
+      {invoice.status !== "draft" && invoice.status !== "pending" && invoice.status !== "rejected" && (
+        <UnderwritePanel invoiceId={invoice.id} invoiceStatus={invoice.status} />
+      )}
+
       <SyndicatePanel invoiceId={invoice.id} />
 
       <AnnouncementFeed invoiceId={invoice.id} />
 
       <AttestationList invoiceId={invoice.id} />
 
-      <InvoiceDocumentsTab
+      {(invoice.document_url || invoice.documents?.length) ? <InvoiceDocumentsTab
         invoiceId={invoice.id}
         documentUrl={invoice.document_url ?? null}
         additionalDocuments={invoice.documents ?? []}
+      /> : null}
+
+      <InvoiceDiscussionThread
+        invoiceId={invoice.id}
+        issuerAddress={invoice.seller}
+        currentUserAddress={address}
       />
 
       <InvoiceRatingWidget

@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSettlements, useClaimSettlement, useBatchClaimSettlement } from "@/hooks/useSettlements";
 import { useCurrency } from "@/hooks/useCurrency";
 import { ClaimableSettlementCard, ClaimedHistoryCard } from "./SettlementClaimCard";
+import { SettlementHistory } from "./SettlementHistory";
 
 export function SettlementsTab() {
   const { data, isLoading } = useSettlements();
@@ -28,6 +29,7 @@ export function SettlementsTab() {
 
   return (
     <div className="space-y-6" data-testid="settlements-tab">
+      <SettlementHistory />
       {/* Claimable Section */}
       <div>
         <div className="flex items-center justify-between mb-4">

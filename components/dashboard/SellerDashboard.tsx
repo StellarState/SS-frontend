@@ -10,6 +10,7 @@ import { KycStatusBanner } from "@/components/dashboard/KycStatusBanner";
 import { SellerInvoiceTabs } from "@/components/dashboard/SellerInvoiceTabs";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { TierProgressCard } from "@/components/issuers/TierProgressCard";
+import { SellerTaxProfileSettings } from "@/components/dashboard/SellerTaxProfileSettings";
 import { BulkImportModal } from "@/components/invoices/BulkImportModal";
 import {
   useSellerDashboard,
@@ -181,6 +182,7 @@ export function SellerDashboard() {
           statusFilter={selectedStage}
         />
       </div>
+      <SellerTaxProfileSettings previewAmount={data.total_raised} />
     </div>
   );
 }
