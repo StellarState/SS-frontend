@@ -5,7 +5,7 @@
  *
  * Fetches `/api/invoices/{id}/collateral` returning ratio and band.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
@@ -32,11 +32,9 @@ export function useCollateralHealth(invoiceId: string) {
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     enabled: Boolean(invoiceId),
+  });
+}
 
-
-
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   type CollateralPosition,
