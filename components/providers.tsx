@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import { notifyApiError } from "@/lib/apiErrors";
 import { I18nextProvider } from "react-i18next";
@@ -14,8 +15,31 @@ import { CurrencyProvider } from "@/context/CurrencyContext";
 import { AccreditationProvider } from "@/context/AccreditationContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
+import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { initSentry, setRouteContext, setWalletNetworkContext } from "@/src/monitoring/sentry";
 import { RateLimitedToast } from "@/components/RateLimitedToast";
 import i18n from "@/src/i18n";
+
+function SentryContextSync() {
+  const pathname = usePathname();
+  const { network, wallet, isConnected } = useStellarWallet();
+
+  useEffect(() => {
+    if (pathname) {
+      setRouteContext(pathname);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    setWalletNetworkContext({
+      network: network ?? undefined,
+      wallet: wallet ?? undefined,
+      isConnected,
+    });
+  }, [network, wallet, isConnected]);
+
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,6 +53,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    // Initialize Sentry error monitoring (#761)
+    initSentry();
+
     const storedLanguage = localStorage.getItem("language");
     if (storedLanguage && ["en", "es", "fr"].includes(storedLanguage)) {
       i18n.changeLanguage(storedLanguage);
@@ -56,6 +83,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           {/* #379: one shared wallet session for the whole app */}
           <WalletProvider>
+            {/* #761: attach route & wallet context to error telemetry */}
+            <SentryContextSync />
             {/* #610: global wrong-network detection and transaction guard */}
             <NetworkMismatchProvider>
               <AuthProvider>
