@@ -1,6 +1,11 @@
-/** Shared internals for the domain API clients added for the assigned batch. */
+/**
+ * Shared internals for the domain-specific API clients under lib/api.
+ *
+ * Domain modules import from here instead of the barrel so re-exporting them
+ * from lib/api/index.ts cannot introduce a circular import.
+ */
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 export class ApiError extends Error {
   constructor(
@@ -25,4 +30,30 @@ export async function readApiJson<T>(response: Response): Promise<T> {
 
 export function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;
+}
+
+export function authHeaders(token?: string): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function readJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export function asRecord(payload: unknown): Record<string, unknown> {
+  if (typeof payload !== "object" || payload === null) return {};
+  return payload as Record<string, unknown>;
+}
+
+export function stringFrom(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+export function numberFrom(value: unknown, fallback = 0): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }

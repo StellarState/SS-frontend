@@ -19,24 +19,32 @@
  * testnet order books carry no real market price.
  */
 
-export type FiatCurrency = "USD" | "EUR" | "NGN";
+export type FiatCurrency = "USD" | "EUR" | "GBP" | "KES" | "NGN";
 export type Currency = "XLM" | FiatCurrency;
 
 /** Order shown in the toggle. */
-export const CURRENCIES: readonly Currency[] = ["USD", "EUR", "NGN", "XLM"] as const;
+export const CURRENCIES: readonly Currency[] = ["USD", "EUR", "GBP", "KES", "NGN", "XLM"] as const;
 
 /** Stablecoin each display currency is quoted in (#504). */
 export const CURRENCY_LABELS: Record<Currency, string> = {
   XLM: "XLM",
   USD: "USDC",
   EUR: "EURC",
+  GBP: "GBPC",
+  KES: "KESC",
   NGN: "NGNC",
 };
 
-export const FIAT_CURRENCIES: readonly FiatCurrency[] = ["USD", "EUR", "NGN"] as const;
+export const FIAT_CURRENCIES: readonly FiatCurrency[] = ["USD", "EUR", "GBP", "KES", "NGN"] as const;
 
 export function isFiatCurrency(value: unknown): value is FiatCurrency {
-  return value === "USD" || value === "EUR" || value === "NGN";
+  return (
+    value === "USD" ||
+    value === "EUR" ||
+    value === "GBP" ||
+    value === "KES" ||
+    value === "NGN"
+  );
 }
 
 /** The FX oracle rate is flagged stale once it is older than one hour (#504). */
@@ -221,18 +229,27 @@ export function formatUsd(amount: number): string {
 const fiatFormatters: Record<FiatCurrency, Intl.NumberFormat> = {
   USD: usdFormatter,
   EUR: new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }),
+  GBP: new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }),
+  KES: new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES" }),
   NGN: new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }),
 };
 
-/** "$1,234.56" / "€1,234.56" / "₦1,234.56". */
+/** "$1,234.56" / "€1,234.56" / "£1,234.56" / "KSh 1,234.56" / "₦1,234.56". */
 export function formatFiat(amount: number, currency: FiatCurrency): string {
   return fiatFormatters[currency].format(Number.isFinite(amount) ? amount : 0);
 }
 
 /** Rate with enough precision for a sub-dollar asset: "$0.2221". */
 export function formatRate(rate: number, currency: FiatCurrency = "USD"): string {
-  const symbol = { USD: "$", EUR: "€", NGN: "₦" }[currency];
-  return `${symbol}${rate.toFixed(4)}`;
+  const symbol: Record<FiatCurrency, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    KES: "KSh ",
+    NGN: "₦",
+  };
+  const s = symbol[currency] ?? "$";
+  return `${s}${rate.toFixed(4)}`;
 }
 
 /**

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchAccreditationStatus, isAccreditedForInvoice, type AccreditationStatus, type AccreditationTier } from "@/lib/api";
 import { useWallet } from "@/context/WalletContext";
+export { isAccreditationExpired } from "@/lib/accreditation";
 
 export const ACCREDITATION_QUERY_KEY = ["accreditation"] as const;
 

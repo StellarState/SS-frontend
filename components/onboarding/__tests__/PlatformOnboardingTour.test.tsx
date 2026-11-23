@@ -6,8 +6,12 @@ import { RestartTourSettings } from "@/components/settings/RestartTourSettings";
 import { ONBOARDING_TOUR_STORAGE_KEY } from "@/hooks/useOnboardingTour";
 
 let connected = false;
+let approved = true;
 vi.mock("@/context/WalletContext", () => ({
   useWallet: () => ({ isConnected: connected }),
+}));
+vi.mock("@/hooks/useKycStatus", () => ({
+  useIsKycApproved: () => ({ isApproved: approved, isLoading: false }),
 }));
 
 async function mount() {
@@ -29,6 +33,7 @@ describe("PlatformOnboardingTour (#505)", () => {
   beforeEach(() => {
     localStorage.clear();
     connected = true;
+    approved = true;
     vi.useRealTimers();
   });
 
@@ -39,18 +44,23 @@ describe("PlatformOnboardingTour (#505)", () => {
       "invoice-detail",
       "invest-flow",
       "portfolio",
-      "secondary-market",
     ]);
   });
 
-  it("starts on wallet connection when never completed", async () => {
+  it("starts after KYC approval when never completed", async () => {
     await mount();
     expect(screen.getByTestId("onboarding-tour")).toBeInTheDocument();
-    expect(screen.getByTestId("onboarding-step-count")).toHaveTextContent("Step 1 of 6");
+    expect(screen.getByTestId("onboarding-step-count")).toHaveTextContent("Step 1 of 5");
   });
 
   it("does not start without a connected wallet", async () => {
     connected = false;
+    await mount();
+    expect(screen.queryByTestId("onboarding-tour")).not.toBeInTheDocument();
+  });
+
+  it("does not start before KYC approval", async () => {
+    approved = false;
     await mount();
     expect(screen.queryByTestId("onboarding-tour")).not.toBeInTheDocument();
   });
@@ -89,6 +99,6 @@ describe("PlatformOnboardingTour (#505)", () => {
     await mount();
     fireEvent.click(screen.getByTestId("restart-tour-button"));
     expect(localStorage.getItem(ONBOARDING_TOUR_STORAGE_KEY)).toBeNull();
-    expect(screen.getByTestId("onboarding-step-count")).toHaveTextContent("Step 1 of 6");
+    expect(screen.getByTestId("onboarding-step-count")).toHaveTextContent("Step 1 of 5");
   });
 });

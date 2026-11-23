@@ -111,7 +111,8 @@ export function RelistInvoiceForm({ invoice }: RelistInvoiceFormProps) {
     },
   });
 
-  if (invoice.status !== "cancelled" && (invoice.status as string) !== "canceled") {
+  const invoiceStatus = invoice.status as string;
+  if (invoiceStatus !== "cancelled" && invoiceStatus !== "canceled") {
     return null;
   }
 

@@ -36,6 +36,8 @@ export function formatUsdc(amount: number | string | null | undefined): string {
   return `${formatted} USDC`;
 }
 
+export { formatStellarAmount, roundStellar, STELLAR_DECIMALS } from "./withholding";
+
 /** Formats a percentage rate (e.g. 8.25) as "8.25%". */
 export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || isNaN(value)) {

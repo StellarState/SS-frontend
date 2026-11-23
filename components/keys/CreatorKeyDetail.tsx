@@ -10,11 +10,13 @@ import { GovernanceTab } from "@/components/keys/GovernanceTab";
 import { BuyKeyPanel } from "@/components/keys/BuyKeyPanel";
 import { CreatorVestingSection } from "@/components/keys/CreatorVestingSection";
 import { CreatorRevenueSection } from "@/components/keys/CreatorRevenueSection";
+import { DividendReinvestmentSettings } from "@/components/keys/DividendReinvestmentSettings";
 import { DistributeDividendsPanel } from "@/components/keys/DistributeDividendsPanel";
 import { SupplyCapSettings } from "@/components/keys/SupplyCapSettings";
 import { WhitelistManager } from "@/components/keys/WhitelistManager";
 import { CurveMigrationTimeline } from "@/components/keys/CurveMigrationTimeline";
 import { PerformanceBondPanel } from "@/components/keys/PerformanceBondPanel";
+import { DistributionStatementsTab } from "@/components/keys/DistributionStatementsTab";
 import { useCreatorKey, useKeySupply } from "@/hooks/useCreatorKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -42,7 +44,7 @@ function CreatorKeyDetailSkeleton() {
 
 export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "governance" | "settings" | "whitelist"
+    "overview" | "governance" | "settings" | "whitelist" | "statements"
   >("overview");
   const { jwt } = useAuth();
   const { data: creatorKey, isLoading } = useCreatorKey(keyId, jwt);
@@ -112,6 +114,20 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
             >
               Governance
             </button>
+            {isHolder && (
+              <button
+                type="button"
+                className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${
+                  activeTab === "statements"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("statements")}
+                data-testid="statements-tab"
+              >
+                Statements
+              </button>
+            )}
             {creatorKey.is_creator && (
               <>
                 <button
@@ -179,6 +195,10 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
             </>
           )}
 
+          {activeTab === "overview" && isHolder && (
+            <DividendReinvestmentSettings keyId={creatorKey.id} />
+          )}
+
           {activeTab === "settings" && creatorKey.is_creator && (
             <>
               <CurveMigrationTimeline
@@ -194,6 +214,16 @@ export function CreatorKeyDetail({ keyId }: CreatorKeyDetailProps) {
               keyId={creatorKey.id}
               isHolder={isHolder}
               isCreator={creatorKey.is_creator}
+              holderBalance={holderBalance}
+              whitelistEnabled={creatorKey.whitelist_enabled}
+            />
+          )}
+
+          {activeTab === "statements" && isHolder && (
+            <DistributionStatementsTab
+              keyId={creatorKey.id}
+              keyTitle={creatorKey.title}
+              heldKeys={holderBalance}
             />
           )}
 

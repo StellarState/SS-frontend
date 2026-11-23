@@ -14,6 +14,7 @@ import { CurrencyProvider } from "@/context/CurrencyContext";
 import { AccreditationProvider } from "@/context/AccreditationContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
+import { RateLimitedToast } from "@/components/RateLimitedToast";
 import i18n from "@/src/i18n";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     <PreferencesProvider>
                       {children}
                       <PlatformOnboardingTour />
+                      <RateLimitedToast />
                       <Toaster position="top-right" />
                     </PreferencesProvider>
                   </AccreditationProvider>

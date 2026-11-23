@@ -61,6 +61,18 @@ export function IssuerScoreCard({ invoices, isLoading = false }: IssuerScoreCard
   }
 
   const reputation = computeReputationScore(invoices);
+  const settledInvoices = invoices.filter(
+    (invoice) => invoice.settlement?.settled_at && invoice.settlement.maturity_date,
+  );
+  const averageDaysToSettle = settledInvoices.length
+    ? settledInvoices.reduce((total, invoice) => {
+        const days =
+          (Date.parse(invoice.settlement!.settled_at!) -
+            Date.parse(invoice.settlement!.maturity_date)) /
+          86_400_000;
+        return total + (Number.isFinite(days) ? Math.max(0, days) : 0);
+      }, 0) / settledInvoices.length
+    : null;
 
   return (
     <Card data-testid="issuer-score-card">
@@ -87,7 +99,7 @@ export function IssuerScoreCard({ invoices, isLoading = false }: IssuerScoreCard
           </span>
         </div>
 
-        <dl className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-4">
+        <dl className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-5">
           <div>
             <dt className="text-xs text-muted-foreground">On-time rate</dt>
             <dd
@@ -122,6 +134,12 @@ export function IssuerScoreCard({ invoices, isLoading = false }: IssuerScoreCard
               className="text-lg font-semibold tabular-nums"
             >
               {reputation.totalInvoiceCount}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground" title="Settlement date minus maturity date; negative values indicate early repayment.">Avg. days vs. maturity</dt>
+            <dd data-testid="issuer-average-days-to-settle" className="text-lg font-semibold tabular-nums">
+              {averageDaysToSettle === null ? "—" : averageDaysToSettle.toFixed(1)}
             </dd>
           </div>
         </dl>

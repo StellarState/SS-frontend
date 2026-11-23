@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWallet } from "@/context/WalletContext";
+import { useIsKycApproved } from "@/hooks/useKycStatus";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 
 interface TourStep {
@@ -49,13 +50,6 @@ export const ONBOARDING_TOUR_STEPS: TourStep[] = [
     title: "Track your portfolio",
     description:
       "Your portfolio lists every position with its payouts and dividends, and what is due at maturity.",
-  },
-  {
-    id: "secondary-market",
-    target: "secondary-market",
-    title: "Trade on the secondary market",
-    description:
-      "Sell fractions before maturity or buy from other investors. Each invoice shows live market depth.",
   },
 ];
 
@@ -108,8 +102,9 @@ function cardPosition(rect: Rect): { top: number; left: number } {
  */
 export function PlatformOnboardingTour() {
   const { isConnected } = useWallet();
+  const { isApproved, isLoading } = useIsKycApproved({ enabled: isConnected });
   const { isActive, currentStep, setCurrentStep, complete, skip } =
-    useOnboardingTour(isConnected);
+    useOnboardingTour(isConnected && !isLoading && isApproved);
 
   const step = ONBOARDING_TOUR_STEPS[Math.min(currentStep, ONBOARDING_TOUR_STEPS.length - 1)];
   const [rect, setRect] = useState<Rect | null>(null);

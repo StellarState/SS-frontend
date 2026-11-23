@@ -13,6 +13,7 @@ import { IssuerReputationHeaderBadge, IssuerReputationPanel } from "./IssuerRepu
 import { IssuerCreditTierBadge } from "./IssuerCreditTierBadge";
 import { IssuerTierBadge } from "./IssuerTierBadge";
 import { TierProgressCard } from "./TierProgressCard";
+import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
 
 function IssuerProfileSkeleton() {
   return (
@@ -102,6 +103,8 @@ export function IssuerProfile({ issuerId, now }: IssuerProfileProps) {
       <TierProgressCard address={issuer.id} />
 
       <IssuerReputationPanel wallet={issuer.id} />
+
+      <DynamicYieldCard wallet={issuer.id} />
 
       <IssuerScoreCard invoices={invoices} />
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Wallet, Bookmark, Activity, Receipt, FlaskConical } from "lucide-react";
+import { Wallet, Bookmark, Activity, Receipt, ShieldAlert, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
@@ -15,6 +15,7 @@ import { NetworkBadge } from "@/components/network/NetworkBadge";
 import { WhatsNewButton } from "@/components/changelog/WhatsNewButton";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { useEscapeStatus } from "@/hooks/useEscapeStatus";
 import { useSandboxMode } from "@/hooks/useSandboxMode";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export function Navbar() {
     refreshNetwork,
   } = useStellarWallet();
   const { count, isLoading } = useWatchlist();
+  const { escapeEnabled } = useEscapeStatus();
   const { isSandbox, toggleSandbox } = useSandboxMode();
   const [connectOpen, setConnectOpen] = useState(false);
 
@@ -102,6 +104,17 @@ export function Navbar() {
                 )}
               </Link>
             </>
+          )}
+          {/* #592 — only reachable while the escape hatch is open */}
+          {escapeEnabled && (
+            <Link
+              href="/escape"
+              className="flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400"
+              data-testid="nav-escape-link"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Emergency withdrawal
+            </Link>
           )}
           {/* #443 — app-wide Stellar network badge */}
           <NetworkBadge />
