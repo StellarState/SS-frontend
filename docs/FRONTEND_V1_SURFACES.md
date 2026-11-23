@@ -122,6 +122,35 @@ interface RateAuctionData {
 - Closed filled and closed unfilled outcomes disable the form. Unfilled
   auctions show refund guidance.
 
+## #678 Issuer covenant monitoring dashboard
+
+`CovenantMonitoringDashboard` and `useCovenantMonitoring` provide covenant tracking, headroom buffers, cure countdowns, and evidence verification:
+
+```ts
+interface MonitoredCovenant {
+  id: string;
+  name: string;
+  metric_unit: string;
+  direction: "min" | "max";
+  threshold_value: number;
+  warning_threshold_value: number;
+  current_value: number;
+  status: "healthy" | "warning" | "breached" | "cured";
+  headroom_value: number;
+  headroom_percent: number;
+  cure_deadline?: string | null;
+  cure_plan_summary?: string | null;
+  evidence_records: CovenantEvidenceRecord[];
+}
+```
+
+- Each covenant reports explicit units, required thresholds, warning triggers, and current values.
+- Headroom calculations trigger warning alerts preceding breach thresholds.
+- Active breaches display accurate real-time cure countdown timers.
+- Evidence records open in the secure viewer displaying verified IPFS CID and SHA-256 hash.
+- Authorised investor groups see active breaches, cure plan remediation, and confidential evidence.
+- Route available at `/issuer/covenants`.
+
 ## Failure behavior
 
 Every new hook surfaces `isError`, and each view renders an explicit

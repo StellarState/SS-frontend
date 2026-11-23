@@ -12,3 +12,4 @@ export {
 export { IssuerTierBadge } from "./IssuerTierBadge";
 export { TierProgressCard } from "./TierProgressCard";
 export { ReserveTargetPlanner } from "./ReserveTargetPlanner";
+export { CovenantMonitoringDashboard } from "./CovenantMonitoringDashboard";
