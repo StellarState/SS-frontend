@@ -12,14 +12,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LimitOrderPanel } from "@/components/invoices/LimitOrderPanel";
+import { OfferNegotiationPanel } from "@/components/invoices/OfferNegotiationPanel";
 import { useSecondaryListings } from "@/hooks/useSecondaryMarket";
 import { BuyFractionModal } from "@/components/marketplace/BuyFractionModal";
 import type { ResaleListing } from "@/lib/api";
+import type { ListingReference } from "@/lib/analytics/offerNegotiation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 function formatAmount(n: number) {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+  return n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 }
 
 interface SecondaryMarketTabsPanelProps {
@@ -27,7 +29,7 @@ interface SecondaryMarketTabsPanelProps {
   walletAddress: string | null | undefined;
 }
 
-type Tab = "buy_now" | "limit_order";
+type Tab = "buy_now" | "limit_order" | "negotiate";
 
 export function SecondaryMarketTabsPanel({
   invoiceId,
@@ -35,12 +37,22 @@ export function SecondaryMarketTabsPanel({
 }: SecondaryMarketTabsPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("buy_now");
   const [selectedListing, setSelectedListing] = useState<ResaleListing | null>(null);
+  const [selectedListingForOffer, setSelectedListingForOffer] = useState<ListingReference | null>(null);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
 
   const { data, isLoading } = useSecondaryListings({ invoiceId });
   const listings = (data?.listings ?? []).filter(
     (l) => l.status === "active" && l.remaining_quantity > 0
   );
+
+  const activeListingReference: ListingReference | null = selectedListingForOffer ?? (listings.length > 0 ? {
+    id: listings[0].id,
+    seller_address: listings[0].seller ?? "GBSELLER...",
+    price_per_fraction: listings[0].ask_price,
+    available_quantity: listings[0].remaining_quantity,
+    fair_value_per_fraction: listings[0].ask_price * 0.98,
+    invoice_annual_yield: 12.0,
+  } : null);
 
   const tabClass = (tab: Tab) =>
     `pb-2 text-sm font-semibold border-b-2 transition-colors ${
@@ -79,6 +91,14 @@ export function SecondaryMarketTabsPanel({
           >
             Limit Order
           </button>
+          <button
+            type="button"
+            className={tabClass("negotiate")}
+            onClick={() => setActiveTab("negotiate")}
+            data-testid="tab-negotiate"
+          >
+            Negotiate Offers
+          </button>
         </div>
       </CardHeader>
 
@@ -104,32 +124,59 @@ export function SecondaryMarketTabsPanel({
                   >
                     <div>
                       <p className="text-sm font-medium">
-                        {listing.remaining_quantity.toLocaleString()} fractions @{" "}
+                        {listing.remaining_quantity.toLocaleString("en-US")} fractions @{" "}
                         {formatAmount(listing.ask_price)} XLM/fraction
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Maturity value: {formatAmount(listing.maturity_value)} XLM ·{" "}
-                        {new Date(listing.maturity_date).toLocaleDateString()}
+                        {new Date(listing.maturity_date).toLocaleDateString("en-US")}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedListing(listing);
-                        setBuyModalOpen(true);
-                      }}
-                      data-testid={`buy-listing-${listing.id}`}
-                    >
-                      Buy
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedListingForOffer({
+                            id: listing.id,
+                            seller_address: listing.seller ?? "GBSELLER...",
+                            price_per_fraction: listing.ask_price,
+                            available_quantity: listing.remaining_quantity,
+                            fair_value_per_fraction: listing.ask_price * 0.98,
+                            invoice_annual_yield: 12.0,
+                          });
+                          setActiveTab("negotiate");
+                        }}
+                        data-testid={`offer-listing-${listing.id}`}
+                      >
+                        Make Offer
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedListing(listing);
+                          setBuyModalOpen(true);
+                        }}
+                        data-testid={`buy-listing-${listing.id}`}
+                      >
+                        Buy
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-        ) : (
+        ) : activeTab === "limit_order" ? (
           <LimitOrderPanel invoiceId={invoiceId} walletAddress={walletAddress} />
+        ) : (
+          <OfferNegotiationPanel
+            invoiceId={invoiceId}
+            walletAddress={walletAddress}
+            activeListing={activeListingReference}
+          />
         )}
       </CardContent>
 
