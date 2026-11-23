@@ -69,6 +69,8 @@ import { CurrencyToggle } from "@/components/layout/CurrencyToggle";
 import { InvoiceGreylistStatus } from "@/components/invoices/InvoiceGreylistStatus";
 import { ImpactReport } from "@/components/invoices/ImpactReport";
 import { DynamicYieldCard } from "@/components/invoices/DynamicYieldCard";
+import { UnderwritePanel } from "@/components/underwriting/UnderwritePanel";
+import { WithdrawCommitmentModal } from "@/components/invoices/WithdrawCommitmentModal";
 import { RateAuctionPanel } from "@/components/invoices/RateAuctionPanel";
 import { DebtorAckPanel, useDebtorAckBlocked } from "@/components/invoices/DebtorAckPanel";
 import { VelocityMeter } from "@/components/investor/VelocityMeter";
@@ -528,6 +530,24 @@ export function InvoiceDetailView({ invoiceId }: InvoiceDetailViewProps) {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Early exit (#593): investors in an invoice that is still raising can
+          pull their commitment, with the fee previewed before confirming. */}
+      {invoice.status === "open" && isQualifyingInvestor && (
+        <Card data-testid="withdraw-commitment-card">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+            <p className="text-sm text-muted-foreground">
+              Changed your mind? You can withdraw your commitment while the invoice is still raising.
+            </p>
+            <WithdrawCommitmentModal invoiceId={invoice.id} invoiceTitle={invoice.title} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Underwriter cover (#587). Hidden for invoices with no cover pool. */}
+      {invoice.status !== "draft" && invoice.status !== "pending" && invoice.status !== "rejected" && (
+        <UnderwritePanel invoiceId={invoice.id} invoiceStatus={invoice.status} />
       )}
 
       <SyndicatePanel invoiceId={invoice.id} />

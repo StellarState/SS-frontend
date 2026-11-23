@@ -5380,6 +5380,380 @@ export async function fetchInvoiceLeaderboard(
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Underwriting cover (#587)
+// ---------------------------------------------------------------------------
+
+/** On-chain cover state for one invoice, as read by the contract service. */
+export interface InvoiceCover {
+  invoice_id: string;
+  /** Total XLM staked by underwriters against this invoice. */
+  staked: number;
+  /** Maximum cover the invoice accepts (the cap). */
+  max_cover: number;
+  /** Cover still available to stake: `max_cover - staked`, never negative. */
+  remaining_capacity: number;
+  /** Annualised premium paid to underwriters, as a percentage (e.g. 4.5). */
+  premium_rate: number;
+  /** Cover consumed to absorb a default; 0 unless the invoice defaulted. */
+  loss_absorbed: number;
+  /** The requesting wallet's own stake, when a wallet was supplied. */
+  user_stake: number;
+  /** Whether the requesting wallet has already released its stake. */
+  user_released: boolean;
+}
+
+export type UnderwritingPositionStatus =
+  | "active"
+  | "claimable"
+  | "released"
+  | "absorbed";
+
+export interface UnderwritingPosition {
+  invoice_id: string;
+  invoice_title: string;
+  staked: number;
+  premium_rate: number;
+  premium_earned: number;
+  loss_absorbed: number;
+  status: UnderwritingPositionStatus;
+}
+
+function finiteOr(value: unknown, fallback = 0): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function normalizeInvoiceCover(raw: any, invoiceId: string): InvoiceCover {
+  const staked = Math.max(0, finiteOr(raw?.staked ?? raw?.staked_amount));
+  const maxCover = Math.max(0, finiteOr(raw?.max_cover ?? raw?.cover_cap));
+  const remaining =
+    raw?.remaining_capacity != null
+      ? Math.max(0, finiteOr(raw.remaining_capacity))
+      : Math.max(0, maxCover - staked);
+  return {
+    invoice_id: raw?.invoice_id ?? invoiceId,
+    staked,
+    max_cover: maxCover,
+    remaining_capacity: remaining,
+    premium_rate: Math.max(0, finiteOr(raw?.premium_rate)),
+    loss_absorbed: Math.max(0, finiteOr(raw?.loss_absorbed)),
+    user_stake: Math.max(0, finiteOr(raw?.user_stake)),
+    user_released: Boolean(raw?.user_released),
+  };
+}
+
+export async function fetchInvoiceCover(
+  invoiceId: string,
+  wallet?: string | null,
+): Promise<InvoiceCover> {
+  const query = wallet ? `?wallet=${encodeURIComponent(wallet)}` : "";
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/underwriting${query}`,
+  );
+  if (!res.ok) throw new Error("Failed to fetch invoice cover");
+  return normalizeInvoiceCover(await res.json(), invoiceId);
+}
+
+export async function stakeInvoiceCover(
+  invoiceId: string,
+  wallet: string,
+  amount: number,
+  token?: string,
+): Promise<{ tx_hash?: string }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/underwriting/stake`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ wallet, amount }),
+    },
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to stake cover"));
+  return res.json().catch(() => ({}));
+}
+
+export async function releaseInvoiceCover(
+  invoiceId: string,
+  wallet: string,
+  token?: string,
+): Promise<{ tx_hash?: string }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/underwriting/release`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ wallet }),
+    },
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to release stake"));
+  return res.json().catch(() => ({}));
+}
+
+export async function fetchUnderwritingPositions(
+  wallet: string,
+): Promise<UnderwritingPosition[]> {
+  const res = await fetch(
+    `${API_BASE}/underwriting/positions?wallet=${encodeURIComponent(wallet)}`,
+  );
+  if (!res.ok) throw new Error("Failed to fetch underwriting positions");
+  const raw = await res.json();
+  const rows: any[] = Array.isArray(raw) ? raw : (raw?.positions ?? []);
+  return rows.map((row) => ({
+    invoice_id: String(row.invoice_id),
+    invoice_title: row.invoice_title ?? String(row.invoice_id),
+    staked: finiteOr(row.staked),
+    premium_rate: finiteOr(row.premium_rate),
+    premium_earned: finiteOr(row.premium_earned),
+    loss_absorbed: finiteOr(row.loss_absorbed),
+    status: (["active", "claimable", "released", "absorbed"].includes(row.status)
+      ? row.status
+      : "active") as UnderwritingPositionStatus,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Operator approvals for delegated payout claims (#591)
+// ---------------------------------------------------------------------------
+
+export interface PayoutOperator {
+  address: string;
+  /** ISO timestamp after which the operator can no longer claim. */
+  expires_at: string;
+  approved_at?: string | null;
+}
+
+export async function fetchOperators(
+  wallet: string,
+  token?: string,
+): Promise<PayoutOperator[]> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/operators`,
+    { headers: authHeaders(token) },
+  );
+  if (!res.ok) throw new Error("Failed to fetch operators");
+  const raw = await res.json();
+  const rows: any[] = Array.isArray(raw) ? raw : (raw?.operators ?? []);
+  return rows.map((row) => ({
+    address: String(row.address ?? row.operator),
+    expires_at: String(row.expires_at),
+    approved_at: row.approved_at ?? null,
+  }));
+}
+
+export async function approveOperator(
+  wallet: string,
+  operator: string,
+  expiresAt: string,
+  token?: string,
+): Promise<PayoutOperator> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/operators`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ operator, expires_at: expiresAt }),
+    },
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to approve operator"));
+  const raw = await res.json().catch(() => ({}));
+  return {
+    address: String(raw?.address ?? operator),
+    expires_at: String(raw?.expires_at ?? expiresAt),
+    approved_at: raw?.approved_at ?? new Date().toISOString(),
+  };
+}
+
+export async function revokeOperator(
+  wallet: string,
+  operator: string,
+  token?: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/investors/${encodeURIComponent(wallet)}/operators/${encodeURIComponent(operator)}`,
+    { method: "DELETE", headers: authHeaders(token) },
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to revoke operator"));
+}
+
+// ---------------------------------------------------------------------------
+// Protocol escape hatch (#592)
+// ---------------------------------------------------------------------------
+
+export interface EscapeStatus {
+  paused: boolean;
+  /** When the current pause began; null while the protocol is running. */
+  paused_at: string | null;
+  /** When escape withdrawals open; null when not paused. */
+  escape_available_at: string | null;
+  escape_enabled: boolean;
+}
+
+export interface EscapePosition {
+  invoice_id: string;
+  invoice_title: string;
+  committed: number;
+  /** Pro-rata principal recoverable, straight from the contract preview. */
+  recoverable: number;
+  withdrawn: boolean;
+  withdrawn_at?: string | null;
+  tx_hash?: string | null;
+}
+
+export async function fetchEscapeStatus(): Promise<EscapeStatus> {
+  const res = await fetch(`${API_BASE}/protocol/escape`);
+  if (!res.ok) throw new Error("Failed to fetch escape status");
+  const raw = await res.json();
+  const pausedAt: string | null = raw?.paused_at ?? null;
+  let availableAt: string | null = raw?.escape_available_at ?? null;
+  // Older responses carry the delay instead of the absolute opening time.
+  if (!availableAt && pausedAt && raw?.escape_delay_seconds != null) {
+    availableAt = new Date(
+      new Date(pausedAt).getTime() + finiteOr(raw.escape_delay_seconds) * 1000,
+    ).toISOString();
+  }
+  return {
+    paused: Boolean(raw?.paused),
+    paused_at: pausedAt,
+    escape_available_at: availableAt,
+    escape_enabled: Boolean(raw?.escape_enabled),
+  };
+}
+
+export async function fetchEscapePositions(wallet: string): Promise<EscapePosition[]> {
+  const res = await fetch(
+    `${API_BASE}/protocol/escape/positions?wallet=${encodeURIComponent(wallet)}`,
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch escape positions"));
+  const raw = await res.json();
+  const rows: any[] = Array.isArray(raw) ? raw : (raw?.positions ?? []);
+  return rows.map((row) => ({
+    invoice_id: String(row.invoice_id),
+    invoice_title: row.invoice_title ?? String(row.invoice_id),
+    committed: finiteOr(row.committed),
+    recoverable: finiteOr(row.recoverable ?? row.preview_amount),
+    withdrawn: Boolean(row.withdrawn),
+    withdrawn_at: row.withdrawn_at ?? null,
+    tx_hash: row.tx_hash ?? null,
+  }));
+}
+
+export async function submitEscapeWithdraw(
+  invoiceId: string,
+  wallet: string,
+  token?: string,
+): Promise<{ tx_hash?: string; amount?: number }> {
+  const res = await fetch(`${API_BASE}/protocol/escape/withdraw`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ invoice_id: invoiceId, wallet }),
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Escape withdrawal failed"));
+  return res.json().catch(() => ({}));
+}
+
+// ---------------------------------------------------------------------------
+// Early exit fee preview (#593)
+// ---------------------------------------------------------------------------
+
+export type ExitFeeTrend = "rising" | "falling" | "flat";
+
+export interface ExitPreview {
+  invoice_id: string;
+  commitment: number;
+  /** Fee as a percentage of the commitment (e.g. 1.5 = 1.5%). */
+  fee_percent: number;
+  fee_amount: number;
+  net_refund: number;
+  /** True when the invoice missed minimum funding and the fee is waived. */
+  fee_waived: boolean;
+  trend: ExitFeeTrend;
+  /** Fee percentage that applies after `next_change_at`. */
+  next_fee_percent: number | null;
+  next_change_at: string | null;
+}
+
+/** Stroop precision: Stellar amounts carry 7 decimal places. */
+function roundStroops(value: number): number {
+  return Math.round(value * 1e7) / 1e7;
+}
+
+/**
+ * Normalises the contract preview so the breakdown always adds up: the fee is
+ * clamped to the commitment and the refund is derived from it, never read
+ * independently, so `net_refund + fee_amount === commitment` holds.
+ */
+export function normalizeExitPreview(raw: any, invoiceId: string): ExitPreview {
+  const commitment = Math.max(0, finiteOr(raw?.commitment));
+  const waived = Boolean(raw?.fee_waived);
+  const feePercent = waived
+    ? 0
+    : raw?.fee_bps != null
+      ? finiteOr(raw.fee_bps) / 100
+      : Math.max(0, finiteOr(raw?.fee_percent));
+  const feeAmount = waived
+    ? 0
+    : roundStroops(
+        Math.min(
+          commitment,
+          Math.max(
+            0,
+            raw?.fee_amount != null ? finiteOr(raw.fee_amount) : (commitment * feePercent) / 100,
+          ),
+        ),
+      );
+  const nextPercent =
+    raw?.next_fee_bps != null
+      ? finiteOr(raw.next_fee_bps) / 100
+      : raw?.next_fee_percent != null
+        ? finiteOr(raw.next_fee_percent)
+        : null;
+  let trend: ExitFeeTrend = "flat";
+  if (nextPercent != null && !waived) {
+    if (nextPercent > feePercent) trend = "rising";
+    else if (nextPercent < feePercent) trend = "falling";
+  }
+  return {
+    invoice_id: raw?.invoice_id ?? invoiceId,
+    commitment,
+    fee_percent: feePercent,
+    fee_amount: feeAmount,
+    net_refund: roundStroops(commitment - feeAmount),
+    fee_waived: waived,
+    trend,
+    next_fee_percent: waived ? null : nextPercent,
+    next_change_at: waived ? null : (raw?.next_change_at ?? null),
+  };
+}
+
+export async function fetchExitPreview(
+  invoiceId: string,
+  wallet: string,
+): Promise<ExitPreview> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/exit-preview?wallet=${encodeURIComponent(wallet)}`,
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Could not load the exit fee preview"));
+  return normalizeExitPreview(await res.json(), invoiceId);
+}
+
+export async function withdrawCommitment(
+  invoiceId: string,
+  wallet: string,
+  token?: string,
+): Promise<{ tx_hash?: string; refund?: number }> {
+  const res = await fetch(
+    `${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/withdraw-commitment`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ wallet }),
+    },
+  );
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Withdrawal failed"));
+  return res.json().catch(() => ({}));
+}
+
 /* ─── V1 finance surfaces (#594, #595, #596) ────────────────────────────────
  *
  * The backend routes below are part of the documented frontend contract in

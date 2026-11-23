@@ -26,6 +26,7 @@ import {
   type WalletKind,
 } from "@/lib/stellar";
 import { useWallet } from "@/context/WalletContext";
+import { WalletHelpModal } from "./WalletHelpModal";
 
 interface ConnectWalletModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ interface ConnectWalletModalProps {
 export function ConnectWalletModal({ open, onOpenChange }: ConnectWalletModalProps) {
   const { connect, isConnecting, error } = useWallet();
   const [availability, setAvailability] = useState<Record<string, boolean> | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Detection is async because Freighter's probe is, and it only needs to run
   // while the modal is actually on screen.
@@ -67,6 +69,7 @@ export function ConnectWalletModal({ open, onOpenChange }: ConnectWalletModalPro
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="connect-wallet-modal" className="sm:max-w-md">
         <DialogHeader>
@@ -139,7 +142,19 @@ export function ConnectWalletModal({ open, onOpenChange }: ConnectWalletModalPro
             {error}
           </p>
         )}
+
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto self-start p-0 text-sm"
+          onClick={() => setHelpOpen(true)}
+          data-testid="connect-wallet-help"
+        >
+          {error ? "Get help fixing this" : "Having trouble connecting?"}
+        </Button>
       </DialogContent>
     </Dialog>
+    <WalletHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
+    </>
   );
 }

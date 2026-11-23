@@ -17,6 +17,7 @@ import { PreferencesProvider } from "@/context/PreferencesContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { initSentry, setRouteContext, setWalletNetworkContext } from "@/src/monitoring/sentry";
+import { RateLimitedToast } from "@/components/RateLimitedToast";
 import i18n from "@/src/i18n";
 
 function SentryContextSync() {
@@ -93,6 +94,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     <PreferencesProvider>
                       {children}
                       <PlatformOnboardingTour />
+                      <RateLimitedToast />
                       <Toaster position="top-right" />
                     </PreferencesProvider>
                   </AccreditationProvider>
