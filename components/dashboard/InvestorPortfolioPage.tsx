@@ -16,6 +16,7 @@ import { FractionTransferModal } from "@/components/dashboard/FractionTransferMo
 import { SettlementCountdown } from "@/components/marketplace/SettlementCountdown";
 import { PortfolioRiskIndicator } from "@/components/invoices/InvoiceRiskAlert";
 import { ListPositionButton } from "@/components/dashboard/ListPositionButton";
+import { LockupIndicator } from "@/components/dashboard/LockupIndicator";
 import { UnderwritingPositionsTab } from "@/components/underwriting/UnderwritingPositionsTab";
 import { ConcentrationPanel } from "@/components/investor/ConcentrationPanel";
 
@@ -116,6 +117,7 @@ function HoldingsTab() {
                   <span className="inline-flex items-center gap-2">
                     {pos.invoice_title}
                     <PortfolioRiskIndicator invoiceId={pos.invoice_id} />
+                    <LockupIndicator expiresAt={pos.lockup_expires_at} />
                   </span>
                 </td>
                 <td className="p-3">
