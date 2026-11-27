@@ -47,6 +47,24 @@ function renderModal() {
   );
 }
 
+function renderModalWithQuote(quoteExpiresAt: number) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <CreateListingModal
+        invoiceId="inv-1"
+        invoiceName="Invoice One"
+        availableQuantity={20}
+        open
+        onOpenChange={vi.fn()}
+        initialQuantity={2}
+        initialPrice={50}
+        quoteExpiresAt={quoteExpiresAt}
+      />
+    </QueryClientProvider>
+  );
+}
+
 function fill(quantity: string, price: string) {
   fireEvent.change(screen.getByTestId("listing-quantity-input"), { target: { value: quantity } });
   fireEvent.change(screen.getByTestId("listing-price-input"), { target: { value: price } });
@@ -80,5 +98,18 @@ describe("CreateListingModal fee preview (issue #496)", () => {
     balanceState.balance = 100;
     renderModal();
     expect(screen.getByTestId("listing-fee-source")).toHaveTextContent("Wallet balance");
+  });
+
+  it("prefills quoted listing terms and disables submission after quote expiry", async () => {
+    balanceState.balance = 100;
+    renderModalWithQuote(Date.now() - 1);
+    await waitFor(() => expect(screen.getByTestId("listing-fee-amount")).not.toHaveTextContent("Loading"));
+
+    expect(screen.getByTestId("listing-quantity-input")).toHaveValue(2);
+    expect(screen.getByTestId("listing-price-input")).toHaveValue(50);
+    expect(screen.getByTestId("listing-quantity-input")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("listing-price-input")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("listing-quote-expiry")).toHaveTextContent("quote expired");
+    expect(screen.getByTestId("listing-confirm")).toBeDisabled();
   });
 });
