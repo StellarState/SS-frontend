@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -41,6 +41,9 @@ interface CreateListingModalProps {
   availableQuantity: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialQuantity?: number;
+  initialPrice?: number;
+  quoteExpiresAt?: number;
 }
 
 export function CreateListingModal({
@@ -49,12 +52,29 @@ export function CreateListingModal({
   availableQuantity,
   open,
   onOpenChange,
+  initialQuantity,
+  initialPrice,
+  quoteExpiresAt,
 }: CreateListingModalProps) {
   const queryClient = useQueryClient();
   const { address, network } = useWallet();
   const { balance } = useUsdcBalance(address, network);
   const [quantityRaw, setQuantityRaw] = useState("");
   const [priceRaw, setPriceRaw] = useState("");
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!open) return;
+    setQuantityRaw(initialQuantity === undefined ? "" : String(initialQuantity));
+    setPriceRaw(initialPrice === undefined ? "" : String(initialPrice));
+    setNow(Date.now());
+  }, [initialPrice, initialQuantity, open]);
+
+  useEffect(() => {
+    if (!open || quoteExpiresAt === undefined) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [open, quoteExpiresAt]);
 
   const feeConfig = useQuery({
     queryKey: ["secondary-market", "listing-fee"],
@@ -79,6 +99,7 @@ export function CreateListingModal({
   const feeBps = feeConfig.data?.fee_bps ?? 0;
   const preview = computeListingFee(quantity, price, feeBps);
   const insufficientBalance = !canCoverFee(balance, preview.fee);
+  const quoteExpired = quoteExpiresAt !== undefined && now >= quoteExpiresAt;
 
   const mutation = useMutation({
     mutationFn: () => createListing({ invoiceId, quantity, askPrice: price }),
@@ -104,6 +125,7 @@ export function CreateListingModal({
     !priceError &&
     Boolean(feeConfig.data) &&
     !insufficientBalance &&
+    !quoteExpired &&
     !mutation.isPending;
 
   return (
@@ -125,6 +147,7 @@ export function CreateListingModal({
               max={availableQuantity}
               value={quantityRaw}
               onChange={(e) => setQuantityRaw(e.target.value)}
+              readOnly={quoteExpiresAt !== undefined}
               data-testid="listing-quantity-input"
             />
             {quantityError ? (
@@ -145,6 +168,7 @@ export function CreateListingModal({
               min={0}
               value={priceRaw}
               onChange={(e) => setPriceRaw(e.target.value)}
+              readOnly={quoteExpiresAt !== undefined}
               data-testid="listing-price-input"
             />
             {priceError && (
@@ -153,6 +177,18 @@ export function CreateListingModal({
               </p>
             )}
           </div>
+
+          {quoteExpiresAt !== undefined && (
+            <p
+              className={`text-sm ${quoteExpired ? "text-destructive" : "text-muted-foreground"}`}
+              role={quoteExpired ? "alert" : "status"}
+              data-testid="listing-quote-expiry"
+            >
+              {quoteExpired
+                ? "The exit quote expired. Close this dialog and create a new quote."
+                : `Exit quote expires at ${new Date(quoteExpiresAt).toLocaleTimeString()}.`}
+            </p>
+          )}
 
           <div className="space-y-2 rounded-md border p-3 text-sm" data-testid="listing-fee-preview">
             <div className="flex items-center justify-between">

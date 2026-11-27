@@ -14,6 +14,17 @@ vi.mock("@/hooks/useStellarWallet", () => ({
   useStellarWallet: () => ({ address: "GTESTADDRESS" }),
 }));
 
+vi.mock("@/hooks/useInvoiceOrderBook", () => ({
+  useInvoiceOrderBook: () => ({
+    data: { bids: [{ price: 10, quantity: 5 }], asks: [] },
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock("@/hooks/useCreatorKeys", () => ({
   useBurnCreatorKeyMutation: () => ({
     mutateAsync: burnMutateAsync,
@@ -74,5 +85,15 @@ describe("HoldingActionsMenu", () => {
     await user.click(await screen.findByTestId("burn-action-key-1"));
 
     expect(screen.queryByTestId("burn-confirm-input")).not.toBeInTheDocument();
+  });
+
+  it("opens the exit liquidity preview from the position actions", async () => {
+    const user = userEvent.setup();
+    render(<HoldingActionsMenu position={makePosition()} />);
+
+    await user.click(screen.getByTestId("holding-actions-key-1"));
+    await user.click(await screen.findByTestId("exit-liquidity-action-key-1"));
+
+    expect(await screen.findByTestId("exit-liquidity-preview")).toBeInTheDocument();
   });
 });

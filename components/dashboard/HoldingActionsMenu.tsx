@@ -13,6 +13,8 @@ import { KeyTransferModal } from "@/components/dashboard/KeyTransferModal";
 import { BurnKeyModal } from "@/components/keys/BurnKeyModal";
 import { CreateListingModal } from "@/components/marketplace/CreateListingModal";
 import type { InvestmentPosition } from "@/lib/portfolio";
+import { ExitLiquidityPreviewModal } from "@/components/dashboard/ExitLiquidityPreviewModal";
+import type { ExitLiquidityQuote } from "@/lib/exitLiquidity";
 
 interface HoldingActionsMenuProps {
   position: InvestmentPosition;
@@ -23,6 +25,8 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
   const [transferOpen, setTransferOpen] = useState(false);
   const [burnOpen, setBurnOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [exitPreviewOpen, setExitPreviewOpen] = useState(false);
+  const [exitQuote, setExitQuote] = useState<ExitLiquidityQuote | null>(null);
 
   const keyId = position.key_id ?? position.invoice_id;
   const heldBalance = position.quantity ?? 0;
@@ -68,6 +72,13 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
             <Flame className="h-4 w-4" />
             Burn
           </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={listableQuantity <= 0}
+            onSelect={() => setExitPreviewOpen(true)}
+            data-testid={`exit-liquidity-action-${keyId}`}
+          >
+            Exit liquidity preview
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -82,7 +93,25 @@ export function HoldingActionsMenu({ position }: HoldingActionsMenuProps) {
           invoiceName={position.invoice_title}
           availableQuantity={listableQuantity}
           open={listOpen}
-          onOpenChange={setListOpen}
+          initialQuantity={exitQuote?.quantity}
+          initialPrice={exitQuote?.limitPrice}
+          quoteExpiresAt={exitQuote?.expiresAt}
+          onOpenChange={(next) => {
+            setListOpen(next);
+            if (!next) setExitQuote(null);
+          }}
+        />
+      )}
+      {exitPreviewOpen && (
+        <ExitLiquidityPreviewModal
+          position={{ ...position, quantity: listableQuantity }}
+          open={exitPreviewOpen}
+          onOpenChange={setExitPreviewOpen}
+          onContinueToListing={(quote) => {
+            setExitQuote(quote);
+            setExitPreviewOpen(false);
+            setListOpen(true);
+          }}
         />
       )}
       <BurnKeyModal
