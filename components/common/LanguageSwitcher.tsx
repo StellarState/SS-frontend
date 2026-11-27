@@ -20,7 +20,7 @@ export function LanguageSwitcher() {
 
   return (
     <Select value={i18n.language} onValueChange={handleLanguageChange}>
-      <SelectTrigger className="w-[100px]">
+      <SelectTrigger className="w-[100px]" aria-label="Select language">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

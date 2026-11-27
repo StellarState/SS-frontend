@@ -22,7 +22,11 @@ import { cn } from "@/lib/utils";
 
 interface MoneyProps {
   /** Amount in XLM (the unit every API value uses). */
-  xlm: number | string | null | undefined;
+  xlm?: number | string | null | undefined;
+  /** Alias for xlm amount */
+  amount?: number | string | null | undefined;
+  /** Optional decimal precision */
+  decimals?: number;
   /** Exact text to show when displaying XLM; defaults to `formatXLM`. */
   xlmText?: string;
   /** Whether to show the original XLM amount alongside converted value. */
@@ -30,9 +34,9 @@ interface MoneyProps {
   className?: string;
 }
 
-export function Money({ xlm, xlmText, className, showOriginal = true }: MoneyProps) {
+export function Money({ xlm, amount: amountProp, decimals, xlmText, className, showOriginal = true }: MoneyProps) {
   const { currency, isConverted, convert, exchangeRate, isStale } = useCurrency();
-  const amount = Number(xlm ?? 0);
+  const amount = Number(xlm ?? amountProp ?? 0);
   const originalText = xlmText ?? formatXLM(amount);
 
   if (!isConverted || !exchangeRate || !isFiatCurrency(currency) || !Number.isFinite(amount)) {

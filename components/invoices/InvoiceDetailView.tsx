@@ -219,6 +219,7 @@ function InvestCallToAction({
             invoiceFaceValue={fundingCap}
             trancheType={trancheStatus ? selectedTranche : undefined}
             debtorId={debtorId}
+            enforceAgreement={true}
           />
         )}
         <ReturnsCalculator

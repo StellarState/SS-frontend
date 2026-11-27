@@ -19,6 +19,9 @@ import {
   evaluateLeveragedExposure,
   type LeveragedPositionItem,
 } from "@/lib/analytics/exposureLimits";
+import { AgreementModal } from "@/components/invoices/AgreementModal";
+import { useAgreement } from "@/hooks/useAgreement";
+import { AlertCircle } from "lucide-react";
 import { useInvestMutation } from "@/hooks/useInvestments";
 import { useInvestorLoyalty } from "@/hooks/useInvestorLoyalty";
 import { useFxRate } from "@/hooks/useFxRate";
@@ -57,6 +60,8 @@ interface InvestmentModalProps {
   currentPositions?: LeveragedPositionItem[];
   /** Debtor identity for the exposure gate (#602). */
   debtorId?: string | null;
+  /** Enforces terms agreement acceptance (issue #760). */
+  enforceAgreement?: boolean;
 }
 
 export function InvestmentModal({
@@ -69,6 +74,7 @@ export function InvestmentModal({
   trancheType,
   currentPositions = [],
   debtorId,
+  enforceAgreement = false,
 }: InvestmentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [validAmount, setValidAmount] = useState<number | null>(null);
@@ -127,6 +133,9 @@ export function InvestmentModal({
     Boolean(exposureEvaluation?.requiresWarning && !softWarningDismissed);
 
   const exposure = useExposureLimit(debtorId, validAmount, maxInvestment);
+  const { hasAcceptedCurrentVersion, isInvestingBlocked, investingBlockReason, currentVersion } = useAgreement();
+  const isAgreementBlocked = enforceAgreement && isInvestingBlocked;
+  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
 
   // A null balance means the balance is still unknown, which is not the same as
   // being underfunded, so it must not block the investment.
@@ -158,7 +167,8 @@ export function InvestmentModal({
       insufficientBalance ||
       fxBlocked ||
       feeBlocked ||
-      exposure.blocked
+      exposure.blocked ||
+      isAgreementBlocked
     ) return;
 
     // Revalidate at submit time: a tab may have remained open past its
@@ -328,6 +338,30 @@ export function InvestmentModal({
                 />
               )}
 
+            {isAgreementBlocked && (
+              <div
+                role="alert"
+                className="rounded-md bg-amber-500/15 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-2 border border-amber-500/30"
+                data-testid="investment-agreement-blocked-banner"
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Terms Acceptance Required</span>
+                </div>
+                <p className="text-muted-foreground">{investingBlockReason}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAgreementModalOpen(true)}
+                  data-testid="open-agreement-modal-btn"
+                  className="w-full text-xs h-8"
+                >
+                  Review & Accept Agreement (v{currentVersion})
+                </Button>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -350,7 +384,8 @@ export function InvestmentModal({
                     fxBlocked ||
                     feeBlocked ||
                     isExposureBlocked ||
-                    exposure.blocked
+                    exposure.blocked ||
+                    isAgreementBlocked
                   }
                   data-testid="investment-submit"
                   className="flex-1"
@@ -362,6 +397,11 @@ export function InvestmentModal({
           </div>
         )}
       </DialogContent>
+      <AgreementModal
+        open={agreementModalOpen}
+        onOpenChange={setAgreementModalOpen}
+        onAccepted={() => setAgreementModalOpen(false)}
+      />
     </Dialog>
   );
 }

@@ -1,0 +1,53 @@
+name: A11y & Visual Regression CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  a11y-visual:
+    name: Axe A11y Scans & Visual Snapshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_STELLAR_NETWORK: testnet
+
+      - name: Run A11y and Visual Regression Tests
+        run: npx playwright test tests/e2e/a11y-visual.spec.ts
+        env:
+          CI: true
+
+      - name: Upload test results and snapshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diffs
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

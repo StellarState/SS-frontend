@@ -5,6 +5,7 @@ import { NetworkSelector } from "@/components/network/NetworkSelector";
 import { AutoInvestSettingsPanel } from "@/components/investor/AutoInvestSettingsPanel";
 import { RolloverSettingsPanel } from "@/components/investor/RolloverSettingsPanel";
 import { DisplayPreferences } from "@/components/settings/DisplayPreferences";
+import { AcceptedAgreementsSection } from "@/components/settings/AcceptedAgreementsSection";
 
 // #437 — general settings page; hosts the display-currency toggle.
 // #443 — Stellar network selector.
@@ -51,6 +52,25 @@ export default function SettingsPage() {
           className="inline-block text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           Saved payout destinations →
+        </Link>
+      </section>
+      <section id="tax" className="space-y-3">
+        <h2 className="text-lg font-semibold">Tax Profile</h2>
+        <Link
+          href="/settings/tax"
+          className="inline-block text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Manage tax residency & forms →
+        </Link>
+      </section>
+      <section id="agreements" className="space-y-3">
+        <h2 className="text-lg font-semibold">Agreements</h2>
+        <AcceptedAgreementsSection />
+        <Link
+          href="/settings/agreements"
+          className="inline-block text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          View dedicated agreements page →
         </Link>
       </section>
       <RestartTourSettings />

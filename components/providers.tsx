@@ -16,6 +16,26 @@ import { PreferencesProvider } from "@/context/PreferencesContext";
 import { PlatformOnboardingTour } from "@/components/onboarding/PlatformOnboardingTour";
 import { RateLimitedToast } from "@/components/RateLimitedToast";
 import i18n from "@/src/i18n";
+import { initSentry, setRouteContext, setWalletNetworkContext } from "@/src/monitoring/sentry";
+import { useWallet } from "@/context/WalletContext";
+import { usePathname } from "next/navigation";
+
+function SentryContextBridge() {
+  const { address, network } = useWallet();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname) {
+      setRouteContext(pathname);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    setWalletNetworkContext({ address, network });
+  }, [address, network]);
+
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,6 +49,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    initSentry();
     const storedLanguage = localStorage.getItem("language");
     if (storedLanguage && ["en", "es", "fr"].includes(storedLanguage)) {
       i18n.changeLanguage(storedLanguage);
@@ -56,6 +77,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           {/* #379: one shared wallet session for the whole app */}
           <WalletProvider>
+            <SentryContextBridge />
             {/* #610: global wrong-network detection and transaction guard */}
             <NetworkMismatchProvider>
               <AuthProvider>
